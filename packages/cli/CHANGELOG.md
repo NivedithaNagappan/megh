@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.1](https://github.com/avleonjs/avleon/compare/v0.4.0...v0.4.1) (2026-10-31)
+
+### Features
+
+* **cli:** add make:migration and migrate commands ([0fd29c5](https://github.com/avleonjs/avleon/commit/0fd29c5a02596fb756df364cf3b0de2fa95c668a))
+
+
 # [0.4.0](https://github.com/avleonjs/avleon/compare/v0.3.0...v0.4.0) (2026-10-30)
 
 * test!: replace jest with vitest ([ddff510](https://github.com/avleonjs/avleon/commit/ddff51057108b48084ef259c1cd82d6520429dd4))

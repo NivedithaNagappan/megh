@@ -1,6 +1,6 @@
 {
   "name": "@avleon/cli",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "CLI for scaffolding and running Avleon applications",
   "author": "Tareq Hossain",
   "license": "MIT",
@@ -44,7 +44,7 @@
     "vitest": "^4.1.12"
   },
   "peerDependencies": {
-    "@avleon/core": "^0.4.0"
+    "@avleon/core": "^0.4.1"
   },
   "peerDependenciesMeta": {
     "@avleon/core": {

@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.1](https://github.com/avleonjs/avleon/compare/v0.4.0...v0.4.1) (2026-10-31)
+
+### Bug Fixes
+
+* **core:** document request bodies in the generated OpenAPI spec ([ab9ad42](https://github.com/avleonjs/avleon/commit/ab9ad42646780d76c1ca73d8c9dec2eebf4af47d))
+
+### Features
+
+* **cli:** add make:migration and migrate commands ([0fd29c5](https://github.com/avleonjs/avleon/commit/0fd29c5a02596fb756df364cf3b0de2fa95c668a))
+* **core:** add type-safe models and migrations on top of Kysely ([c81dc88](https://github.com/avleonjs/avleon/commit/c81dc8820cd9b9422aa109b3dc176f19ddb919fc))
+
+
 # [0.4.0](https://github.com/avleonjs/avleon/compare/v0.3.0...v0.4.0) (2026-10-30)
 
 * feat!: add a plugin system and move TypeORM and Knex into @avleon/data ([ec444bc](https://github.com/avleonjs/avleon/commit/ec444bc2e97a0686f15c36805edac4cf2e8691e8))

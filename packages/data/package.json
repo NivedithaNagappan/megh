@@ -1,6 +1,6 @@
 {
   "name": "@avleon/data",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "TypeORM and Knex integration for Avleon",
   "author": "Tareq Hossain",
   "license": "MIT",
@@ -45,7 +45,7 @@
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
-    "@avleon/core": "^0.4.0",
+    "@avleon/core": "^0.4.1",
     "better-sqlite3": ">=12.0.0",
     "knex": ">=2.0.0",
     "mssql": ">=11.0.0",
@@ -78,7 +78,7 @@
     }
   },
   "devDependencies": {
-    "@avleon/core": "^0.4.0",
+    "@avleon/core": "^0.4.1",
     "@swc/core": "^1.16.20",
     "@types/node": "^20.19.17",
     "better-sqlite3": "^12.9.0",
