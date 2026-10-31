@@ -48,6 +48,7 @@ export default defineConfig({
         text: 'Advanced',
         items: [
           { text: 'Database', link: '/advanced/database' },
+          { text: 'Models (ORM)', link: '/advanced/orm' },
           { text: 'Events', link: '/advanced/events' },
           { text: 'Queue', link: '/advanced/queue' },
           { text: 'File Uploads', link: '/advanced/file-uploads' },
