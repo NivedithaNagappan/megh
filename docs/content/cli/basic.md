@@ -23,6 +23,12 @@ npm i -g @avleon/cli
 | `make:service` | `m:s` | Create a service |
 | `make:config` | `m:cnf` | Create a config class |
 | `make:middleware` | `m:mlwr` | Create a middleware |
+| `make:migration` | `m:mig` | Create a database migration |
+| `migrate` | | Run pending migrations |
+| `migrate:status` | | Show which migrations have run |
+| `migrate:rollback` | | Undo the last migration (`--step <n>` for more) |
+| `migrate:reset` | | Undo every migration |
+| `migrate:refresh` | | Undo every migration, then run them all again |
 
 Every `make:*` command takes `-f` / `--force` to overwrite an existing file.
 
@@ -135,6 +141,22 @@ export class JwtConfig extends AvleonConfig {
   }
 }
 ```
+
+## Migrations
+
+```sh
+npx avleon make:migration create_users_table
+npx avleon migrate
+```
+
+`make:migration` writes `src/database/migrations/<timestamp>_<name>.ts`.
+A `create_<table>_table` name gives a create-table migration, and
+`add_<x>_to_<table>_table` an alter-table one; `--create <table>` and
+`--table <table>` choose explicitly.
+
+The `migrate` commands load the Kysely instance exported from
+`src/database/connection.ts`. Set `avleon.database` and `avleon.migrations` in
+`package.json` to use other paths. See [Models (ORM): Migrations](/advanced/orm#migrations).
 
 ## Build
 

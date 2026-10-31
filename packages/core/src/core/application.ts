@@ -21,6 +21,7 @@ import { BaseHttpException } from "../common/exceptions";
 import { SystemUseError } from "../common/exceptions/system-exception";
 import { Constructor, inject, loadPackageFromClient } from "../common/helpers";
 import { generateSwaggerSchema } from "../openapi/swagger-schema";
+import { applyRequestBodyExtensions } from "../openapi/request-body";
 import { OpenApiUiOptions } from "../openapi/openapi";
 import { AvleonMiddleware } from "../http/middleware";
 import { AvleonScheduler } from "../scheduler";
@@ -33,6 +34,8 @@ import { AvleonConfig } from "../config/config";
 import { AvleonAuthentication } from "../security/authentication";
 import { registerPlugins } from "../plugins/registry";
 import { internalLogger } from "../observability/internal-logger";
+import { setConnection } from "../orm/connection";
+import type { Kysely } from "kysely";
 // ---------------------------------------------------------------------------
 // Lazy loaders for optional peer dependencies
 // ---------------------------------------------------------------------------
@@ -190,6 +193,16 @@ export class AvleonApplication implements IAvleonApplication {
     return this;
   }
 
+  /**
+   * Use `db` for models (`@avleon/core` ORM). It is also registered in the
+   * container under `ORM_CONNECTION`, and destroyed when the app shuts down.
+   */
+  useDatabase(db: Kysely<any>) {
+    setConnection(db);
+    this.onClose(() => db.destroy());
+    return this;
+  }
+
   useCache(options?: CacheOptions) {
     CacheManager.configure(options);
 
@@ -253,6 +266,8 @@ export class AvleonApplication implements IAvleonApplication {
         security: options?.security,
         externalDocs: options?.externalDocs,
       },
+      transformObject: ({ openapiObject }: { openapiObject: any }) =>
+        applyRequestBodyExtensions(openapiObject),
     });
 
     const routePrefix = options?.routePrefix || "/swagger";

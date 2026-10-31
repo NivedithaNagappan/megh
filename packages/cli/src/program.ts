@@ -6,7 +6,16 @@ import { routeList } from "./commands/route-list";
 import { serve } from "./commands/serve";
 import { start } from "./commands/start";
 import { CliError } from "./errors";
-import { makeConfig, makeController, makeDto, makeMiddleware, makeModel, makeService } from "./generators/make";
+import { migrate, migrateRefresh, migrateReset, migrateRollback, migrateStatus } from "./commands/migrate";
+import {
+  makeConfig,
+  makeController,
+  makeDto,
+  makeMiddleware,
+  makeMigration,
+  makeModel,
+  makeService,
+} from "./generators/make";
 import { log } from "./utils/log";
 import { cliVersion } from "./utils/stubs";
 
@@ -122,6 +131,49 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
     )
     .action((o) => {
       routeList({ cwd: cwd(), json: o.json, static: o.static });
+    });
+
+  // ── Database ────────────────────────────────────────────────────────────
+  const db = (name: string, description: string) =>
+    sub(name, description).addHelpText(
+      "after",
+      "\nThe Kysely instance is the default (or `db`) export of src/database/connection.ts and\n" +
+        "migrations live in src/database/migrations; set avleon.database / avleon.migrations in\n" +
+        "package.json to change them. Sources are compiled with SWC first, and .env is loaded.",
+    );
+
+  db("migrate", "Run pending migrations").action(() => {
+    migrate({ cwd: cwd() });
+  });
+
+  db("migrate:rollback", "Undo the last migration (or the last --step n)")
+    .option("--step <n>", "Number of migrations to undo", parseInteger, 1)
+    .action((o) => {
+      migrateRollback({ cwd: cwd(), step: o.step });
+    });
+
+  db("migrate:reset", "Undo every migration").action(() => {
+    migrateReset({ cwd: cwd() });
+  });
+
+  db("migrate:refresh", "Undo every migration, then run them all again").action(() => {
+    migrateRefresh({ cwd: cwd() });
+  });
+
+  db("migrate:status", "Show which migrations have run")
+    .option("--json", "Print JSON")
+    .action((o) => {
+      migrateStatus({ cwd: cwd(), json: o.json });
+    });
+
+  sub("make:migration", "Create a migration in src/database/migrations/<timestamp>_<name>.ts")
+    .alias("m:mig")
+    .argument("<name>", "e.g. create_users_table, add_role_to_users_table")
+    .option("--create <table>", "Generate a create-table migration for <table>")
+    .option("--table <table>", "Generate an alter-table migration for <table>")
+    .option("-f, --force", "Overwrite the file if it exists")
+    .action((name: string, o) => {
+      makeMigration(name, { cwd: cwd(), create: o.create, table: o.table, force: o.force });
     });
 
   // ── Generators ──────────────────────────────────────────────────────────

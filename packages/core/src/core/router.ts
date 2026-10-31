@@ -37,6 +37,10 @@ import { contentDisposition } from "../common/utils/path-utils";
 import { AvleonMiddleware } from "../http/middleware";
 import { REQUEST_METADATA_KEY } from "../http/controller";
 import { OpenApiOptions } from "../openapi/openapi";
+import {
+  buildRequestBody,
+  REQUEST_BODY_EXTENSION,
+} from "../openapi/request-body";
 import mime from "mime";
 import Stream from "stream";
 import { HTTPMethods, FastifyInstance } from "fastify";
@@ -69,8 +73,21 @@ function normalizeParamsToJsonSchema(
  * Take a raw @OpenApi schema object and return a Fastify-compatible
  * route schema — normalizing params, query → querystring, and headers.
  */
-function buildRouteSchema(raw: any): any {
-  const schema: any = { ...raw };
+function buildRouteSchema(raw: any, bodyClass?: Function): any {
+  const { requestBody, responseBody, exclude, ...rest } = raw ?? {};
+  const schema: any = rest;
+
+  // @OpenApi({ exclude: true }) → hidden from the generated document.
+  if (exclude) schema.hide = true;
+
+  // Request body documentation: see openapi/request-body.ts. Without one,
+  // a Fastify `body` schema is documented by @fastify/swagger itself.
+  const docBody = buildRequestBody({
+    requestBody: requestBody ?? responseBody,
+    bodyClass,
+    consumes: raw.consumes,
+  });
+  if (docBody) schema[REQUEST_BODY_EXTENSION] = docBody;
 
   // ✅ Normalize path params
   if (raw.params && typeof raw.params === "object" && !raw.params.type) {
@@ -349,14 +366,27 @@ export class AvleonRouter {
               type: "string",
               format: "binary",
             };
-          } else {
-            schema.body.properties[param.key] = { type: param.dataType };
+          } else if (param.key !== "all") {
+            // A whole-body DTO (`@Body() dto`) has no single field to add, and
+            // its class is not a JSON schema type.
+            schema.body.properties[param.key] = {
+              type:
+                typeof param.dataType === "string" ? param.dataType : "string",
+            };
           }
         }
       }
 
+      // DTO of the route's @Body() parameter, documented as the request body
+      // unless @OpenApi supplies a raw Fastify `body` schema.
+      const bodyClass = swaggerMeta.body
+        ? undefined
+        : allMeta.body.find(
+            (b) => b.validatorClass && typeof b.dataType === "function",
+          )?.dataType;
+
       // ✅ Normalize params/query/headers into valid JSON Schema
-      const routeSchema = buildRouteSchema(schema);
+      const routeSchema = buildRouteSchema(schema, bodyClass);
 
       // Resolve DI singletons once at route-registration time, not per request.
       // _resolveAuthorizer picks the named handler when @Authorized("jwt") is used,

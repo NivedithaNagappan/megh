@@ -5,6 +5,11 @@ description: Connecting Avleon to a database with TypeORM or Knex.
 
 # Database
 
+::: tip Built-in models
+`@avleon/core` also has its own type-safe models and migrations, built on
+Kysely, with no extra Avleon package. See [Models (ORM)](/advanced/orm).
+:::
+
 The `@avleon/data` package adds two database integrations: **TypeORM** for an
 entity/repository model, and **Knex** for a query builder. Install it with the
 library you use and its driver. It needs `@avleon/core` 0.4 or later.

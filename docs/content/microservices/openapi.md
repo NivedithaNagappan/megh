@@ -152,6 +152,47 @@ findOne(@Param('id') id: string) {
 }
 ```
 
+### Request bodies
+
+A `@Body()` DTO is documented automatically as a required
+`application/json` body (or `multipart/form-data` when it has a
+`format: 'binary'` field). Nested DTOs become `$ref`s under
+`components.schemas`.
+
+`requestBody` refines or replaces that. It only affects the document, and
+validation still comes from the DTO:
+
+```ts
+// Describe the DTO body
+@OpenApi({ requestBody: { description: 'The new user' } })
+@Post()
+create(@Body() body: CreateUserDto) {}
+
+// Inline schema with an example; `required` defaults to true
+@OpenApi({
+  requestBody: {
+    required: false,
+    schema: { type: 'object', properties: { q: { type: 'string' } } },
+    example: { q: 'avleon' },
+  },
+})
+
+// One schema per media type (schemas may be DTO classes)
+@OpenApi({
+  requestBody: {
+    content: {
+      'application/json': { schema: CreateUserDto },
+      'text/csv': { schema: { type: 'string' } },
+    },
+  },
+})
+```
+
+`requestBody` also takes a DTO class (`requestBody: CreateUserDto`) or a
+`$ref` to `#/components/requestBodies/*`. Use `contentType` to document
+`schema` under other media types, and `examples` / `encoding` as in the
+OpenAPI spec.
+
 ## Inline routes
 
 Routes registered with `mapGet` and friends return a chainable object, so they

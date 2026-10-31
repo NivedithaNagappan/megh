@@ -5,6 +5,7 @@ import { log } from "../utils/log";
 import { resolveName, snakeCase } from "../utils/names";
 import { installedVersion, requireProjectRoot, writeFileSafe } from "../utils/project";
 import { renderStub } from "../utils/stubs";
+import { databasePaths } from "../commands/migrate";
 
 export type MakeBaseOptions = {
   /** Directory to start the project-root search from. Defaults to `process.cwd()`. */
@@ -175,4 +176,58 @@ export function makeDto(name: string, opts: MakeBaseOptions = {}): string {
   const n = resolveName(name, "Dto");
   const file = path.join(targetDir(projectRoot, "dto", n.dirs, opts.root), `${n.fileBase}.dto.ts`);
   return write(file, renderStub("dtos/dto.stub", { ClassName: n.className }), opts.force, "DTO", projectRoot);
+}
+
+export type MakeMigrationOptions = Pick<MakeBaseOptions, "cwd" | "force"> & {
+  /** Create this table (overrides the name-based guess). */
+  create?: string;
+  /** Alter this table (overrides the name-based guess). */
+  table?: string;
+  /** Clock for the file name's timestamp (tests). */
+  now?: Date;
+};
+
+/** `YYYYMMDDHHmmss` in local time: migrations run in file-name order. */
+export function migrationTimestamp(date = new Date()): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${date.getFullYear()}${p(date.getMonth() + 1)}${p(date.getDate())}` +
+    `${p(date.getHours())}${p(date.getMinutes())}${p(date.getSeconds())}`
+  );
+}
+
+/** The `id` column for the project's database driver. */
+function idColumn(pkg: Record<string, any>): string {
+  const deps = { ...pkg?.dependencies, ...pkg?.devDependencies };
+  if (deps.pg || deps.postgres) return `.addColumn("id", "serial", (col) => col.primaryKey())`;
+  if (deps.tedious) return `.addColumn("id", "integer", (col) => col.identity().primaryKey())`;
+  return `.addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())`;
+}
+
+/**
+ * Create `<migrations>/<timestamp>_<name>.ts`. `create_<table>_table` gives a
+ * create-table migration, `add_x_to_<table>_table` (also from/in, and
+ * remove/drop/alter/change/update) an alter-table one, anything else a blank one.
+ */
+export function makeMigration(name: string, opts: MakeMigrationOptions = {}): string {
+  const projectRoot = requireProjectRoot(opts.cwd ?? process.cwd());
+  const snake = snakeCase(name);
+  if (!snake) throw new CliError(`Invalid migration name "${name}".`);
+  const pkg = JSON.parse(fs.readFileSync(path.join(projectRoot, "package.json"), "utf8"));
+  const { migrations } = databasePaths(projectRoot, pkg);
+
+  const createTable =
+    opts.create ?? (opts.table ? undefined : snake.match(/^create_(\w+?)_table$/)?.[1]);
+  const alterTable =
+    opts.table ??
+    (opts.create ? undefined : snake.match(/^(?:add|remove|drop|alter|change|update)_\w+_(?:to|from|in|on)_(\w+?)_table$/)?.[1]);
+
+  const content = createTable
+    ? renderStub("migrations/create-table.stub", { table: createTable, idColumn: idColumn(pkg) })
+    : alterTable
+      ? renderStub("migrations/alter-table.stub", { table: alterTable })
+      : renderStub("migrations/migration.stub");
+
+  const file = path.join(migrations, `${migrationTimestamp(opts.now)}_${snake}.ts`);
+  return write(file, content, opts.force, "Migration", projectRoot);
 }
