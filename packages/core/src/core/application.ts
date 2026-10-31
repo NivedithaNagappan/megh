@@ -21,6 +21,7 @@ import { BaseHttpException } from "../common/exceptions";
 import { SystemUseError } from "../common/exceptions/system-exception";
 import { Constructor, inject, loadPackageFromClient } from "../common/helpers";
 import { generateSwaggerSchema } from "../openapi/swagger-schema";
+import { applyRequestBodyExtensions } from "../openapi/request-body";
 import { OpenApiUiOptions } from "../openapi/openapi";
 import { AvleonMiddleware } from "../http/middleware";
 import { AvleonScheduler } from "../scheduler";
@@ -253,6 +254,8 @@ export class AvleonApplication implements IAvleonApplication {
         security: options?.security,
         externalDocs: options?.externalDocs,
       },
+      transformObject: ({ openapiObject }: { openapiObject: any }) =>
+        applyRequestBodyExtensions(openapiObject),
     });
 
     const routePrefix = options?.routePrefix || "/swagger";

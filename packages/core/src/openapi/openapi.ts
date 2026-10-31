@@ -118,11 +118,7 @@ export interface ParameterBaseObject {
   };
 }
 export type NonArraySchemaObjectType =
-  | "boolean"
-  | "object"
-  | "number"
-  | "string"
-  | "integer";
+  "boolean" | "object" | "number" | "string" | "integer";
 export type ArraySchemaObjectType = "array";
 export type SchemaObject = ArraySchemaObject | NonArraySchemaObject;
 export interface ArraySchemaObject extends BaseSchemaObject {
@@ -360,15 +356,39 @@ export type ParamSchema = {
 
 export type ParamsSchemaMap = Record<string, ParamSchema>;
 
+/** A DTO class; documented through its `#/components/schemas/<Name>` schema. */
+export type SchemaClass = abstract new (...args: any[]) => any;
+
+/** A Media Type Object whose `schema` may also be a DTO class. */
+export type RequestBodyMediaTypeOptions = Omit<MediaTypeObject, "schema"> & {
+  schema?: SchemaObject | ReferenceObject | SchemaClass;
+};
+
 export type RequestBodyOptions = {
   description?: string;
+  /** Defaults to `true`. */
   required?: boolean;
+  /**
+   * Full control over each media type. When given, `schema`, `contentType`,
+   * `example`, `examples` and `encoding` are ignored.
+   */
   content?: {
-    [media: string]: MediaTypeObject;
+    [media: string]: RequestBodyMediaTypeOptions;
   };
-  schema?: SchemaObject | ReferenceObject;
+  /**
+   * Body schema: a JSON schema, a `$ref`, or a DTO class. Defaults to the
+   * route's `@Body()` DTO.
+   */
+  schema?: SchemaObject | ReferenceObject | SchemaClass;
+  /**
+   * Media type(s) `schema` is documented under. Defaults to
+   * `multipart/form-data` when the schema has a binary field, otherwise
+   * `application/json`.
+   */
+  contentType?: string | string[];
   example?: any;
-  examples?: Record<string, ExampleObject>;
+  examples?: Record<string, ExampleObject | ReferenceObject>;
+  encoding?: Record<string, EncodingObject>;
 };
 
 export type ResponseBodyOptions = {
@@ -411,14 +431,18 @@ export type OpenApiOptions = {
   /** Request headers */
   headers?: ParamsSchemaMap;
 
-  /** Request body */
-  requestBody?: RequestBodyOptions;
+  /**
+   * Request body: options, a DTO class, or a `$ref` to
+   * `#/components/requestBodies/*`. Documentation only; validation still
+   * comes from the `@Body()` DTO.
+   */
+  requestBody?: RequestBodyOptions | ReferenceObject | SchemaClass;
 
   /** Responses keyed by HTTP status code */
   response?: ResponsesOptions;
 
-  /** @deprecated use requestBody instead */
-  responseBody?: any;
+  /** @deprecated Misnamed alias of `requestBody`; use `requestBody`. */
+  responseBody?: RequestBodyOptions | ReferenceObject | SchemaClass;
 };
 
 /**
