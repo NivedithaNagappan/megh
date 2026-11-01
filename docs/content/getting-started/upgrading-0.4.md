@@ -11,7 +11,7 @@ lifecycle hooks, and fixes security issues in optional dependencies. `@avleon/co
 version, so upgrade them together:
 
 ```sh
-npm i @avleon/core@^0.4.0 @avleon/cli@^0.4.0
+npm i @avleon/core@^0.4.1 @avleon/cli@^0.4.1
 ```
 
 ## 1. TypeORM and Knex moved to `@avleon/data`
@@ -104,6 +104,17 @@ metadata. Existing projects are not changed.
   `app.onReady`, `app.onClose`, and `app.close()` for a clean shutdown.
 - [Plugins](/advanced/plugins): packages can add `app.use*` methods, services
   and hooks, and are found automatically once installed.
+
+### 0.4.1
+
+- [Models (ORM)](/advanced/orm): type-safe models built on Kysely, with
+  relations and eager loading, timestamps, soft deletes, casts and
+  transactions. Connect them with `app.useDatabase(db)`.
+- [Migrations](/advanced/orm#migrations): `avleon make:migration` and the
+  `migrate`, `migrate:status`, `migrate:rollback`, `migrate:reset` and
+  `migrate:refresh` [commands](/cli/basic#migrations).
+- The generated [OpenAPI](/microservices/openapi) spec now documents request
+  bodies.
 
 The full list of changes is in the
 [changelog](https://github.com/avleonjs/avleon/blob/main/packages/core/CHANGELOG.md).

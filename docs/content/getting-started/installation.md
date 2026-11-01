@@ -147,6 +147,7 @@ imports, and you get a clear install hint the moment a feature needs one:
 | Static files (`useStaticFiles`) | `@fastify/static` |
 | OpenAPI with Swagger UI | `@fastify/swagger`, `@fastify/swagger-ui` |
 | OpenAPI with Scalar | `@fastify/swagger`, `@scalar/fastify-api-reference` |
+| Models and migrations (`useDatabase`) | `kysely` + a driver (`pg`, `mysql2`, `better-sqlite3`) |
 | TypeORM | `typeorm` + a driver (`pg`, `mysql2`, `sqlite3`, `better-sqlite3`, `mssql`) |
 | Knex | `knex` + a driver |
 | Queues | `bullmq`, `ioredis` (not needed with the `memory`/`sync` drivers) |

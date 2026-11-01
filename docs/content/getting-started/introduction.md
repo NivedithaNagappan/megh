@@ -15,6 +15,7 @@ for building REST APIs with minimal boilerplate. It gives you:
 - Request validation with class-validator DTOs
 - Authentication and deny-by-default authorization
 - Automatic OpenAPI documentation with Swagger UI or Scalar
+- [Type-safe models and migrations](/advanced/orm) built on Kysely
 - TypeORM and Knex integrations with one pagination shape
 - Events, BullMQ queues, task scheduling and caching
 - Socket.IO integration

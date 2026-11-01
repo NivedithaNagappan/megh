@@ -30,8 +30,8 @@ Avleon is a TypeScript-first web framework built on top of [Fastify](https://fas
   - [Logging](#logging)
   - [OpenAPI Documentation](#openapi-documentation)
 - [Advanced Features](#advanced-features)
-  - [Database — Knex](#database--knex)
-  - [Database — TypeORM](#database--typeorm)
+  - [Models (ORM)](#models-orm)
+  - [Database](#database)
   - [Pagination](#pagination)
   - [Events](#events)
   - [Queues & Workers](#queues--workers)
@@ -59,6 +59,7 @@ Avleon is a TypeScript-first web framework built on top of [Fastify](https://fas
 - 🔑 **Authentication** — pluggable handler that populates `request.user`
 - 🔒 **Authorization** — deny-by-default `@Authorized` routes
 - 📁 **File uploads** — multipart support with safe, confined storage
+- 🧬 **Models & migrations** — type-safe, Eloquent-style models and migrations built on [Kysely](https://kysely.dev)
 - 🗄️ **Database** — TypeORM and Knex integrations with one pagination shape
 - ⚙️ **Config** — typed, environment-aware config classes
 - 📣 **Events** — typed events with queued delivery and Socket.IO broadcast
@@ -118,6 +119,7 @@ feature needs one:
 | Static files (`useStaticFiles`)              | `npm i @fastify/static`                                                           |
 | OpenAPI with Swagger UI                      | `npm i @fastify/swagger @fastify/swagger-ui`                                      |
 | OpenAPI with Scalar                          | `npm i @fastify/swagger @scalar/fastify-api-reference`                            |
+| Models and migrations (`useDatabase`)        | `npm i kysely` + a driver (`pg`, `mysql2`, `better-sqlite3`)                      |
 | TypeORM                                      | `npm i typeorm` + a driver (`pg`, `mysql2`, `sqlite3`, `better-sqlite3`, `mssql`) |
 | Knex                                         | `npm i knex` + a driver                                                           |
 | Queues & workers                             | `npm i bullmq ioredis` (not needed with the `memory`/`sync` drivers)              |
@@ -636,6 +638,50 @@ Schemas are generated from decorated properties only, and nested DTOs become
 ---
 
 ## Advanced Features
+
+### Models (ORM)
+
+Type-safe models built on [Kysely](https://kysely.dev): column names, value
+types and loaded relations are checked by TypeScript.
+
+```bash
+npm install kysely pg   # or: mysql2, better-sqlite3
+```
+
+```typescript
+import { Model, hasMany } from "@avleon/core";
+import { Post } from "./post.model";
+
+export class User extends Model {
+  static readonly table = "users";
+
+  id!: number;
+  email!: string;
+  name!: string | null;
+
+  posts = hasMany(() => Post);
+}
+
+// app.ts
+app.useDatabase(db); // a Kysely instance
+
+const users = await User.where("email", "like", "%@acme.io")
+  .with("posts")
+  .orderBy("name")
+  .get();
+```
+
+Migrations live in `src/database/migrations` and run with the CLI:
+
+```bash
+npx avleon make:migration create_users_table
+npx avleon migrate
+```
+
+Relations, timestamps, soft deletes, casts, transactions and the migration
+commands are covered in the [Models (ORM) guide](https://avleonjs.github.io/advanced/orm).
+
+---
 
 ### Database
 

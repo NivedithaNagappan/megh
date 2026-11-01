@@ -15,7 +15,7 @@ export default defineConfig({
       { text: 'Guide', link: '/getting-started/introduction', activeMatch: '^/(getting-started|core-concept|advanced|microservices|ai)/' },
       { text: 'CLI', link: '/cli/basic', activeMatch: '^/cli/' },
       {
-        text: 'v0.4.0',
+        text: 'v0.4.1',
         items: [
           { text: 'Upgrading to 0.4', link: '/getting-started/upgrading-0.4' },
           { text: 'Upgrading to 0.3', link: '/getting-started/upgrading' },

@@ -25,7 +25,7 @@ features:
   - title: Secure by default
     details: Deny-by-default authorization, confined file storage and production-safe error responses.
   - title: Batteries included
-    details: TypeORM and Knex, events, BullMQ queues, scheduling, caching, Socket.IO and structured logging.
+    details: Type-safe models and migrations, TypeORM and Knex, events, BullMQ queues, scheduling, caching, Socket.IO and structured logging.
 ---
 
 ## Hello, Avleon
