@@ -4,7 +4,7 @@ import { SocketContextService } from "./socket-dispatcher";
 import { SocketIoServer } from "../realtime/websocket";
 import "reflect-metadata";
 
-const PRIVATE_META_KEY = "avleon:private";
+const PRIVATE_META_KEY = "megh:private";
 
 export function PrivateChannel(channelResolver?: (socket: any) => string) {
   return function (target: any, propertyKey: string) {

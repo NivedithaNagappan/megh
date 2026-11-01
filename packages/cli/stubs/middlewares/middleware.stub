@@ -1,7 +1,7 @@
-import { AppMiddleware, AvleonMiddleware, IRequest, IResponse } from '@avleon/core';
+import { AppMiddleware, MeghMiddleware, IRequest, IResponse } from '@meghjs/core';
 
 @AppMiddleware
-export class {ClassName} extends AvleonMiddleware {
+export class {ClassName} extends MeghMiddleware {
   async invoke(req: IRequest, res?: IResponse) {
     // your logic goes here
     return req;

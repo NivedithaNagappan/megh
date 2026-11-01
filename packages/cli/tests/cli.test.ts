@@ -20,7 +20,7 @@ const quiet = () => {
 };
 
 beforeEach(() => {
-  tmp = fs.mkdtempSync(path.join(os.tmpdir(), "avleon-cli-"));
+  tmp = fs.mkdtempSync(path.join(os.tmpdir(), "megh-cli-"));
   quiet();
 });
 
@@ -172,23 +172,23 @@ describe("new", () => {
     const pkg = JSON.parse(read("my_api", "package.json"));
     expect(pkg.name).toBe("my-api");
     expect(pkg.dependencies["@fastify/cors"]).toBeDefined();
-    expect(pkg.scripts["start:dev"]).toBe("avleon serve");
+    expect(pkg.scripts["start:dev"]).toBe("megh serve");
     expect(pkg.scripts.test).toBe("vitest run");
     expect(read("my_api", "vitest.config.mts")).toContain("swc.vite()");
     expect(exists("my_api", "vitest.e2e.config.mts")).toBe(true);
     expect(read("my_api", "src", "app.ts")).toContain("useCors");
     expect(fs.existsSync(path.join(root, "src", "config", "openapi.config.ts"))).toBe(true);
-    expect(pkg.dependencies["@avleon/data"]).toBeUndefined();
-    expect(read("my_api", "avleon-env.d.ts")).not.toContain("reference");
+    expect(pkg.dependencies["@meghjs/data"]).toBeUndefined();
+    expect(read("my_api", "megh-env.d.ts")).not.toContain("reference");
   });
 
-  it("adds @avleon/data and its types for the database features", async () => {
+  it("adds @meghjs/data and its types for the database features", async () => {
     await createApplication("db_api", { cwd: tmp, yes: true, skipInstall: true, features: ["typeorm"] });
     const pkg = JSON.parse(read("db_api", "package.json"));
-    expect(pkg.dependencies["@avleon/data"]).toBe(pkg.dependencies["@avleon/cli"]);
+    expect(pkg.dependencies["@meghjs/data"]).toBe(pkg.dependencies["@meghjs/cli"]);
     expect(pkg.dependencies.typeorm).toBeDefined();
-    expect(read("db_api", "avleon-env.d.ts")).toContain('/// <reference types="@avleon/data" />');
-    expect(read("db_api", "tsconfig.json")).toContain('"avleon-env.d.ts"');
+    expect(read("db_api", "megh-env.d.ts")).toContain('/// <reference types="@meghjs/data" />');
+    expect(read("db_api", "tsconfig.json")).toContain('"megh-env.d.ts"');
   });
 
   it("scaffolds a minimal project", async () => {

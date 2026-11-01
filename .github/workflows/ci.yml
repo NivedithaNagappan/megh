@@ -26,7 +26,7 @@ jobs:
       # Lerna 10 needs Node 22.22+, so the checks call the workspace scripts
       # through npm and run on every supported Node version.
       - run: npm ci
-      # Build first: @avleon/data type-checks and tests against core's dist.
+      # Build first: @meghjs/data type-checks and tests against core's dist.
       # npm runs workspaces alphabetically, so core builds before data.
       - name: Build
         run: npm run build --workspaces --if-present

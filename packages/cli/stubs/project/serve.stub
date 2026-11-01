@@ -1,4 +1,4 @@
-import { Environment, inject } from '@avleon/core';
+import { Environment, inject } from '@meghjs/core';
 import app from './app';
 
 async function serve() {

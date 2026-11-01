@@ -25,7 +25,7 @@ import {
   type Constructor,
   type PageRequest,
   type Paginated,
-} from "@avleon/core";
+} from "@meghjs/core";
 import { getDataSource } from "./datasource";
 
 // ─── Query operators ─────────────────────────────────────────────────────────
@@ -77,9 +77,9 @@ export interface SoftDeletable {
 
 // ─── Base Repository ─────────────────────────────────────────────────────────
 
-const REPOSITORY_ENTITY = Symbol.for("avleon:repository:entity");
+const REPOSITORY_ENTITY = Symbol.for("megh:repository:entity");
 
-export class AvleonRepository<TEntity extends ObjectLiteral> {
+export class MeghRepository<TEntity extends ObjectLiteral> {
   protected orm!: OrmRepository<TEntity>;
   protected entity: EntityTarget<TEntity>;
   protected manager: EntityManager;
@@ -98,7 +98,7 @@ export class AvleonRepository<TEntity extends ObjectLiteral> {
         | undefined);
     if (!resolvedEntity) {
       throw new Error(
-        `[Avleon] ${this.constructor.name} has no entity. Decorate it with @Repository(Entity) or pass the entity to super().`,
+        `[Megh] ${this.constructor.name} has no entity. Decorate it with @Repository(Entity) or pass the entity to super().`,
       );
     }
     this.entity = resolvedEntity;
@@ -456,7 +456,7 @@ export class AvleonRepository<TEntity extends ObjectLiteral> {
  *
  * ```ts
  * @Repository(User)
- * class UserRepository extends AvleonRepository<User> {
+ * class UserRepository extends MeghRepository<User> {
  *   constructor(private readonly audit: AuditService) { super(); }
  * }
  * ```
@@ -464,7 +464,7 @@ export class AvleonRepository<TEntity extends ObjectLiteral> {
 export function Repository<TEntity extends ObjectLiteral>(
   entity: EntityTarget<TEntity>,
 ) {
-  return function <TBase extends Constructor<AvleonRepository<TEntity>>>(
+  return function <TBase extends Constructor<MeghRepository<TEntity>>>(
     Base: TBase,
   ): TBase {
     Object.defineProperty(Base, REPOSITORY_ENTITY, {

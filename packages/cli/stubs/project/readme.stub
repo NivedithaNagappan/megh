@@ -1,6 +1,6 @@
 # {AppTitle}
 
-Built with [Avleon](https://github.com/avleonjs/avleon-core).
+Built with [Megh](https://github.com/meghjs/megh).
 
 ## Getting Started
 
@@ -13,9 +13,9 @@ Built with [Avleon](https://github.com/avleonjs/avleon-core).
 
 | Script | Description |
 |--------|-------------|
-| `start:dev` | Start the development server with reload (`avleon serve`) |
-| `build`     | Compile TypeScript to `dist/` (`avleon build`) |
-| `start`     | Run the compiled app in production (`avleon start`) |
+| `start:dev` | Start the development server with reload (`megh serve`) |
+| `build`     | Compile TypeScript to `dist/` (`megh build`) |
+| `start`     | Run the compiled app in production (`megh start`) |
 {TestRow}
 ## Project Structure
 

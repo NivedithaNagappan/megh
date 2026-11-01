@@ -17,9 +17,9 @@ export type DatabasePaths = {
   migrations: string;
 };
 
-/** `avleon.database` / `avleon.migrations` from package.json, else the defaults. */
+/** `megh.database` / `megh.migrations` from package.json, else the defaults. */
 export function databasePaths(root: string, pkg: Record<string, any> = readPackageJson(root)): DatabasePaths {
-  const conf = pkg?.avleon ?? {};
+  const conf = pkg?.megh ?? {};
   return {
     connection: path.resolve(root, typeof conf.database === "string" ? conf.database : DEFAULT_CONNECTION),
     migrations: path.resolve(root, typeof conf.migrations === "string" ? conf.migrations : DEFAULT_MIGRATIONS),
@@ -29,11 +29,11 @@ export function databasePaths(root: string, pkg: Record<string, any> = readPacka
 export type MigrateAction = "latest" | "rollback" | "reset" | "refresh" | "status";
 export type MigrateOptions = { cwd?: string; step?: number };
 
-const MARKER = "__AVLEON_MIGRATE__";
+const MARKER = "__MEGH_MIGRATE__";
 
 /**
  * Runs in a child process: loads `.env`, the compiled connection module and
- * @avleon/core from the project, runs the action, prints the result as JSON
+ * @meghjs/core from the project, runs the action, prints the result as JSON
  * after MARKER and closes the connection.
  */
 const WORKER = `
@@ -47,9 +47,9 @@ const send = (value) => console.log(${JSON.stringify(MARKER)} + JSON.stringify(v
     const env = path.join(root, ".env");
     if (fs.existsSync(env) && typeof process.loadEnvFile === "function") process.loadEnvFile(env);
     let core;
-    try { core = require(require.resolve("@avleon/core", { paths: [root] })); }
-    catch { throw new Error("@avleon/core is not installed in this project."); }
-    if (typeof core.Migrations !== "function") throw new Error("This @avleon/core version has no migrations; upgrade it.");
+    try { core = require(require.resolve("@meghjs/core", { paths: [root] })); }
+    catch { throw new Error("@meghjs/core is not installed in this project."); }
+    if (typeof core.Migrations !== "function") throw new Error("This @meghjs/core version has no migrations; upgrade it.");
     const mod = require(connection);
     db = mod && (mod.default || mod.db);
     if (!db || typeof db.schema !== "object" || typeof db.destroy !== "function") {
@@ -74,11 +74,11 @@ function compiled(root: string) {
     throw new CliError(
       `No database connection module at ${rel(paths.connection)}.\n` +
         "Create it and export your Kysely instance (export default db), or point " +
-        '"avleon.database" in package.json at it.',
+        '"megh.database" in package.json at it.',
     );
   }
 
-  const cacheDir = path.join(root, "node_modules", ".cache", "avleon", "migrate");
+  const cacheDir = path.join(root, "node_modules", ".cache", "megh", "migrate");
   fs.rmSync(cacheDir, { recursive: true, force: true });
   const inside = (dir: string, file: string) => {
     const r = path.relative(dir, file);

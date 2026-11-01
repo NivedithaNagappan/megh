@@ -7,7 +7,7 @@
  * Internal: discovering a DTO's properties without instantiating it.
  */
 
-const SCHEMA_PROPERTIES_KEY = Symbol.for("avleon:openapi:properties");
+const SCHEMA_PROPERTIES_KEY = Symbol.for("megh:openapi:properties");
 
 /** Record `key` as a schema property declared on `prototype`. */
 export function registerSchemaProperty(prototype: object, key: string) {

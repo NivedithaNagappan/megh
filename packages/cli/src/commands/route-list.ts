@@ -25,9 +25,9 @@ function controllerFiles(srcDir: string): string[] {
     .sort();
 }
 
-// ── Runtime: compile, require, read Avleon's route metadata ───────────────
+// ── Runtime: compile, require, read Megh's route metadata ───────────────
 
-const MARKER = "__AVLEON_ROUTES__";
+const MARKER = "__MEGH_ROUTES__";
 
 /**
  * Runs in a child process (so the app's import side effects cannot affect the
@@ -43,7 +43,7 @@ for (const [src, compiled] of files) {
   let mod;
   try { mod = require(compiled); } catch (e) { errors.push(src + ": " + (e && e.message || e)); continue; }
   if (typeof Reflect.getOwnMetadataKeys !== "function") {
-    errors.push("reflect-metadata is not loaded; is @avleon/core installed?");
+    errors.push("reflect-metadata is not loaded; is @meghjs/core installed?");
     break;
   }
   for (const value of Object.values(mod)) {
@@ -68,7 +68,7 @@ process.exit(0);
 
 export function runtimeRoutes(root: string): Route[] {
   const layout = projectLayout(root);
-  const cacheDir = path.join(root, "node_modules", ".cache", "avleon", "route-list");
+  const cacheDir = path.join(root, "node_modules", ".cache", "megh", "route-list");
   fs.rmSync(cacheDir, { recursive: true, force: true });
   const compiler = new SwcCompiler(layout.srcDir, cacheDir, layout.compilerOptions);
   const failures = compiler.compileAll();

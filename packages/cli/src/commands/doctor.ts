@@ -22,7 +22,7 @@ export function runChecks(cwd: string, nodeVersion = process.versions.node): Che
     status: major(nodeVersion) >= MIN_NODE_MAJOR ? "ok" : "fail",
     detail: `v${nodeVersion} (requires >=${MIN_NODE_MAJOR})`,
   });
-  checks.push({ name: "@avleon/cli", status: "ok", detail: `v${cli}` });
+  checks.push({ name: "@meghjs/cli", status: "ok", detail: `v${cli}` });
 
   const root = findProjectRoot(cwd);
   if (!root) {
@@ -35,19 +35,19 @@ export function runChecks(cwd: string, nodeVersion = process.versions.node): Che
   }
   checks.push({ name: "Project", status: "ok", detail: root });
 
-  const core = installedVersion("@avleon/core", root);
+  const core = installedVersion("@meghjs/core", root);
   if (!core) {
-    checks.push({ name: "@avleon/core", status: "fail", detail: "not installed (npm install @avleon/core)" });
+    checks.push({ name: "@meghjs/core", status: "fail", detail: "not installed (npm install @meghjs/core)" });
   } else if (major(core) !== major(cli)) {
     checks.push({
-      name: "@avleon/core",
+      name: "@meghjs/core",
       status: "fail",
       detail: `v${core} does not match CLI v${cli} (major versions must match)`,
     });
   } else if (minor(core) !== minor(cli)) {
-    checks.push({ name: "@avleon/core", status: "warn", detail: `v${core}, CLI is v${cli} (minor versions differ)` });
+    checks.push({ name: "@meghjs/core", status: "warn", detail: `v${core}, CLI is v${cli} (minor versions differ)` });
   } else {
-    checks.push({ name: "@avleon/core", status: "ok", detail: `v${core} (matches CLI)` });
+    checks.push({ name: "@meghjs/core", status: "ok", detail: `v${core} (matches CLI)` });
   }
 
   const reflect = installedVersion("reflect-metadata", root);

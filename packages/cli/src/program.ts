@@ -54,12 +54,12 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
   const program = new Command();
 
   program
-    .name("avleon")
-    .description("Scaffold, run and build Avleon applications.")
+    .name("megh")
+    .description("Scaffold, run and build Megh applications.")
     .version(cliVersion(), "-v, --version", "Print the CLI version")
     .helpOption("-h, --help", "Show help")
     .helpCommand("help [command]", "Show help for a command")
-    .showHelpAfterError("(run `avleon --help` for usage)")
+    .showHelpAfterError("(run `megh --help` for usage)")
     .showSuggestionAfterError(true)
     .exitOverride();
 
@@ -78,20 +78,20 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
   };
 
   // ── Project ─────────────────────────────────────────────────────────────
-  sub("new", "Create a new Avleon application")
+  sub("new", "Create a new Megh application")
     .argument("<name>", "Project directory (created if missing); `.` for the current directory")
     .option("-m, --minimal", "Minimal app: a single functional route, no controllers, services or tests")
     .option("-f, --force", "Scaffold into a non-empty directory, overwriting generated files")
     .option("-y, --yes", "Skip prompts and use defaults (npm, openapi)")
     .option("--pm <manager>", `Package manager: ${PACKAGE_MANAGERS.join(", ")}`)
     .option("--features <list>", `Comma-separated features: ${FEATURES.join(", ")}`, parseList)
-    .option("--skip-install", "Do not install dependencies (or set AVLEON_SKIP_INSTALL=1)")
+    .option("--skip-install", "Do not install dependencies (or set MEGH_SKIP_INSTALL=1)")
     .action(async (name: string, o) => {
       await createApplication(name, { cwd: cwd(), ...o });
     });
 
   sub("serve", "Start the dev server: compile src/ with SWC, run the app, reload on changes")
-    .option("--entry <file>", "Entry file, overriding avleon.entry / main in package.json")
+    .option("--entry <file>", "Entry file, overriding megh.entry / main in package.json")
     .option("--no-type-check", "Do not run `tsc --noEmit --watch` alongside the server")
     .option("--debounce <ms>", "Wait this long for more file changes before reloading", parseInteger, 200)
     .action(async (o) => {
@@ -105,12 +105,12 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
     });
 
   sub("start", "Run the compiled app in production (NODE_ENV=production unless set)")
-    .option("--entry <file>", "Entry file, overriding avleon.entry / main in package.json")
+    .option("--entry <file>", "Entry file, overriding megh.entry / main in package.json")
     .action(async (o) => {
       exitCode = await start({ cwd: cwd(), entry: o.entry });
     });
 
-  sub("doctor", "Check Node.js, @avleon/core, reflect-metadata and decorator settings")
+  sub("doctor", "Check Node.js, @meghjs/core, reflect-metadata and decorator settings")
     .action(() => {
       exitCode = doctor(cwd());
     });
@@ -124,9 +124,9 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
     )
     .addHelpText(
       "after",
-      "\nBy default the sources are compiled with SWC to node_modules/.cache/avleon and each\n" +
-        "*.controller.ts is loaded in a child process to read Avleon's route metadata, so\n" +
-        "@avleon/core must be installed. --static needs no dependencies but only understands\n" +
+      "\nBy default the sources are compiled with SWC to node_modules/.cache/megh and each\n" +
+        "*.controller.ts is loaded in a child process to read Megh's route metadata, so\n" +
+        "@meghjs/core must be installed. --static needs no dependencies but only understands\n" +
         "string-literal paths.",
     )
     .action((o) => {
@@ -138,7 +138,7 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
     sub(name, description).addHelpText(
       "after",
       "\nThe Kysely instance is the default (or `db`) export of src/database/connection.ts and\n" +
-        "migrations live in src/database/migrations; set avleon.database / avleon.migrations in\n" +
+        "migrations live in src/database/migrations; set megh.database / megh.migrations in\n" +
         "package.json to change them. Sources are compiled with SWC first, and .env is loaded.",
     );
 

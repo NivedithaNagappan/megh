@@ -1,13 +1,13 @@
-import type { AvleonApplication } from "../core/application";
+import type { MeghApplication } from "../core/application";
 import { Container } from "../di";
 import { LoggerService } from "../observability/logger";
 import { SystemUseError } from "../common/exceptions/system-exception";
 import { discoverPlugins } from "./discovery";
-import { assertPlugin, type AvleonPlugin, type PluginContext } from "./plugin";
+import { assertPlugin, type MeghPlugin, type PluginContext } from "./plugin";
 
 export type PluginOptions = {
   /** Plugins to register explicitly. They take precedence over discovered plugins of the same name. */
-  plugins?: AvleonPlugin[];
+  plugins?: MeghPlugin[];
   /** Find plugins among the app's dependencies. Defaults to true. */
   autoloadPlugins?: boolean;
 };
@@ -17,10 +17,10 @@ export type PluginOptions = {
  * registration order.
  */
 export function registerPlugins(
-  app: AvleonApplication,
+  app: MeghApplication,
   options: PluginOptions = {},
 ): string[] {
-  const byName = new Map<string, AvleonPlugin>();
+  const byName = new Map<string, MeghPlugin>();
   for (const plugin of options.plugins ?? []) {
     assertPlugin(plugin, "An entry in the plugins option");
     if (byName.has(plugin.name)) {
@@ -57,8 +57,8 @@ export function registerPlugins(
 }
 
 function createContext(
-  app: AvleonApplication,
-  plugin: AvleonPlugin,
+  app: MeghApplication,
+  plugin: MeghPlugin,
   methodOwners: Map<string, string>,
 ): PluginContext {
   return {
@@ -97,11 +97,11 @@ function createContext(
 }
 
 /** Order plugins so each one comes after everything in its `dependsOn`. */
-function sortByDependencies(byName: Map<string, AvleonPlugin>): AvleonPlugin[] {
-  const ordered: AvleonPlugin[] = [];
+function sortByDependencies(byName: Map<string, MeghPlugin>): MeghPlugin[] {
+  const ordered: MeghPlugin[] = [];
   const state = new Map<string, "visiting" | "done">();
 
-  const visit = (plugin: AvleonPlugin, chain: string[]) => {
+  const visit = (plugin: MeghPlugin, chain: string[]) => {
     const current = state.get(plugin.name);
     if (current === "done") return;
     if (current === "visiting") {

@@ -22,7 +22,7 @@ export type NewOptions = {
   yes?: boolean;
   pm?: string;
   features?: string[];
-  /** Skip `<pm> install`. Also enabled by the `AVLEON_SKIP_INSTALL=1` environment variable. */
+  /** Skip `<pm> install`. Also enabled by the `MEGH_SKIP_INSTALL=1` environment variable. */
   skipInstall?: boolean;
 };
 
@@ -101,13 +101,13 @@ async function prompt(opts: NewOptions): Promise<{ pm: PackageManager; features:
 export function packageJson(name: string, features: Feature[], minimal: boolean): string {
   const v = cliVersion();
   const deps: Record<string, string> = {
-    "@avleon/core": coreRange(),
-    "@avleon/cli": `^${v}`,
+    "@meghjs/core": coreRange(),
+    "@meghjs/cli": `^${v}`,
   };
   const pick = (...names: string[]) => names.forEach((n) => (deps[n] = DEP_VERSIONS[n]));
   pick("class-transformer", "class-validator", "reflect-metadata");
   if (features.includes("cors")) pick("@fastify/cors");
-  if (usesData(features)) deps["@avleon/data"] = `^${v}`;
+  if (usesData(features)) deps["@meghjs/data"] = `^${v}`;
   if (features.includes("typeorm")) pick("typeorm", "pg");
   if (features.includes("knex")) pick("knex", "pg");
   if (features.includes("scalar")) pick("@scalar/fastify-api-reference");
@@ -118,9 +118,9 @@ export function packageJson(name: string, features: Feature[], minimal: boolean)
   if (!minimal) pickDev("@swc/core", "@vitest/coverage-v8", "unplugin-swc", "vitest");
 
   const scripts: Record<string, string> = {
-    "start:dev": "avleon serve",
-    build: "avleon build",
-    start: "avleon start",
+    "start:dev": "megh serve",
+    build: "megh build",
+    start: "megh start",
   };
   if (!minimal) {
     Object.assign(scripts, {
@@ -132,13 +132,13 @@ export function packageJson(name: string, features: Feature[], minimal: boolean)
   }
 
   const pkg: Record<string, any> = {
-    name: kebabCase(name) || "avleon-app",
+    name: kebabCase(name) || "megh-app",
     version: "0.0.1",
     private: true,
-    description: `${titleCase(name)} API built with Avleon`,
+    description: `${titleCase(name)} API built with Megh`,
     main: "dist/serve.js",
     scripts,
-    keywords: ["avleon", "nodejs", "typescript"],
+    keywords: ["megh", "nodejs", "typescript"],
     engines: { node: ">=20" },
     dependencies: sortKeys(deps),
     devDependencies: sortKeys(devDeps),
@@ -146,7 +146,7 @@ export function packageJson(name: string, features: Feature[], minimal: boolean)
   return JSON.stringify(pkg, null, 2) + "\n";
 }
 
-/** TypeORM and Knex come from the @avleon/data plugin. */
+/** TypeORM and Knex come from the @meghjs/data plugin. */
 function usesData(features: Feature[]) {
   return features.includes("typeorm") || features.includes("knex");
 }
@@ -198,7 +198,7 @@ function runInstall(pm: string, cwd: string): Promise<void> {
 }
 
 export async function createApplication(name: string, opts: NewOptions = {}): Promise<string> {
-  if (!name || !name.trim()) throw new CliError("Please provide a project name, e.g. `avleon new my-api`.");
+  if (!name || !name.trim()) throw new CliError("Please provide a project name, e.g. `megh new my-api`.");
   const cwd = opts.cwd ?? process.cwd();
   const root = path.resolve(cwd, name);
   const appName = path.basename(root);
@@ -214,7 +214,7 @@ export async function createApplication(name: string, opts: NewOptions = {}): Pr
   const { pm, features } = await prompt(opts);
 
   console.log();
-  console.log(c.bold(c.cyan("  Avleon")) + c.dim(` v${cliVersion()}`));
+  console.log(c.bold(c.cyan("  Megh")) + c.dim(` v${cliVersion()}`));
   console.log(`  ${c.dim("Creating project:")} ${c.bold(appName)}${minimal ? c.dim(" (minimal)") : ""}`);
 
   const rel = (f: string) => path.relative(cwd, f) || ".";
@@ -243,7 +243,7 @@ export async function createApplication(name: string, opts: NewOptions = {}): Pr
   add("src/serve.ts", renderStub("project/serve.stub"));
   add("package.json", packageJson(appName, features, minimal));
   add("tsconfig.json", renderStub("project/tsconfig.stub"));
-  add(ENV_TYPES_FILE, envTypesFile(usesData(features) ? ["@avleon/data"] : []));
+  add(ENV_TYPES_FILE, envTypesFile(usesData(features) ? ["@meghjs/data"] : []));
   add("tsconfig.build.json", renderStub("project/tsconfig.build.stub"));
   add(".gitignore", renderStub("project/gitignore.stub"));
   add(".env", renderStub("project/env.stub"));
@@ -268,7 +268,7 @@ export async function createApplication(name: string, opts: NewOptions = {}): Pr
   }
   if (!minimal) fs.mkdirSync(path.join(root, "public"), { recursive: true });
 
-  const skipInstall = opts.skipInstall || process.env.AVLEON_SKIP_INSTALL === "1";
+  const skipInstall = opts.skipInstall || process.env.MEGH_SKIP_INSTALL === "1";
   if (skipInstall) {
     log.section("Skipping dependency install");
   } else {

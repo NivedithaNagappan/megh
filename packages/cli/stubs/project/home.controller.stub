@@ -1,4 +1,4 @@
-import { ApiController, Get } from '@avleon/core';
+import { ApiController, Get } from '@meghjs/core';
 import { HomeService } from '../services/home.service';
 
 @ApiController('/')

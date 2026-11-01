@@ -1,5 +1,5 @@
 /**
- * Library entry for `@avleon/cli`. Importing it has no side effects; the
+ * Library entry for `@meghjs/cli`. Importing it has no side effects; the
  * executable lives in `bin.ts`.
  */
 export { runCli, createProgram, normalizeArgv } from "./program";

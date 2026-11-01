@@ -1,5 +1,5 @@
 {
-  "name": "@avleon/core",
+  "name": "@meghjs/core",
   "version": "0.4.1",
   "description": "TypeScript-first web framework built on Fastify",
   "author": "Tareq Hossain",
@@ -25,7 +25,7 @@
   ],
   "keywords": [
     "restapi",
-    "avleon",
+    "megh",
     "backend",
     "fastify",
     "typescript"
@@ -167,12 +167,12 @@
   },
   "lint-staged": {
     "*.{js,mjs,ts,json,md}": "prettier --write",
-    "*.{js,mjs,ts}": "npm exec -w @avleon/core -- eslint --fix",
-    "*.ts": "npm exec -w @avleon/core -- vitest related --run --passWithNoTests"
+    "*.{js,mjs,ts}": "npm exec -w @meghjs/core -- eslint --fix",
+    "*.ts": "npm exec -w @meghjs/core -- vitest related --run --passWithNoTests"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/avleonjs/avleon.git",
+    "url": "git+https://github.com/meghjs/megh.git",
     "directory": "packages/core"
   },
   "publishConfig": {

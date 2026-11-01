@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { Avleon } from "./testing";
-import { AvleonApplication } from "./application";
+import { Megh } from "./testing";
+import { MeghApplication } from "./application";
 
-describe("Avleon.createApplication", () => {
-  it("should return an instance of AvleonApplication", () => {
-    const app = Avleon.createApplication();
-    expect(app).toBeInstanceOf(AvleonApplication);
+describe("Megh.createApplication", () => {
+  it("should return an instance of MeghApplication", () => {
+    const app = Megh.createApplication();
+    expect(app).toBeInstanceOf(MeghApplication);
   });
 
   it("should always return the same instance (singleton)", () => {
-    const app1 = Avleon.createApplication();
-    const app2 = Avleon.createApplication();
+    const app1 = Megh.createApplication();
+    const app2 = Megh.createApplication();
     expect(app1).toBe(app2);
   });
 });

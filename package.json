@@ -1,7 +1,7 @@
 {
-  "name": "avleon-monorepo",
+  "name": "megh-monorepo",
   "private": true,
-  "description": "Source for @avleon/core, @avleon/cli and the Avleon docs site",
+  "description": "Source for @meghjs/core, @meghjs/cli and the Megh docs site",
   "workspaces": [
     "packages/*"
   ],

@@ -1,5 +1,5 @@
 /**
- * Avleon's dependency injection API.
+ * Megh's dependency injection API.
  *
  * Core and plugins use only this module, never `typedi` directly, so the
  * underlying container can be replaced without changing any caller.

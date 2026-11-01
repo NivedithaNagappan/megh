@@ -28,7 +28,7 @@ function requireNodeCron() {
     return require("node-cron");
   } catch {
     throw new Error(
-      "[Avleon] node-cron is not installed.\n" +
+      "[Megh] node-cron is not installed.\n" +
         "Run: npm install node-cron\n" +
         "And for types: npm install -D @types/node-cron",
     );
@@ -59,7 +59,7 @@ type JobHandle = CronHandle | IntervalHandle | TimeoutHandle;
 
 // ─── Scheduler ────────────────────────────────────────────────────────────────
 
-export class AvleonScheduler {
+export class MeghScheduler {
   private handles: JobHandle[] = [];
   private taskClasses: Constructor<any>[] = [];
 
@@ -76,14 +76,14 @@ export class AvleonScheduler {
   // ── Bootstrap ───────────────────────────────────────────────────────────────
 
   /**
-   * Called once from AvleonApplication.run(), after the database is ready.
+   * Called once from MeghApplication.run(), after the database is ready.
    * Iterates every registered task class and wires up all job decorators.
    */
   start(): void {
     for (const cls of this.taskClasses) {
       if (!isScheduledTask(cls)) {
         logger.warn(
-          `[Avleon Scheduler] "${cls.name}" is not decorated with @ScheduledTask() — skipping.`,
+          `[Megh Scheduler] "${cls.name}" is not decorated with @ScheduledTask() — skipping.`,
         );
         continue;
       }
@@ -98,7 +98,7 @@ export class AvleonScheduler {
 
     if (this.handles.length > 0) {
       logger.info(
-        `[Avleon Scheduler] Started ${this.handles.length} job(s): ` +
+        `[Megh Scheduler] Started ${this.handles.length} job(s): ` +
           this.handles.map((h) => h.label).join(", "),
       );
     }
@@ -112,7 +112,7 @@ export class AvleonScheduler {
     for (const job of jobs) {
       if (job.options?.disabled) {
         logger.info(
-          `[Avleon Scheduler] Cron "${this._label(cls, job)}" is disabled — skipping.`,
+          `[Megh Scheduler] Cron "${this._label(cls, job)}" is disabled — skipping.`,
         );
         continue;
       }
@@ -121,7 +121,7 @@ export class AvleonScheduler {
 
       if (!nodeCron.validate(job.expression)) {
         throw new Error(
-          `[Avleon Scheduler] Invalid cron expression "${job.expression}" ` +
+          `[Megh Scheduler] Invalid cron expression "${job.expression}" ` +
             `on ${cls.name}#${job.methodName}`,
         );
       }
@@ -156,7 +156,7 @@ export class AvleonScheduler {
     for (const job of jobs) {
       if (job.options?.disabled) {
         logger.info(
-          `[Avleon Scheduler] Interval "${this._label(cls, job)}" is disabled — skipping.`,
+          `[Megh Scheduler] Interval "${this._label(cls, job)}" is disabled — skipping.`,
         );
         continue;
       }
@@ -179,7 +179,7 @@ export class AvleonScheduler {
     for (const job of jobs) {
       if (job.options?.disabled) {
         logger.info(
-          `[Avleon Scheduler] Timeout "${this._label(cls, job)}" is disabled — skipping.`,
+          `[Megh Scheduler] Timeout "${this._label(cls, job)}" is disabled — skipping.`,
         );
         continue;
       }
@@ -202,7 +202,7 @@ export class AvleonScheduler {
 
   /**
    * Stops every running job. Called automatically on SIGTERM / SIGINT
-   * from AvleonApplication.run().
+   * from MeghApplication.run().
    */
   stopAll(): void {
     for (const handle of this.handles) {
@@ -218,13 +218,13 @@ export class AvleonScheduler {
       } catch (e) {
         logger.warn(
           { err: e },
-          `[Avleon Scheduler] Error stopping "${handle.label}"`,
+          `[Megh Scheduler] Error stopping "${handle.label}"`,
         );
       }
     }
 
     if (this.handles.length > 0) {
-      logger.info(`[Avleon Scheduler] Stopped ${this.handles.length} job(s).`);
+      logger.info(`[Megh Scheduler] Stopped ${this.handles.length} job(s).`);
     }
 
     this.handles = [];
@@ -248,7 +248,7 @@ export class AvleonScheduler {
     return async function () {
       if (running) {
         logger.warn(
-          `[Avleon Scheduler] "${label}" previous run still in progress — skipping tick.`,
+          `[Megh Scheduler] "${label}" previous run still in progress — skipping tick.`,
         );
         return;
       }
@@ -258,7 +258,7 @@ export class AvleonScheduler {
       } catch (err: any) {
         logger.error(
           { err },
-          `[Avleon Scheduler] Error in "${label}": ${err?.message ?? err}`,
+          `[Megh Scheduler] Error in "${label}": ${err?.message ?? err}`,
         );
       } finally {
         running = false;

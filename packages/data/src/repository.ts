@@ -4,7 +4,7 @@ import {
   paginated,
   type PageRequest,
   type Paginated,
-} from "@avleon/core";
+} from "@meghjs/core";
 import type { EntityTarget, ObjectLiteral, Repository } from "typeorm";
 import { getDataSource } from "./datasource";
 

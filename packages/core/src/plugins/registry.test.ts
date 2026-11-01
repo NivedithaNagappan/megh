@@ -3,16 +3,16 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AvleonApplication } from "../core/application";
-import { AvleonApplicationOptions } from "../core/interfaces";
+import { MeghApplication } from "../core/application";
+import { MeghApplicationOptions } from "../core/interfaces";
 import { Container } from "../di";
 import { discoverPlugins } from "./discovery";
-import { definePlugin, type AvleonPlugin } from "./plugin";
+import { definePlugin, type MeghPlugin } from "./plugin";
 
-const apps: AvleonApplication[] = [];
+const apps: MeghApplication[] = [];
 // A fresh app per test; getApp() would return a shared singleton.
-function createApp(options: AvleonApplicationOptions) {
-  const app = AvleonApplication.getInternalApp({
+function createApp(options: MeghApplicationOptions) {
+  const app = MeghApplication.getInternalApp({
     autoloadPlugins: false,
     ...options,
   });
@@ -20,7 +20,7 @@ function createApp(options: AvleonApplicationOptions) {
   return app;
 }
 
-const plugin = (name: string, extra: Partial<AvleonPlugin> = {}) =>
+const plugin = (name: string, extra: Partial<MeghPlugin> = {}) =>
   definePlugin({ name, register: () => {}, ...extra });
 
 afterEach(async () => {
@@ -41,7 +41,7 @@ describe("registering plugins", () => {
       ],
     });
 
-    expect((app as any).greet("avleon")).toBe("hello avleon");
+    expect((app as any).greet("megh")).toBe("hello megh");
     expect(app.getPlugins()).toEqual(["greeter"]);
   });
 
@@ -147,7 +147,7 @@ describe("registering plugins", () => {
     const asyncPlugin = {
       name: "slow",
       register: async () => {},
-    } as unknown as AvleonPlugin;
+    } as unknown as MeghPlugin;
 
     expect(() => createApp({ plugins: [asyncPlugin] })).toThrow(
       "Plugin \"slow\": register() must be synchronous. Move async work into ctx.onInit().",
@@ -168,7 +168,7 @@ describe("registering plugins", () => {
 
   it("rejects something that is not a plugin", () => {
     expect(() => createApp({ plugins: [{ name: "x" } as any] })).toThrow(
-      "An entry in the plugins option is not a valid Avleon plugin",
+      "An entry in the plugins option is not a valid Megh plugin",
     );
   });
 });
@@ -198,7 +198,7 @@ describe("discovering plugins", () => {
     ` ctx.extend(${JSON.stringify(method)}, () => ${JSON.stringify(name)}); } };`;
 
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), "avleon-plugins-"));
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "megh-plugins-"));
     fs.writeFileSync(
       path.join(root, "package.json"),
       JSON.stringify({
@@ -212,13 +212,13 @@ describe("discovering plugins", () => {
     );
     installPackage(
       "@acme/data",
-      { avleon: { plugin: "./plugin.js" } },
+      { megh: { plugin: "./plugin.js" } },
       { "plugin.js": pluginSource("@acme/data", "useData") },
     );
     installPackage("plain-lib", { main: "index.js" });
     installPackage(
       "dev-plugin",
-      { avleon: { plugin: "./plugin.js" } },
+      { megh: { plugin: "./plugin.js" } },
       { "plugin.js": pluginSource("dev-plugin", "useDev") },
     );
   });
@@ -252,7 +252,7 @@ describe("discovering plugins", () => {
   it("reports a plugin entry that exports something else", () => {
     installPackage(
       "bad-plugin",
-      { avleon: { plugin: "./plugin.js" } },
+      { megh: { plugin: "./plugin.js" } },
       { "plugin.js": "exports.x = 1;" },
     );
     fs.writeFileSync(
@@ -261,7 +261,7 @@ describe("discovering plugins", () => {
     );
 
     expect(() => discoverPlugins(root)).toThrow(
-      "bad-plugin (./plugin.js) is not a valid Avleon plugin",
+      "bad-plugin (./plugin.js) is not a valid Megh plugin",
     );
   });
 

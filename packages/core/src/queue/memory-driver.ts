@@ -26,24 +26,24 @@ let globalDriver: QueueDriver | undefined;
 
 /**
  * Set the driver for queues and workers created afterwards, overriding the
- * `AVLEON_QUEUE_DRIVER` environment variable. Pass `undefined` to reset.
+ * `MEGH_QUEUE_DRIVER` environment variable. Pass `undefined` to reset.
  */
 export function setQueueDriver(driver: QueueDriver | undefined): void {
   if (driver !== undefined && !DRIVERS.includes(driver)) {
     throw new Error(
-      `[Avleon] Unknown queue driver "${driver}". Use one of: ${DRIVERS.join(", ")}.`,
+      `[Megh] Unknown queue driver "${driver}". Use one of: ${DRIVERS.join(", ")}.`,
     );
   }
   globalDriver = driver;
 }
 
-/** Resolve the driver: explicit option, then `setQueueDriver`, then `AVLEON_QUEUE_DRIVER`, then `"bullmq"`. */
+/** Resolve the driver: explicit option, then `setQueueDriver`, then `MEGH_QUEUE_DRIVER`, then `"bullmq"`. */
 export function resolveQueueDriver(explicit?: QueueDriver): QueueDriver {
-  const fromEnv = process.env.AVLEON_QUEUE_DRIVER as QueueDriver | undefined;
+  const fromEnv = process.env.MEGH_QUEUE_DRIVER as QueueDriver | undefined;
   const driver = explicit ?? globalDriver ?? (fromEnv || undefined) ?? "bullmq";
   if (!DRIVERS.includes(driver)) {
     throw new Error(
-      `[Avleon] Unknown queue driver "${driver}" (from AVLEON_QUEUE_DRIVER). Use one of: ${DRIVERS.join(", ")}.`,
+      `[Megh] Unknown queue driver "${driver}" (from MEGH_QUEUE_DRIVER). Use one of: ${DRIVERS.join(", ")}.`,
     );
   }
   return driver;
@@ -52,11 +52,7 @@ export function resolveQueueDriver(explicit?: QueueDriver): QueueDriver {
 // ─── In-memory job ───────────────────────────────────────────────────────────
 
 export type MemoryJobState =
-  | "waiting"
-  | "delayed"
-  | "active"
-  | "completed"
-  | "failed";
+  "waiting" | "delayed" | "active" | "completed" | "failed";
 
 /** A job in the in-memory driver. Mirrors the parts of BullMQ's `Job` handlers use. */
 export class MemoryJob<T = any> {
@@ -175,7 +171,7 @@ function safeEmit(state: MemoryQueueState, event: string, ...args: any[]) {
   } catch (err) {
     logger.error(
       { err, queue: state.name },
-      `[Avleon Queue] "${event}" listener threw`,
+      `[Megh Queue] "${event}" listener threw`,
     );
   }
 }
@@ -220,7 +216,7 @@ async function runJob(state: MemoryQueueState, job: MemoryJob): Promise<void> {
             jobName: job.name,
             attempts: job.attemptsMade,
           },
-          `[Avleon Queue] Job "${job.name}" on "${state.name}" failed`,
+          `[Megh Queue] Job "${job.name}" on "${state.name}" failed`,
         );
         safeEmit(state, "failed", job, error);
       }
@@ -368,7 +364,7 @@ export class MemoryWorker {
     const state = stateFor(name);
     if (state.processor) {
       throw new Error(
-        `[Avleon] Queue "${name}" already has an in-memory worker.`,
+        `[Megh] Queue "${name}" already has an in-memory worker.`,
       );
     }
     state.processor = processor;

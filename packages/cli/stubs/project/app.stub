@@ -1,7 +1,7 @@
-import { Avleon } from '@avleon/core';
+import { Megh } from '@meghjs/core';
 import { HomeController } from './controllers/home.controller';
 {Imports}
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 {Setup}
 app.useControllers([HomeController]);
 

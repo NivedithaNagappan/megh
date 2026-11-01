@@ -24,7 +24,7 @@ import type {
 } from "./openapi";
 import { generateClassSchema } from "./swagger-schema";
 
-export const REQUEST_BODY_EXTENSION = "x-avleon-request-body";
+export const REQUEST_BODY_EXTENSION = "x-megh-request-body";
 
 const JSON_MEDIA = "application/json";
 const MULTIPART_MEDIA = "multipart/form-data";

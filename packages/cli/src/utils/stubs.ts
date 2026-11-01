@@ -41,8 +41,8 @@ export function cliVersion(): string {
   return JSON.parse(fs.readFileSync(path.join(packageRoot, "package.json"), "utf8")).version;
 }
 
-/** The `@avleon/core` range new projects should depend on (lockstep with the CLI). */
+/** The `@meghjs/core` range new projects should depend on (lockstep with the CLI). */
 export function coreRange(): string {
   const pkg = JSON.parse(fs.readFileSync(path.join(packageRoot, "package.json"), "utf8"));
-  return pkg.peerDependencies?.["@avleon/core"] ?? `^${pkg.version}`;
+  return pkg.peerDependencies?.["@meghjs/core"] ?? `^${pkg.version}`;
 }

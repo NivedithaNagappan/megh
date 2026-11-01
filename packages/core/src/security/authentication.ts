@@ -20,7 +20,7 @@ import { IRequest } from "../core/types";
  * @example
  * ```ts
  * @Service()
- * class JwtAuthentication extends AvleonAuthentication<User> {
+ * class JwtAuthentication extends MeghAuthentication<User> {
  *   async authenticate(request: IRequest) {
  *     const header = request.headers.authorization;
  *     if (!header?.startsWith("Bearer ")) return null;
@@ -31,7 +31,7 @@ import { IRequest } from "../core/types";
  * app.useAuthentication(JwtAuthentication);
  * ```
  */
-export abstract class AvleonAuthentication<TUser = any> {
+export abstract class MeghAuthentication<TUser = any> {
   /**
    * Resolve the current user from the request.
    *

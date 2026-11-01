@@ -2,23 +2,23 @@ import { Environment } from "./environment-variables";
 import { Constructor, inject } from "../common/helpers";
 import { Container, Injectable } from "../di";
 // The abstract base
-export abstract class AvleonConfig<T = any> {
+export abstract class MeghConfig<T = any> {
   abstract config(env: Environment): T;
 }
 
 // Constructor type that TypeScript recognizes for subclasses
-export type AvleonConfigClass<T = any> = Function & {
-  prototype: AvleonConfig<T>;
+export type MeghConfigClass<T = any> = Function & {
+  prototype: MeghConfig<T>;
 };
 
 // Decorator — registers in DI
-export function AppConfig<T extends AvleonConfig>(
+export function AppConfig<T extends MeghConfig>(
   target: Constructor<T>,
 ): Constructor<T> {
   Injectable()(target);
   return target;
 }
-export function GetConfig<T extends AvleonConfig<R>, R>(
+export function GetConfig<T extends MeghConfig<R>, R>(
   ConfigClass: Constructor<T>,
 ): R;
 export function GetConfig<T = any>(token: string | symbol): T;
@@ -29,8 +29,8 @@ export function GetConfig<R>(token: any): R {
     typeof token.prototype.config === "function"
   ) {
     try {
-      const instance = Container.get<AvleonConfig<R>>(
-        token as Constructor<AvleonConfig<R>>,
+      const instance = Container.get<MeghConfig<R>>(
+        token as Constructor<MeghConfig<R>>,
       );
       return instance.config(inject(Environment));
     } catch {

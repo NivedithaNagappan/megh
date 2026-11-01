@@ -1,12 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { AvleonTest } from '@avleon/core';
+import { MeghTest } from '@meghjs/core';
 import { HomeController } from './home.controller';
 
 describe('HomeController', () => {
   let controller!: HomeController;
 
   beforeAll(() => {
-    controller = AvleonTest.getController(HomeController);
+    controller = MeghTest.getController(HomeController);
   });
 
   it('should be defined', () => {

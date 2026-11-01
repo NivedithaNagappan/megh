@@ -17,7 +17,7 @@
  */
 
 /** Brand of a relation marker. */
-export const RELATION: unique symbol = Symbol("avleon.orm.relation");
+export const RELATION: unique symbol = Symbol("megh.orm.relation");
 
 type RelatedClass = abstract new () => any;
 
@@ -271,7 +271,6 @@ export function getRelation(
   name: string,
 ): RelationDefinition {
   const def = getRelations(cls).get(name);
-  if (!def)
-    throw new Error(`[Avleon ORM] ${cls.name} has no relation "${name}"`);
+  if (!def) throw new Error(`[Megh ORM] ${cls.name} has no relation "${name}"`);
   return def;
 }

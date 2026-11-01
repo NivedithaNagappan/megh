@@ -1,13 +1,13 @@
 {
-  "name": "@avleon/cli",
+  "name": "@meghjs/cli",
   "version": "0.4.1",
-  "description": "CLI for scaffolding and running Avleon applications",
+  "description": "CLI for scaffolding and running Megh applications",
   "author": "Tareq Hossain",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "avleon": "dist/bin.js"
+    "megh": "dist/bin.js"
   },
   "files": [
     "dist",
@@ -28,7 +28,7 @@
   },
   "keywords": [
     "cli",
-    "avleon",
+    "megh",
     "backend",
     "typescript"
   ],
@@ -44,16 +44,16 @@
     "vitest": "^4.1.12"
   },
   "peerDependencies": {
-    "@avleon/core": "^0.4.1"
+    "@meghjs/core": "^0.4.1"
   },
   "peerDependenciesMeta": {
-    "@avleon/core": {
+    "@meghjs/core": {
       "optional": true
     }
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/avleonjs/avleon.git",
+    "url": "git+https://github.com/meghjs/megh.git",
     "directory": "packages/cli"
   },
   "publishConfig": {

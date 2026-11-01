@@ -11,7 +11,7 @@ const NOW = new Date(2026, 10, 1, 9, 30, 5); // local time
 describe("make:migration", () => {
   let tmp: string;
   beforeEach(() => {
-    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "avleon-mig-"));
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "megh-mig-"));
     fs.writeFileSync(path.join(tmp, "package.json"), JSON.stringify({ name: "x" }));
     vi.spyOn(console, "log").mockImplementation(() => {});
   });
@@ -59,8 +59,8 @@ describe("make:migration", () => {
     expect(blank).not.toMatch(/createTable|alterTable/);
   });
 
-  it("honours avleon.migrations and refuses to overwrite", () => {
-    fs.writeFileSync(path.join(tmp, "package.json"), JSON.stringify({ name: "x", avleon: { migrations: "db/migrations" } }));
+  it("honours megh.migrations and refuses to overwrite", () => {
+    fs.writeFileSync(path.join(tmp, "package.json"), JSON.stringify({ name: "x", megh: { migrations: "db/migrations" } }));
     expect(databasePaths(tmp).migrations).toBe(path.join(tmp, "db", "migrations"));
     const file = makeMigration("create_users_table", { cwd: tmp, now: NOW });
     expect(file).toBe(path.join(tmp, "db", "migrations", "20261101093005_create_users_table.ts"));
@@ -81,7 +81,7 @@ describe("make:migration", () => {
 
 // ── End to end: compiles a project and runs migrations on SQLite ──────────
 // The project lives under this package's node_modules so it resolves
-// @avleon/core (built), kysely and better-sqlite3 from the workspace.
+// @meghjs/core (built), kysely and better-sqlite3 from the workspace.
 
 describe("migrate commands", () => {
   let root: string;
@@ -89,7 +89,7 @@ describe("migrate commands", () => {
   let err: string[];
 
   beforeEach(() => {
-    const base = path.join(__dirname, "..", "node_modules", ".avleon-test");
+    const base = path.join(__dirname, "..", "node_modules", ".megh-test");
     fs.mkdirSync(base, { recursive: true });
     root = fs.mkdtempSync(path.join(base, "app-"));
     fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "app" }));

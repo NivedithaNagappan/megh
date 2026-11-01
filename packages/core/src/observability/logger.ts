@@ -23,7 +23,7 @@ function isPinoPrettyInstalled(): boolean {
 }
 
 /**
- * The pino options Avleon uses: structured JSON everywhere, except in
+ * The pino options Megh uses: structured JSON everywhere, except in
  * development (`NODE_ENV === "development"`) when pino-pretty is installed.
  */
 export function buildLoggerOptions(

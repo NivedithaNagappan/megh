@@ -101,8 +101,8 @@ function writeResourceService(
   if (asDependency) ensureDependency(serviceFile, render, "Service", projectRoot);
   else write(serviceFile, render(), force, "Service", projectRoot);
   ensureDependency(modelFile, () => renderModel(m.base, orm), "Model", projectRoot);
-  if (orm && !installedVersion("@avleon/data", projectRoot)) {
-    log.warn("The generated service uses @avleon/data. Install it: npm install @avleon/data typeorm");
+  if (orm && !installedVersion("@meghjs/data", projectRoot)) {
+    log.warn("The generated service uses @meghjs/data. Install it: npm install @meghjs/data typeorm");
   }
 }
 

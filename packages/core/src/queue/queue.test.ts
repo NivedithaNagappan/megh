@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // bullmq is an optional peer dependency, loaded lazily through
-// loadPackageFromClient. Stub that loader so these tests exercise Avleon's
+// loadPackageFromClient. Stub that loader so these tests exercise Megh's
 // own wiring without needing a Redis server.
 const queueInstances: any[] = [];
 const workerInstances: any[] = [];
@@ -77,15 +77,15 @@ vi.mock("../common/utils/common-utils", async (importOriginal) => {
   };
 });
 
-import { AvleonQueue, JobHandler, Queue } from "./queue";
+import { MeghQueue, JobHandler, Queue } from "./queue";
 
 beforeEach(() => {
   queueInstances.length = 0;
   workerInstances.length = 0;
 });
 
-describe("AvleonQueue", () => {
-  class PlainQueue extends AvleonQueue<{ id: number }> {}
+describe("MeghQueue", () => {
+  class PlainQueue extends MeghQueue<{ id: number }> {}
 
   it("creates the underlying queue with the given name and options", () => {
     const opts = { connection: { host: "localhost" } } as any;
@@ -152,7 +152,7 @@ describe("AvleonQueue", () => {
     it("routes each named job to its handler", async () => {
       const seen: string[] = [];
 
-      class NamedQueue extends AvleonQueue<any> {
+      class NamedQueue extends MeghQueue<any> {
         @JobHandler("welcome")
         async welcome() {
           seen.push("welcome");
@@ -182,7 +182,7 @@ describe("AvleonQueue", () => {
     it("inherits handlers declared on a base class", async () => {
       const seen: string[] = [];
 
-      class BaseQueue extends AvleonQueue<any> {
+      class BaseQueue extends MeghQueue<any> {
         @JobHandler("base-job")
         async baseJob() {
           seen.push("base");
@@ -208,7 +208,7 @@ describe("AvleonQueue", () => {
     it("lets a subclass override a base handler of the same name", async () => {
       const seen: string[] = [];
 
-      class BaseQueue extends AvleonQueue<any> {
+      class BaseQueue extends MeghQueue<any> {
         @JobHandler("run")
         async run() {
           seen.push("base");
@@ -229,11 +229,11 @@ describe("AvleonQueue", () => {
     });
 
     it("does not leak handlers between sibling classes", async () => {
-      class QueueA extends AvleonQueue<any> {
+      class QueueA extends MeghQueue<any> {
         @JobHandler("a-job")
         async a() {}
       }
-      class QueueB extends AvleonQueue<any> {
+      class QueueB extends MeghQueue<any> {
         @JobHandler("b-job")
         async b() {}
       }
@@ -251,7 +251,7 @@ describe("AvleonQueue", () => {
     it("uses handler() for jobs with no named match", async () => {
       const seen: string[] = [];
 
-      class FallbackQueue extends AvleonQueue<any> {
+      class FallbackQueue extends MeghQueue<any> {
         async handler(job: any) {
           seen.push(job.name);
           return "handled";
@@ -268,7 +268,7 @@ describe("AvleonQueue", () => {
     it("prefers a named handler over the fallback", async () => {
       const seen: string[] = [];
 
-      class MixedQueue extends AvleonQueue<any> {
+      class MixedQueue extends MeghQueue<any> {
         @JobHandler("named")
         async named() {
           seen.push("named");
@@ -288,7 +288,7 @@ describe("AvleonQueue", () => {
     });
 
     it("throws for an unmatched job when there is no fallback", async () => {
-      class NamedOnly extends AvleonQueue<any> {
+      class NamedOnly extends MeghQueue<any> {
         @JobHandler("known")
         async known() {}
       }
@@ -303,7 +303,7 @@ describe("AvleonQueue", () => {
 
   describe("lifecycle", () => {
     it("starts the worker at most once", () => {
-      class Q extends AvleonQueue<any> {
+      class Q extends MeghQueue<any> {
         async handler() {}
       }
 
@@ -322,7 +322,7 @@ describe("AvleonQueue", () => {
     });
 
     it("registers listeners once started", () => {
-      class Q extends AvleonQueue<any> {
+      class Q extends MeghQueue<any> {
         async handler() {}
       }
 
@@ -333,7 +333,7 @@ describe("AvleonQueue", () => {
     });
 
     it("closes both the worker and the queue", async () => {
-      class Q extends AvleonQueue<any> {
+      class Q extends MeghQueue<any> {
         async handler() {}
       }
 
@@ -348,7 +348,7 @@ describe("AvleonQueue", () => {
   describe("@Queue", () => {
     it("configures the queue and starts its worker", () => {
       @Queue({ name: "decorated" })
-      class DecoratedQueue extends AvleonQueue<any> {
+      class DecoratedQueue extends MeghQueue<any> {
         @JobHandler("go")
         async go() {}
       }
@@ -361,7 +361,7 @@ describe("AvleonQueue", () => {
 
     it("keeps the original class name", () => {
       @Queue({ name: "named" })
-      class MyQueue extends AvleonQueue<any> {}
+      class MyQueue extends MeghQueue<any> {}
 
       expect(MyQueue.name).toBe("MyQueue");
     });
@@ -370,7 +370,7 @@ describe("AvleonQueue", () => {
       const handler = vi.fn().mockResolvedValue("from-config");
 
       @Queue({ name: "cfg", handler })
-      class ConfigQueue extends AvleonQueue<any> {}
+      class ConfigQueue extends MeghQueue<any> {}
 
       new ConfigQueue();
       await expect(

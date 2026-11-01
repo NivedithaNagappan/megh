@@ -1,7 +1,7 @@
-import { AppConfig, AvleonConfig, Environment, OpenApiUiOptions } from '@avleon/core';
+import { AppConfig, MeghConfig, Environment, OpenApiUiOptions } from '@meghjs/core';
 
 @AppConfig
-export class OpenApiConfig extends AvleonConfig<OpenApiUiOptions> {
+export class OpenApiConfig extends MeghConfig<OpenApiUiOptions> {
   config(env: Environment): OpenApiUiOptions {
     return {
       info: {

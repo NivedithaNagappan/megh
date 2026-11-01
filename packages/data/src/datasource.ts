@@ -4,7 +4,7 @@
  * @email xtrinsic96@gmail.com
  * @url https://github.com/xtareq
  */
-import { AvleonContainer as Container, loadPackageFromClient } from "@avleon/core";
+import { MeghContainer as Container, loadPackageFromClient } from "@meghjs/core";
 import type { DataSource } from "typeorm";
 
 /**
@@ -24,7 +24,7 @@ export const DATASOURCE_TOKEN = "idatasource";
 export function registerDataSource(dataSource: DataSource): DataSource {
   if (!dataSource) {
     throw new Error(
-      "[Avleon] registerDataSource() requires a DataSource instance.",
+      "[Megh] registerDataSource() requires a DataSource instance.",
     );
   }
 
@@ -66,7 +66,7 @@ export function getDataSource(): DataSource {
   }
 
   throw new Error(
-    "[Avleon] No TypeORM DataSource is registered. Call app.useTypeORM(...) " +
+    "[Megh] No TypeORM DataSource is registered. Call app.useTypeORM(...) " +
       "(or registerDataSource(dataSource)) before resolving repositories.",
   );
 }

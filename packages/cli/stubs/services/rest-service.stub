@@ -1,4 +1,4 @@
-import { AppService, Collection } from '@avleon/core';
+import { AppService, Collection } from '@meghjs/core';
 import { {Model} } from '{modelImport}';
 
 @AppService
