@@ -10,7 +10,7 @@ import { HttpExceptionTypes as HttpException } from "../common/exceptions";
 import { AUTHORIZATION_META_KEY } from "../common/container";
 import { Constructor } from "../common/helpers";
 
-export abstract class AvleonMiddleware {
+export abstract class MeghMiddleware {
   abstract invoke(
     req: IRequest,
     res?: IResponse,
@@ -93,7 +93,7 @@ export function Authorized(
   };
 }
 
-export function AppMiddleware(target: Constructor<AvleonMiddleware>) {
+export function AppMiddleware(target: Constructor<MeghMiddleware>) {
   if (typeof target.prototype.invoke !== "function") {
     throw new Error(
       `Class "${target.name}" must implement an "invoke" method.`,
@@ -117,7 +117,7 @@ export function AppMiddleware(target: Constructor<AvleonMiddleware>) {
  * @returns A decorator that registers the middleware metadata.
  */
 export function UseMiddleware<
-  T extends AvleonMiddleware | (new (...args: any[]) => AvleonMiddleware),
+  T extends MeghMiddleware | (new (...args: any[]) => MeghMiddleware),
 >(options: T | T[]): MethodDecorator & ClassDecorator {
   return function (
     target: Object | Function,

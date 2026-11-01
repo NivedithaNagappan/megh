@@ -6,7 +6,7 @@
  */
 
 /**
- * One pagination shape shared by `Collection`, `AvleonRepository`,
+ * One pagination shape shared by `Collection`, `MeghRepository`,
  * `@InjectRepository` repositories and `KnexDB`.
  */
 

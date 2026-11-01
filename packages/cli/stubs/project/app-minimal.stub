@@ -1,6 +1,6 @@
-import { Avleon } from '@avleon/core';
+import { Megh } from '@meghjs/core';
 
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 
 app.mapGet('/', () => ({ message: 'Hello World!' }));
 

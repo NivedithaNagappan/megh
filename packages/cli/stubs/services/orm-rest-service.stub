@@ -1,5 +1,5 @@
-import { AppService } from '@avleon/core';
-import { InjectRepository } from '@avleon/data';
+import { AppService } from '@meghjs/core';
+import { InjectRepository } from '@meghjs/data';
 import { Repository } from 'typeorm';
 import { {Model} } from '{modelImport}';
 

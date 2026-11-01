@@ -7,11 +7,11 @@
 import Fastify, { FastifyInstance, HTTPMethods } from "fastify";
 import path from "path";
 import fs from "fs";
-import { AvleonRouter } from "./router";
+import { MeghRouter } from "./router";
 import { Container } from "../di";
 import {
-  IAvleonApplication,
-  AvleonApplicationOptions,
+  IMeghApplication,
+  MeghApplicationOptions,
   CorsOptions,
   GlobalOptions,
   CacheOptions,
@@ -23,15 +23,15 @@ import { Constructor, inject, loadPackageFromClient } from "../common/helpers";
 import { generateSwaggerSchema } from "../openapi/swagger-schema";
 import { applyRequestBodyExtensions } from "../openapi/request-body";
 import { OpenApiUiOptions } from "../openapi/openapi";
-import { AvleonMiddleware } from "../http/middleware";
-import { AvleonScheduler } from "../scheduler";
+import { MeghMiddleware } from "../http/middleware";
+import { MeghScheduler } from "../scheduler";
 import { isApiController } from "../common/container";
 import { AutoControllerOptions, IResponse, TestApplication } from "./types";
 
 import type { RedisOptions } from "ioredis";
 import { CacheManager } from "../observability/cache";
-import { AvleonConfig } from "../config/config";
-import { AvleonAuthentication } from "../security/authentication";
+import { MeghConfig } from "../config/config";
+import { MeghAuthentication } from "../security/authentication";
 import { registerPlugins } from "../plugins/registry";
 import { internalLogger } from "../observability/internal-logger";
 import { setConnection } from "../orm/connection";
@@ -45,7 +45,7 @@ function requireSocketIo() {
     return require("fastify-socket.io");
   } catch {
     throw new Error(
-      "[Avleon] fastify-socket.io is not installed.\n" +
+      "[Megh] fastify-socket.io is not installed.\n" +
         "Run: npm install fastify-socket.io socket.io",
     );
   }
@@ -56,7 +56,7 @@ function requireSwagger() {
     return require("@fastify/swagger");
   } catch {
     throw new Error(
-      "[Avleon] @fastify/swagger is not installed.\n" +
+      "[Megh] @fastify/swagger is not installed.\n" +
         "Run: npm install @fastify/swagger @fastify/swagger-ui",
     );
   }
@@ -67,7 +67,7 @@ function requireSwaggerUi() {
     return require("@fastify/swagger-ui");
   } catch {
     throw new Error(
-      "[Avleon] @fastify/swagger-ui is not installed.\n" +
+      "[Megh] @fastify/swagger-ui is not installed.\n" +
         "Run: npm install @fastify/swagger-ui",
     );
   }
@@ -78,7 +78,7 @@ function requireScalar() {
     return require("@scalar/fastify-api-reference");
   } catch {
     throw new Error(
-      "[Avleon] @scalar/fastify-api-reference is not installed.\n" +
+      "[Megh] @scalar/fastify-api-reference is not installed.\n" +
         "Run: npm install @scalar/fastify-api-reference",
     );
   }
@@ -89,7 +89,7 @@ function requireCors() {
     return require("@fastify/cors");
   } catch {
     throw new Error(
-      "[Avleon] @fastify/cors is not installed.\n" +
+      "[Megh] @fastify/cors is not installed.\n" +
         "Run: npm install @fastify/cors",
     );
   }
@@ -100,7 +100,7 @@ function requireMultipart() {
     return require("@fastify/multipart");
   } catch {
     throw new Error(
-      "[Avleon] @fastify/multipart is not installed.\n" +
+      "[Megh] @fastify/multipart is not installed.\n" +
         "Run: npm install @fastify/multipart",
     );
   }
@@ -111,7 +111,7 @@ function requireStatic() {
     return require("@fastify/static");
   } catch {
     throw new Error(
-      "[Avleon] @fastify/static is not installed.\n" +
+      "[Megh] @fastify/static is not installed.\n" +
         "Run: npm install @fastify/static",
     );
   }
@@ -121,10 +121,10 @@ function requireStatic() {
 // Application
 // ---------------------------------------------------------------------------
 
-export class AvleonApplication implements IAvleonApplication {
+export class MeghApplication implements IMeghApplication {
   public app: FastifyInstance;
-  private router: AvleonRouter;
-  private static instance: AvleonApplication;
+  private router: MeghRouter;
+  private static instance: MeghApplication;
   private alreadyRun = false;
   private hasSwagger = false;
   private globalSwaggerOptions: OpenApiUiOptions | undefined;
@@ -134,7 +134,7 @@ export class AvleonApplication implements IAvleonApplication {
   private controllers: any[] = [];
   private _hasWebsocket = false;
   private io: any;
-  private scheduler: AvleonScheduler = new AvleonScheduler();
+  private scheduler: MeghScheduler = new MeghScheduler();
   private schedulerTasks: any[] = [];
   private registerSchedulerAuto = false;
   private registerSchedulerPath = "src/tasks";
@@ -148,7 +148,7 @@ export class AvleonApplication implements IAvleonApplication {
   private closing: Promise<void> | null = null;
   private pluginNames: string[] = [];
 
-  private constructor(options?: AvleonApplicationOptions) {
+  private constructor(options?: MeghApplicationOptions) {
     this.app = Fastify({
       ...options?.server,
       ajv: {
@@ -158,7 +158,7 @@ export class AvleonApplication implements IAvleonApplication {
         },
       },
     }) as FastifyInstance;
-    this.router = new AvleonRouter(this.app);
+    this.router = new MeghRouter(this.app);
 
     this.pluginNames = registerPlugins(this, options);
     if (this.pluginNames.length) {
@@ -174,16 +174,16 @@ export class AvleonApplication implements IAvleonApplication {
     return this.pluginNames;
   }
 
-  public static getApp(options?: AvleonApplicationOptions) {
-    if (!AvleonApplication.instance) {
-      AvleonApplication.instance = new AvleonApplication(options);
+  public static getApp(options?: MeghApplicationOptions) {
+    if (!MeghApplication.instance) {
+      MeghApplication.instance = new MeghApplication(options);
     }
-    return AvleonApplication.instance;
+    return MeghApplication.instance;
   }
 
   /** @deprecated Use `getApp` instead. This is internal. */
-  public static getInternalApp(options?: AvleonApplicationOptions) {
-    return new AvleonApplication(options);
+  public static getInternalApp(options?: MeghApplicationOptions) {
+    return new MeghApplication(options);
   }
 
   // ── Feature methods ──────────────────────────────────────────────────────
@@ -194,7 +194,7 @@ export class AvleonApplication implements IAvleonApplication {
   }
 
   /**
-   * Use `db` for models (`@avleon/core` ORM). It is also registered in the
+   * Use `db` for models (`@meghjs/core` ORM). It is also registered in the
    * container under `ORM_CONNECTION`, and destroyed when the app shuts down.
    */
   useDatabase(db: Kysely<any>) {
@@ -225,7 +225,7 @@ export class AvleonApplication implements IAvleonApplication {
   }
 
   useOpenApi(
-    options?: OpenApiUiOptions | Constructor<AvleonConfig<OpenApiUiOptions>>,
+    options?: OpenApiUiOptions | Constructor<MeghConfig<OpenApiUiOptions>>,
   ) {
     this.hasSwagger = true;
     if (
@@ -306,9 +306,9 @@ export class AvleonApplication implements IAvleonApplication {
     }
   }
 
-  useMiddlewares(middlewares: Constructor<AvleonMiddleware>[]) {
+  useMiddlewares(middlewares: Constructor<MeghMiddleware>[]) {
     middlewares.forEach((m) => {
-      const cls = Container.get<AvleonMiddleware>(m);
+      const cls = Container.get<MeghMiddleware>(m);
       this.app.addHook("preHandler", async (req, res) => {
         await cls.invoke(req as any, res as IResponse);
       });
@@ -325,12 +325,12 @@ export class AvleonApplication implements IAvleonApplication {
    *
    *   app.useAuthentication(JwtAuthentication)
    *
-   * @see AvleonAuthentication
+   * @see MeghAuthentication
    */
-  useAuthentication(authentication: Constructor<AvleonAuthentication>) {
+  useAuthentication(authentication: Constructor<MeghAuthentication>) {
     if (typeof authentication !== "function") {
       throw new SystemUseError(
-        "[Avleon] useAuthentication expects an authentication class, e.g. app.useAuthentication(JwtAuthentication).",
+        "[Megh] useAuthentication expects an authentication class, e.g. app.useAuthentication(JwtAuthentication).",
       );
     }
     this.router.setAuthenticationHandler(authentication);
@@ -435,7 +435,7 @@ export class AvleonApplication implements IAvleonApplication {
    * Register queue workers.
    *
    * Resolving each class through the container is what starts it: `@Queue`
-   * boots its worker in the constructor, and `@AvleonWorker` starts on
+   * boots its worker in the constructor, and `@MeghWorker` starts on
    * resolution unless `autoStart: false` was set.
    *
    *   app.useWorker([EmailQueue, ReportWorker])
@@ -445,13 +445,13 @@ export class AvleonApplication implements IAvleonApplication {
   useWorker(workers: Constructor<any>[]) {
     if (!Array.isArray(workers)) {
       throw new SystemUseError(
-        "[Avleon] useWorker expects an array of queue or worker classes, e.g. app.useWorker([EmailQueue]).",
+        "[Megh] useWorker expects an array of queue or worker classes, e.g. app.useWorker([EmailQueue]).",
       );
     }
 
     for (const worker of workers) {
       const instance = Container.get(worker) as any;
-      // @AvleonWorker({ autoStart: false }) defers starting until now.
+      // @MeghWorker({ autoStart: false }) defers starting until now.
       if (typeof instance?.start === "function" && !instance.getWorker?.()) {
         instance.start();
       }
@@ -468,7 +468,7 @@ export class AvleonApplication implements IAvleonApplication {
         try {
           await w?.close?.();
         } catch (err) {
-          console.error("[Avleon] Failed to close worker:", err);
+          console.error("[Megh] Failed to close worker:", err);
         }
       }),
     );
@@ -573,7 +573,7 @@ export class AvleonApplication implements IAvleonApplication {
         });
       };
     } catch (e) {
-      console.warn("[Avleon] Socket handler error:", e);
+      console.warn("[Megh] Socket handler error:", e);
     }
   }
 
@@ -639,7 +639,7 @@ export class AvleonApplication implements IAvleonApplication {
       try {
         await hook();
       } catch (err) {
-        console.error("[Avleon] onClose hook failed:", err);
+        console.error("[Megh] onClose hook failed:", err);
       }
     }
   }
@@ -694,7 +694,7 @@ export class AvleonApplication implements IAvleonApplication {
       }
     } catch (e) {
       console.warn(
-        "[Avleon] Could not auto-register tasks from " + resolvedDir,
+        "[Megh] Could not auto-register tasks from " + resolvedDir,
         e,
       );
     }
@@ -816,7 +816,7 @@ export class AvleonApplication implements IAvleonApplication {
         // @ts-ignore
         await this.app.io.on("connection", this.handleSocket.bind(this));
       } catch (e) {
-        console.warn("[Avleon] WebSocket setup error:", e);
+        console.warn("[Megh] WebSocket setup error:", e);
       }
     }
 

@@ -5,7 +5,7 @@ description: Background jobs with BullMQ.
 
 # Queue
 
-Avleon's queue is built on [BullMQ](https://docs.bullmq.io), which runs on
+Megh's queue is built on [BullMQ](https://docs.bullmq.io), which runs on
 Redis. Both are optional peer dependencies:
 
 ```sh
@@ -18,11 +18,11 @@ fills.
 
 ## A queue
 
-Extend `AvleonQueue<T>` and decorate it with `@Queue`. `T` is the shape of the
+Extend `MeghQueue<T>` and decorate it with `@Queue`. `T` is the shape of the
 job payload.
 
 ```ts [queues/email.queue.ts]
-import { AvleonQueue, Queue, JobHandler, Job } from '@avleon/core';
+import { MeghQueue, Queue, JobHandler, Job } from '@meghjs/core';
 
 export type EmailPayload = {
   to: string;
@@ -33,7 +33,7 @@ export type EmailPayload = {
   name: 'email',
   adapter: { connection: { host: '127.0.0.1', port: 6379 } },
 })
-export class EmailQueue extends AvleonQueue<EmailPayload> {
+export class EmailQueue extends MeghQueue<EmailPayload> {
   constructor() {
     super();
   }
@@ -66,10 +66,10 @@ on the class, or pass `handler` in the decorator config.
 worker. Workers are closed automatically when the app shuts down.
 
 ```ts [app.ts]
-import { Avleon } from '@avleon/core';
+import { Megh } from '@meghjs/core';
 import { EmailQueue } from './queues/email.queue';
 
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 
 app.useWorker([EmailQueue]);
 
@@ -81,7 +81,7 @@ export default app;
 Inject the queue anywhere and call `add`:
 
 ```ts [services/signup.service.ts]
-import { AppService } from '@avleon/core';
+import { AppService } from '@meghjs/core';
 import { EmailQueue } from '../queues/email.queue';
 
 @AppService
@@ -119,7 +119,7 @@ adds jobs and never starts a worker:
 
 ```ts
 @Queue({ name: 'report', worker: false })
-export class ReportProducer extends AvleonQueue<ReportPayload> {
+export class ReportProducer extends MeghQueue<ReportPayload> {
   constructor() {
     super();
   }
@@ -128,21 +128,21 @@ export class ReportProducer extends AvleonQueue<ReportPayload> {
 
 ## A worker
 
-When the producer lives elsewhere, extend `AvleonWorkerBase<T>` and point
-`@AvleonWorker` at the queue name. Implement `process`; the lifecycle hooks are
+When the producer lives elsewhere, extend `MeghWorkerBase<T>` and point
+`@MeghWorker` at the queue name. Implement `process`; the lifecycle hooks are
 optional.
 
 ```ts [workers/report.worker.ts]
-import { AvleonWorker, AvleonWorkerBase, Job } from '@avleon/core';
+import { MeghWorker, MeghWorkerBase, Job } from '@meghjs/core';
 
 export type ReportPayload = { reportId: number };
 
-@AvleonWorker({
+@MeghWorker({
   queue: 'report',
   concurrency: 5,
   connection: { host: '127.0.0.1', port: 6379 },
 })
-export class ReportWorker extends AvleonWorkerBase<ReportPayload> {
+export class ReportWorker extends MeghWorkerBase<ReportPayload> {
   async process(job: Job<ReportPayload>) {
     return { generated: job.data.reportId };
   }
@@ -163,7 +163,7 @@ Register it the same way:
 app.useWorker([EmailQueue, ReportWorker]);
 ```
 
-Since 0.3, decorating a class with `@AvleonWorker` does not start it. A worker
+Since 0.3, decorating a class with `@MeghWorker` does not start it. A worker
 starts when it is registered with `app.useWorker([...])` or when you call
 `.start()` yourself.
 
@@ -172,7 +172,7 @@ so a faulty hook cannot crash the process. Failed jobs are always logged.
 
 ::: info
 `bullmq` is loaded lazily, only when a queue or worker actually starts — so
-importing `@avleon/core` never requires Redis to be running.
+importing `@meghjs/core` never requires Redis to be running.
 :::
 
 ## Running without Redis
@@ -186,12 +186,12 @@ Redis is needed:
 | `memory` | Jobs run asynchronously in-process and honour `delay`. |
 | `sync` | `add()` runs the job before it resolves and ignores `delay`. |
 
-Avleon picks a driver in this order: the `driver` option on `@Queue` or
-`@AvleonWorker`, then `setQueueDriver()`, then the `AVLEON_QUEUE_DRIVER`
+Megh picks a driver in this order: the `driver` option on `@Queue` or
+`@MeghWorker`, then `setQueueDriver()`, then the `MEGH_QUEUE_DRIVER`
 environment variable, then `bullmq`.
 
 ```ts [signup.service.test.ts]
-import { setQueueDriver, waitForMemoryQueues, resetMemoryQueues } from '@avleon/core';
+import { setQueueDriver, waitForMemoryQueues, resetMemoryQueues } from '@meghjs/core';
 
 beforeAll(() => setQueueDriver('memory'));
 afterEach(() => resetMemoryQueues());

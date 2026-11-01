@@ -1,31 +1,31 @@
 ---
 title: Installation
-description: Avleon installation
+description: Megh installation
 ---
 
 # Installation
 
-Avleon requires **Node.js 20 or newer**.
+Megh requires **Node.js 20 or newer**.
 
 ## Using Cli
 
-If you already installed @avleon/cli globally then run the following command:
+If you already installed @meghjs/cli globally then run the following command:
 
 ```sh
-avleon new myapi
+megh new myapi
 ```
 
 else you can install using npx:
 
 ::: code-group
 ```sh [npm]
-npx @avleon/cli new myapi
+npx @meghjs/cli new myapi
 ```
 ```sh [pnpm]
-pnpm dlx @avleon/cli new myapi
+pnpm dlx @meghjs/cli new myapi
 ```
 ```sh [yarn]
-yarn dlx @avleon/cli new myapi
+yarn dlx @meghjs/cli new myapi
 ```
 :::
 
@@ -82,19 +82,19 @@ New-Item -ItemType Directory -Name src
 ::: code-group
 ```sh [npm]
 npm init -y
-npm i @avleon/core reflect-metadata class-validator class-transformer
+npm i @meghjs/core reflect-metadata class-validator class-transformer
 npm i --save-dev typescript @types/node
 npx tsc --init
 ```
 ```sh [pnpm]
 pnpm init
-pnpm i @avleon/core reflect-metadata class-validator class-transformer
+pnpm i @meghjs/core reflect-metadata class-validator class-transformer
 pnpm i --save-dev typescript @types/node
 pnpm tsc --init
 ```
 ```sh [yarn]
 yarn init -y
-yarn add @avleon/core reflect-metadata class-validator class-transformer
+yarn add @meghjs/core reflect-metadata class-validator class-transformer
 yarn add --dev typescript @types/node
 yarn tsc --init
 ```
@@ -104,7 +104,7 @@ Since 0.3, `class-validator` and `class-transformer` are peer dependencies. The
 package loads them at import time, so install them in every project.
 
 Ensure `experimentalDecorators` and `emitDecoratorMetadata` are enabled in
-tsconfig.json — Avleon's decorators do not work without them.
+tsconfig.json — Megh's decorators do not work without them.
 
 ```json{3-4}
 {
@@ -118,11 +118,11 @@ tsconfig.json — Avleon's decorators do not work without them.
 Then add a minimal entry point:
 
 ```ts [src/app.ts]
-import { Avleon } from '@avleon/core';
+import { Megh } from '@meghjs/core';
 
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 
-app.mapGet('/', () => 'Welcome to Avleon.');
+app.mapGet('/', () => 'Welcome to Megh.');
 
 app.run();
 ```
@@ -131,8 +131,8 @@ You can still use the CLI's generators and dev server in a manually created
 project by installing it locally:
 
 ```sh
-npm i -D @avleon/cli
-npx avleon serve
+npm i -D @meghjs/cli
+npx megh serve
 ```
 
 ## Optional dependencies
@@ -158,6 +158,6 @@ imports, and you get a clear install hint the moment a feature needs one:
 
 ## Module format
 
-`@avleon/core` ships a single CommonJS build. ESM projects can still
-`import { ... } from '@avleon/core'`. Only the package root is exported:
-deep imports such as `@avleon/core/dist/...` are not supported.
+`@meghjs/core` ships a single CommonJS build. ESM projects can still
+`import { ... } from '@meghjs/core'`. Only the package root is exported:
+deep imports such as `@meghjs/core/dist/...` are not supported.

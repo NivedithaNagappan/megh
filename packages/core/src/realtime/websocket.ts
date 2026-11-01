@@ -23,7 +23,7 @@ interface BrodcastAble {
 }
 
 @Injectable()
-export class AvleonSocketIo {
+export class MeghSocketIo {
   private io?: Server;
 
   sendToAll() {}

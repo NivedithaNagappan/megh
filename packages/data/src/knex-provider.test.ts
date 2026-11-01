@@ -1,8 +1,8 @@
 import "reflect-metadata";
 import { beforeEach, describe, expect, it } from "vitest";
-import { AvleonContainer as Container } from "@avleon/core";
+import { MeghContainer as Container } from "@meghjs/core";
 import type { Knex } from "knex";
-import { KnexDB, AVLEON_KNEX_DB } from "./knex-provider";
+import { KnexDB, MEGH_KNEX_DB } from "./knex-provider";
 
 describe("KnexDB", () => {
   beforeEach(() => {
@@ -15,9 +15,9 @@ describe("KnexDB", () => {
     );
   });
 
-  it("exposes the connection registered under AVLEON_KNEX_DB", () => {
+  it("exposes the connection registered under MEGH_KNEX_DB", () => {
     const conn = { mock: "knexInstance" } as unknown as Knex;
-    Container.set(AVLEON_KNEX_DB, conn);
+    Container.set(MEGH_KNEX_DB, conn);
 
     const db = new KnexDB();
 
@@ -26,7 +26,7 @@ describe("KnexDB", () => {
 
   it("resolves through the DI container", () => {
     const conn = { mock: "knexInstance" } as unknown as Knex;
-    Container.set(AVLEON_KNEX_DB, conn);
+    Container.set(MEGH_KNEX_DB, conn);
 
     const db = Container.get(KnexDB);
 

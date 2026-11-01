@@ -61,12 +61,12 @@ describe("Container", () => {
     class Counter {}
     const NAME = new Token<string>("NAME");
     const before = Container.get(Counter);
-    Container.set(NAME, "avleon");
+    Container.set(NAME, "megh");
 
     Container.reset();
 
     expect(Container.get(Counter)).not.toBe(before);
-    expect(Container.get(NAME)).toBe("avleon");
+    expect(Container.get(NAME)).toBe("megh");
   });
 
   it("discards instances on reset without calling their destroy()", () => {

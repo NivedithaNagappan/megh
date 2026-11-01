@@ -1,10 +1,13 @@
-# Avleon
+# Megh
 
-![npm version](https://img.shields.io/npm/v/@avleon/core.svg)
-![CI](https://github.com/avleonjs/avleon-core/actions/workflows/ci.yml/badge.svg)
-![License](https://img.shields.io/npm/l/@avleon/core.svg)
+![npm version](https://img.shields.io/npm/v/@meghjs/core.svg)
+![CI](https://github.com/meghjs/megh/actions/workflows/ci.yml/badge.svg)
+![License](https://img.shields.io/npm/l/@meghjs/core.svg)
 
-Avleon is a TypeScript-first web framework built on top of [Fastify](https://fastify.dev), designed for building scalable, maintainable REST APIs with minimal boilerplate. It provides decorator-based routing, built-in dependency injection, automatic OpenAPI documentation, and first-class validation support.
+Megh is a TypeScript-first web framework built on top of [Fastify](https://fastify.dev), designed for building scalable, maintainable REST APIs with minimal boilerplate. It provides decorator-based routing, built-in dependency injection, automatic OpenAPI documentation, and first-class validation support.
+
+> **Formerly Avleon.** `@avleon/*` is now `@meghjs/*`. See
+> [Moving from Avleon to Megh](https://meghjs.github.io/getting-started/upgrading-megh).
 
 > **Upgrading from 0.2?** 0.3 has breaking changes in authorization, validation,
 > pagination, file storage and dependencies. See [Upgrading to 0.3](#upgrading-to-03).
@@ -53,7 +56,7 @@ Avleon is a TypeScript-first web framework built on top of [Fastify](https://fas
 ## Features
 
 - 🎯 **Decorator-based routing** — define controllers and routes with TypeScript decorators
-- 💉 **Dependency injection** — `AvleonContainer`, `@Injectable` and `Token`, currently backed by [TypeDI](https://github.com/typestack/typedi)
+- 💉 **Dependency injection** — `MeghContainer`, `@Injectable` and `Token`, currently backed by [TypeDI](https://github.com/typestack/typedi)
 - 📄 **OpenAPI / Swagger** — automatic docs with Swagger UI or [Scalar](https://scalar.com)
 - ✅ **Validation** — request DTOs validated and whitelisted via [class-validator](https://github.com/typestack/class-validator)
 - 🔑 **Authentication** — pluggable handler that populates `request.user`
@@ -74,22 +77,22 @@ Avleon is a TypeScript-first web framework built on top of [Fastify](https://fas
 
 ## Installation
 
-Avleon requires **Node.js 20 or newer**.
+Megh requires **Node.js 20 or newer**.
 
 Scaffold a new project using the CLI:
 
 ```bash
-npx @avleon/cli new myapp
+npx @meghjs/cli new myapp
 # or
-yarn dlx @avleon/cli new myapp
+yarn dlx @meghjs/cli new myapp
 # or
-pnpm dlx @avleon/cli new myapp
+pnpm dlx @meghjs/cli new myapp
 ```
 
 Or install manually:
 
 ```bash
-npm install @avleon/core reflect-metadata class-validator class-transformer
+npm install @meghjs/core reflect-metadata class-validator class-transformer
 ```
 
 `class-validator` and `class-transformer` are declared as optional peers, but
@@ -108,7 +111,7 @@ Enable decorators in `tsconfig.json`:
 
 ### Optional dependencies
 
-Avleon keeps integrations out of the core install. Add only what you use. The
+Megh keeps integrations out of the core install. Add only what you use. The
 package imports fine without any of them, and you get a clear error the moment a
 feature needs one:
 
@@ -130,9 +133,9 @@ feature needs one:
 
 ### Module format
 
-`@avleon/core` ships a single CommonJS build. ESM projects can still
-`import { ... } from '@avleon/core'`. Only the package root is exported:
-deep imports such as `@avleon/core/dist/...` are not supported.
+`@meghjs/core` ships a single CommonJS build. ESM projects can still
+`import { ... } from '@meghjs/core'`. Only the package root is exported:
+deep imports such as `@meghjs/core/dist/...` are not supported.
 
 ---
 
@@ -141,11 +144,11 @@ deep imports such as `@avleon/core/dist/...` are not supported.
 ### Minimal (functional style)
 
 ```typescript
-import { Avleon } from "@avleon/core";
+import { Megh } from "@meghjs/core";
 
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 
-app.mapGet("/", () => ({ message: "Hello, Avleon!" }));
+app.mapGet("/", () => ({ message: "Hello, Megh!" }));
 
 app.run(4000);
 ```
@@ -153,17 +156,17 @@ app.run(4000);
 ### Controller style
 
 ```typescript
-import { Avleon, ApiController, Get } from "@avleon/core";
+import { Megh, ApiController, Get } from "@meghjs/core";
 
 @ApiController("/")
 class HelloController {
   @Get()
   sayHello() {
-    return { message: "Hello, Avleon!" };
+    return { message: "Hello, Megh!" };
   }
 }
 
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 app.useControllers([HelloController]);
 app.run(4000);
 ```
@@ -175,9 +178,9 @@ app.run(4000);
 ### Application
 
 ```typescript
-import { Avleon } from "@avleon/core";
+import { Megh } from "@meghjs/core";
 
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 
 app.useCors({ origin: "*" }); // requires @fastify/cors
 app.useControllers([UserController]);
@@ -195,7 +198,7 @@ app.run(4000);
 ### Controllers
 
 ```typescript
-import { ApiController, Get, Post, Put, Delete } from '@avleon/core';
+import { ApiController, Get, Post, Put, Delete } from '@meghjs/core';
 
 @ApiController('/users')
 class UserController {
@@ -265,7 +268,7 @@ create(@Body({ type: CreateUserDto }) body: CreateUserDto) { ... }
 Throw an `HttpExceptions` error to send a non-200 response:
 
 ```typescript
-import { HttpExceptions } from '@avleon/core';
+import { HttpExceptions } from '@meghjs/core';
 
 @Get('/:id')
 async getUser(@Param('id') id: string) {
@@ -291,10 +294,10 @@ Outside development, 5xx responses hide the message and data and return
 ### Middleware
 
 ```typescript
-import { AppMiddleware, AvleonMiddleware, IRequest } from "@avleon/core";
+import { AppMiddleware, MeghMiddleware, IRequest } from "@meghjs/core";
 
 @AppMiddleware
-class LoggingMiddleware extends AvleonMiddleware {
+class LoggingMiddleware extends MeghMiddleware {
   async invoke(req: IRequest) {
     console.log(`${req.method} ${req.url}`);
     return req;
@@ -343,10 +346,10 @@ whatever it returns becomes `request.user`, the value `@AuthUser()` injects.
 **1 — Define your authentication class:**
 
 ```typescript
-import { AvleonAuthentication, AppService, IRequest } from "@avleon/core";
+import { MeghAuthentication, AppService, IRequest } from "@meghjs/core";
 
 @AppService
-export class JwtAuthentication extends AvleonAuthentication<User> {
+export class JwtAuthentication extends MeghAuthentication<User> {
   async authenticate(request: IRequest) {
     const header = request.headers.authorization;
     if (!header?.startsWith("Bearer ")) return null;
@@ -387,7 +390,7 @@ Authorization is **deny-by-default**. A route marked `@Authorized` answers
 `HttpExceptions` error to deny. Any other return value allows the request:
 
 ```typescript
-import { CanAuthorize, IRequest, HttpExceptions } from "@avleon/core";
+import { CanAuthorize, IRequest, HttpExceptions } from "@meghjs/core";
 
 @CanAuthorize
 class JwtAuthorization {
@@ -429,7 +432,7 @@ class AdminController {
 }
 ```
 
-If no authorizer is registered, Avleon logs a warning at boot and every
+If no authorizer is registered, Megh logs a warning at boot and every
 `@Authorized` route returns 403. `@Authorized('name')` with no handler registered
 under that name makes `app.run()` fail.
 
@@ -437,7 +440,7 @@ under that name makes `app.run()` fail.
 
 ### Validation
 
-Validation is powered by `class-validator`. Decorate your DTOs and Avleon validates `@Body()` and `@Query()` automatically:
+Validation is powered by `class-validator`. Decorate your DTOs and Megh validates `@Body()` and `@Query()` automatically:
 
 ```typescript
 import { IsString, IsNotEmpty, IsEmail, IsInt, Min, Max, IsOptional } from 'class-validator';
@@ -494,15 +497,15 @@ To validate a value by hand with the same rules, call
 ### Configuration
 
 Config classes turn environment variables into typed, injectable settings.
-Extend `AvleonConfig` and register with `@AppConfig`:
+Extend `MeghConfig` and register with `@AppConfig`:
 
 ```typescript
-import { AppConfig, AvleonConfig, Environment, GetConfig } from "@avleon/core";
+import { AppConfig, MeghConfig, Environment, GetConfig } from "@meghjs/core";
 
 type MailSettings = { host: string; port: number };
 
 @AppConfig
-export class MailConfig extends AvleonConfig<MailSettings> {
+export class MailConfig extends MeghConfig<MailSettings> {
   config(env: Environment): MailSettings {
     return {
       host: env.get("MAIL_HOST") || "localhost",
@@ -514,7 +517,7 @@ export class MailConfig extends AvleonConfig<MailSettings> {
 const mail = GetConfig(MailConfig); // MailSettings
 ```
 
-A config class must `extend AvleonConfig`. That is how Avleon recognizes it
+A config class must `extend MeghConfig`. That is how Megh recognizes it
 when you pass one to `useKnex`, `useTypeORM` or `useOpenApi`.
 
 ---
@@ -527,7 +530,7 @@ is installed. Framework logs (events, queues, workers, scheduler) go through
 the same logger.
 
 ```typescript
-import { AppService, LoggerService } from "@avleon/core";
+import { AppService, LoggerService } from "@meghjs/core";
 
 @AppService
 export class OrdersService {
@@ -542,7 +545,7 @@ LoggerService.configure({ level: "debug" });
 const log = LoggerService.child({ module: "billing" });
 ```
 
-Avleon does not hand this logger to Fastify. To share one pino instance, pass it
+Megh does not hand this logger to Fastify. To share one pino instance, pass it
 in explicitly: `LoggerService.getPino()`.
 
 ---
@@ -577,10 +580,10 @@ app.useOpenApi({
 **Config class:**
 
 ```typescript
-import { AppConfig, AvleonConfig, Environment } from "@avleon/core";
+import { AppConfig, MeghConfig, Environment } from "@meghjs/core";
 
 @AppConfig
-export class OpenApiConfig extends AvleonConfig {
+export class OpenApiConfig extends MeghConfig {
   config(env: Environment) {
     return {
       info: { title: "My API", version: "1.0.0" },
@@ -599,7 +602,7 @@ if (app.isDevelopment()) {
 **Route-level docs with `@OpenApi`:**
 
 ```typescript
-import { OpenApi, OpenApiProperty, OpenApiSchema } from '@avleon/core';
+import { OpenApi, OpenApiProperty, OpenApiSchema } from '@meghjs/core';
 
 @OpenApiSchema()
 export class UserQuery {
@@ -649,7 +652,7 @@ npm install kysely pg   # or: mysql2, better-sqlite3
 ```
 
 ```typescript
-import { Model, hasMany } from "@avleon/core";
+import { Model, hasMany } from "@meghjs/core";
 import { Post } from "./post.model";
 
 export class User extends Model {
@@ -674,29 +677,29 @@ const users = await User.where("email", "like", "%@acme.io")
 Migrations live in `src/database/migrations` and run with the CLI:
 
 ```bash
-npx avleon make:migration create_users_table
-npx avleon migrate
+npx megh make:migration create_users_table
+npx megh migrate
 ```
 
 Relations, timestamps, soft deletes, casts, transactions and the migration
-commands are covered in the [Models (ORM) guide](https://avleonjs.github.io/advanced/orm).
+commands are covered in the [Models (ORM) guide](https://meghjs.github.io/advanced/orm).
 
 ---
 
 ### Database
 
-TypeORM and Knex support lives in [`@avleon/data`](https://github.com/avleonjs/avleon/tree/main/packages/data), a plugin:
+TypeORM and Knex support lives in [`@meghjs/data`](https://github.com/meghjs/megh/tree/main/packages/data), a plugin:
 install it and `app.useTypeORM()` / `app.useKnex()` become available.
 
 ```bash
-npm install @avleon/data typeorm pg   # or: knex pg
+npm install @meghjs/data typeorm pg   # or: knex pg
 ```
 
 ---
 
 ### Pagination
 
-Every paginator (`Collection`, `@InjectRepository`, `AvleonRepository`,
+Every paginator (`Collection`, `@InjectRepository`, `MeghRepository`,
 `KnexDB`) takes `{ page, perPage }` and returns the same shape:
 
 ```json
@@ -715,15 +718,15 @@ types are exported.
 
 ```typescript
 import {
-  AvleonEvent,
-  AvleonEventListener,
+  MeghEvent,
+  MeghEventListener,
   EventRegistry,
   EventDispatcher,
-} from "@avleon/core";
+} from "@meghjs/core";
 
-class UserCreated extends AvleonEvent<{ userId: number }> {}
+class UserCreated extends MeghEvent<{ userId: number }> {}
 
-class SendWelcome extends AvleonEventListener<UserCreated> {
+class SendWelcome extends MeghEventListener<UserCreated> {
   async handler(event: UserCreated) {
     await mailer.welcome(event.payload.userId);
   }
@@ -771,7 +774,7 @@ A queue both produces and consumes jobs. Name each job with `@JobHandler`. In
 [Known Issues](#known-issues-in-030)):
 
 ```typescript
-import { AvleonQueue, Queue, JobHandler, Job } from "@avleon/core";
+import { MeghQueue, Queue, JobHandler, Job } from "@meghjs/core";
 
 type EmailPayload = { userId: number; email: string };
 
@@ -780,7 +783,7 @@ type EmailPayload = { userId: number; email: string };
   adapter: { connection: { host: "127.0.0.1", port: 6379 } },
   worker: { concurrency: 5 },
 })
-export class EmailQueue extends AvleonQueue<EmailPayload> {
+export class EmailQueue extends MeghQueue<EmailPayload> {
   constructor() {
     super();
   }
@@ -826,7 +829,7 @@ jobs. No worker is started:
 
 ```typescript
 @Queue({ name: "reports", worker: false })
-export class ReportProducer extends AvleonQueue<ReportPayload> {
+export class ReportProducer extends MeghQueue<ReportPayload> {
   constructor() {
     super();
   }
@@ -834,13 +837,13 @@ export class ReportProducer extends AvleonQueue<ReportPayload> {
 ```
 
 **Standalone workers.** When the consumer runs in its own process, use
-`AvleonWorkerBase`:
+`MeghWorkerBase`:
 
 ```typescript
-import { AvleonWorker, AvleonWorkerBase, Job } from "@avleon/core";
+import { MeghWorker, MeghWorkerBase, Job } from "@meghjs/core";
 
-@AvleonWorker({ queue: "email", concurrency: 5 })
-export class EmailWorker extends AvleonWorkerBase<EmailPayload> {
+@MeghWorker({ queue: "email", concurrency: 5 })
+export class EmailWorker extends MeghWorkerBase<EmailPayload> {
   async process(job: Job<EmailPayload>) {
     await mailer.send(job.data.email, "Welcome!");
   }
@@ -867,9 +870,9 @@ import {
   setQueueDriver,
   waitForMemoryQueues,
   resetMemoryQueues,
-} from "@avleon/core";
+} from "@meghjs/core";
 
-setQueueDriver("memory"); // or AVLEON_QUEUE_DRIVER=memory, or @Queue({ driver: 'memory' })
+setQueueDriver("memory"); // or MEGH_QUEUE_DRIVER=memory, or @Queue({ driver: 'memory' })
 
 await usersService.register(user);
 await waitForMemoryQueues(); // wait until all jobs finish
@@ -883,7 +886,7 @@ resetMemoryQueues();
 Mark a class with `@ScheduledTask()`, then schedule its methods:
 
 ```typescript
-import { ScheduledTask, Cron, Interval, Timeout } from '@avleon/core';
+import { ScheduledTask, Cron, Interval, Timeout } from '@meghjs/core';
 
 @ScheduledTask()
 export class ReportTask {
@@ -933,7 +936,7 @@ Inject `CacheManager` where you need it. Entries can carry tags, so related
 keys are invalidated together:
 
 ```typescript
-import { CacheManager, AppService } from "@avleon/core";
+import { CacheManager, AppService } from "@meghjs/core";
 
 @AppService
 export class UsersService {
@@ -972,7 +975,7 @@ app.useMultipart({
 ```
 
 ```typescript
-import { FileStorage, UploadFile, MultipartFile, OpenApi } from "@avleon/core";
+import { FileStorage, UploadFile, MultipartFile, OpenApi } from "@meghjs/core";
 
 @ApiController("/files")
 class FileController {
@@ -1051,7 +1054,7 @@ app.useSocketIo({ cors: { origin: "*" } });
 Push events to clients with `SocketEventDispatcher`:
 
 ```typescript
-import { AppService, SocketEventDispatcher } from "@avleon/core";
+import { AppService, SocketEventDispatcher } from "@meghjs/core";
 
 @AppService
 export class UserService {
@@ -1122,17 +1125,17 @@ validation.
 Resolve a controller directly, with its dependencies injected:
 
 ```typescript
-import { AvleonTest } from "@avleon/core";
+import { MeghTest } from "@meghjs/core";
 import { UserController } from "./user.controller";
 
 describe("UserController", () => {
   let controller: UserController;
 
   beforeAll(() => {
-    controller = AvleonTest.getController(UserController);
+    controller = MeghTest.getController(UserController);
   });
 
-  afterAll(() => AvleonTest.clean());
+  afterAll(() => MeghTest.clean());
 
   it("should return users", async () => {
     const result = await controller.getAll();
@@ -1144,7 +1147,7 @@ describe("UserController", () => {
 Or exercise real routes without binding a port:
 
 ```typescript
-const app = AvleonTest.createTestApplication({ controllers: [UserController] });
+const app = MeghTest.createTestApplication({ controllers: [UserController] });
 
 const res = await app.get("/users");
 expect(res.statusCode).toBe(200);
@@ -1159,7 +1162,7 @@ taking Fastify's inject options (`payload`, `headers`, `query`, …).
 Pass stub dependencies positionally when a controller needs them:
 
 ```typescript
-const controller = AvleonTest.getController(UserController, [mockUserService]);
+const controller = MeghTest.getController(UserController, [mockUserService]);
 ```
 
 Use the `memory` or `sync` [queue driver](#queues--workers) to test code that
@@ -1184,14 +1187,14 @@ dispatches jobs without Redis.
 | Area            | Change                                                                                                                                                                                                                                                                                                     |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Dependencies    | `@fastify/cors`, `@fastify/multipart`, `@fastify/static`, `@fastify/swagger`, `@fastify/swagger-ui`, `@scalar/fastify-api-reference`, `fastify-socket.io`, `class-validator`, `class-transformer` and `pino-pretty` are now peer dependencies. Install the ones you use ([table](#optional-dependencies)). |
-| Package         | CommonJS only, with an `exports` map. Deep imports (`@avleon/core/dist/...`) no longer resolve. License is now MIT.                                                                                                                                                                                        |
+| Package         | CommonJS only, with an `exports` map. Deep imports (`@meghjs/core/dist/...`) no longer resolve. License is now MIT.                                                                                                                                                                                        |
 | Environment     | `isDevelopment()` requires `NODE_ENV=development`; unset now means production.                                                                                                                                                                                                                             |
 | Authorization   | `@Authorized` is deny-by-default. An authorizer that returns `false` now denies. `AuthorizeMiddleware`, `AppAuthorization`, `AuthHandler` and `AuthReturnTypes` were removed. Use a plain `@CanAuthorize` class with an `authorize()` method.                                                              |
 | Validation      | Unknown DTO properties are rejected with 400. Handlers receive DTO instances. The error body is now `{ code, status, message, errors[] }` (was `{ code, error: "ValidationError", errors }`).                                                                                                              |
 | Pagination      | All paginators return `{ data, meta: { total, page, perPage, lastPage, next, prev } }` and take `{ page, perPage }`.                                                                                                                                                                                       |
 | File storage    | Random filenames, `overwrite: false`, extension allowlist and 50 MB limit by default. `save` options use `saveAs` (not `as`). `download`/`downloadAs`/`getUploadFile` resolve paths relative to `baseDir`. `UploadFileFromRequest`'s `dest` is now a string path.                                          |
-| Events          | `dispatch` takes an `AvleonEvent` instance. Kafka and RabbitMQ broadcast throw. Socket broadcast requires `useSocketIo()`. `getListeners` takes a class or event, and `flushOnce` was removed.                                                                                                             |
-| Queues          | `@AvleonWorker` no longer starts on import; register with `app.useWorker([...])`.                                                                                                                                                                                                                          |
+| Events          | `dispatch` takes an `MeghEvent` instance. Kafka and RabbitMQ broadcast throw. Socket broadcast requires `useSocketIo()`. `getListeners` takes a class or event, and `flushOnce` was removed.                                                                                                               |
+| Queues          | `@MeghWorker` no longer starts on import; register with `app.useWorker([...])`.                                                                                                                                                                                                                            |
 | Cache           | The memory store is per instance and TTL is enforced.                                                                                                                                                                                                                                                      |
 | Logging         | JSON by default; pretty only in development with `pino-pretty` installed.                                                                                                                                                                                                                                  |
 | Results         | `Results.Ok(x)` now serializes as `{ headers, data, statusCode }`.                                                                                                                                                                                                                                         |
@@ -1242,7 +1245,7 @@ for 2.0. These lists track what has landed and what still blocks 1.0.0.
 - [x] Built-in `Validator` accepts `0` and enforces `min` / `max` / `exact` / `optional`
 - [x] Missing decorator metadata (tsx, esbuild, SWC) no longer crashes; `@Body({ type })` supplies the type
 - [x] TypeORM query operators work at runtime
-- [x] `AvleonRepository.transaction()` runs inside the transaction, and `@InjectRepository` works after `useTypeORM()`
+- [x] `MeghRepository.transaction()` runs inside the transaction, and `@InjectRepository` works after `useTypeORM()`
 - [x] Collection fixes: `paginate`, `min`, `findAsync`
 - [x] One pagination shape across Collection, TypeORM and Knex
 - [x] Events keyed by class, exactly-once `once` listeners, `delay` honoured when queued, failed jobs kept
@@ -1261,7 +1264,7 @@ for 2.0. These lists track what has landed and what still blocks 1.0.0.
 
 - [x] CommonJS-only build with an `exports` map and `sideEffects`
 - [x] Integrations moved to optional peer dependencies
-- [x] Keep typedi behind `AvleonContainer` for 1.0; it can be swapped in a later minor release
+- [x] Keep typedi behind `MeghContainer` for 1.0; it can be swapped in a later minor release
 - [x] MIT license file matches `package.json`
 - [x] Build without rimraf, ESLint/Jest configs fixed, husky 9, coverage off by default
 - [x] CI on Node 20 and 22 (typecheck, lint, test, build) and a tag-based publish workflow
@@ -1299,7 +1302,7 @@ for 2.0. These lists track what has landed and what still blocks 1.0.0.
 - [ ] Scalar `spec.content` returns the plugin module instead of the spec
 - [ ] `Environment` re-reads `.env` on every `get()`, and `dotenv` loads on import
 - [ ] Socket handler errors become unhandled rejections
-- [ ] `@AvleonWorker` `autoStart` is not wired to app boot
+- [ ] `@MeghWorker` `autoStart` is not wired to app boot
 - [ ] `class-validator` / `class-transformer` are loaded at import time despite being optional peers
 
 **Missing features**
@@ -1318,8 +1321,8 @@ for 2.0. These lists track what has landed and what still blocks 1.0.0.
 **API cleanup** (a 1.0 surface is a promise)
 
 - [ ] Finish or remove the no-ops `useHttps()`, `useSerialization()` and `mapFeatures()`
-- [x] Move TypeORM and Knex to the `@avleon/data` plugin, and remove deprecated `useDatasource()`
-- [ ] Remove the `AvleonSocketIo` stubs and unused adapter types
+- [x] Move TypeORM and Knex to the `@meghjs/data` plugin, and remove deprecated `useDatasource()`
+- [ ] Remove the `MeghSocketIo` stubs and unused adapter types
 - [ ] Remove `KnexHooks` / `KnexHooksFactory`, `DuplicateRouteException`, `mapRoute()` and `registerMiddleware()`
 - [x] Stop exporting `mock-db` from the public index, and build without Jest types
 - [ ] Replace remaining `console.log` calls with the logger
@@ -1328,13 +1331,13 @@ for 2.0. These lists track what has landed and what still blocks 1.0.0.
 
 - [ ] `application.ts`: `run()`, shutdown, controller auto-discovery, `useScheduler({ path })`
 - [ ] Events, scheduler, workers, Redis cache, `testing.ts`, `map-types.ts`, config
-- [ ] Fix hollow tests and `AvleonTest` (`from()` race, global container mutation)
+- [ ] Fix hollow tests and `MeghTest` (`from()` race, global container mutation)
 - [ ] Coverage thresholds
 
-**CLI** (`@avleon/cli`, rewrite in progress)
+**CLI** (`@meghjs/cli`, rewrite in progress)
 
 - [ ] Finish the commander-based rewrite: `--help` / `--version`, consistent flags and naming, refuse to overwrite existing projects
-- [ ] Generated code compiles against `@avleon/core`
+- [ ] Generated code compiles against `@meghjs/core`
 - [ ] CLI tests (snapshots for every `make:*` command)
 - [ ] Release with versions matched to core
 

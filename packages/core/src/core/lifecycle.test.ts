@@ -1,13 +1,13 @@
 import "reflect-metadata";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { AvleonApplication } from "./application";
+import { MeghApplication } from "./application";
 
 // A fresh app per test; getApp() would return a shared singleton.
-const createApp = () => AvleonApplication.getInternalApp();
+const createApp = () => MeghApplication.getInternalApp();
 
 describe("application lifecycle", () => {
-  const apps: AvleonApplication[] = [];
-  const started = (app: AvleonApplication) => (apps.push(app), app);
+  const apps: MeghApplication[] = [];
+  const started = (app: MeghApplication) => (apps.push(app), app);
 
   afterEach(async () => {
     await Promise.all(apps.splice(0).map((app) => app.close()));
@@ -95,7 +95,7 @@ describe("application lifecycle", () => {
 
     expect(last).toHaveBeenCalledTimes(1);
     expect(errorLog).toHaveBeenCalledWith(
-      "[Avleon] onClose hook failed:",
+      "[Megh] onClose hook failed:",
       expect.any(Error),
     );
   });

@@ -1,17 +1,17 @@
 import fs from "fs";
 import path from "path";
-import { assertPlugin, type AvleonPlugin } from "./plugin";
+import { assertPlugin, type MeghPlugin } from "./plugin";
 
 /**
  * Find the plugins among the app's installed dependencies.
  *
  * A package is a plugin when its package.json has
- * `"avleon": { "plugin": "./dist/plugin.js" }`. The entry's default export
- * (or `plugin` export, or the module itself) must be an `AvleonPlugin`.
+ * `"megh": { "plugin": "./dist/plugin.js" }`. The entry's default export
+ * (or `plugin` export, or the module itself) must be an `MeghPlugin`.
  * Dependencies listed in the app's package.json but not installed, such as
  * dev dependencies in a production install, are skipped.
  */
-export function discoverPlugins(root: string = process.cwd()): AvleonPlugin[] {
+export function discoverPlugins(root: string = process.cwd()): MeghPlugin[] {
   const appPkg = readJson(path.join(root, "package.json"));
   if (!appPkg) return [];
 
@@ -19,11 +19,11 @@ export function discoverPlugins(root: string = process.cwd()): AvleonPlugin[] {
     ...appPkg.dependencies,
     ...appPkg.devDependencies,
   }).sort();
-  const plugins: AvleonPlugin[] = [];
+  const plugins: MeghPlugin[] = [];
   for (const name of names) {
     const dir = findPackageDir(name, root);
     if (!dir) continue;
-    const entry = readJson(path.join(dir, "package.json"))?.avleon?.plugin;
+    const entry = readJson(path.join(dir, "package.json"))?.megh?.plugin;
     if (typeof entry !== "string") continue;
 
     const mod = require(path.join(dir, entry));

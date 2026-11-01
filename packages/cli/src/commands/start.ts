@@ -20,7 +20,7 @@ export async function start(opts: StartOptions = {}): Promise<number> {
   if (!entry) {
     throw new CliError(
       `No compiled entry file found (tried ${candidates.map((p) => path.relative(root, p)).join(", ")}). ` +
-        "Run `avleon build` first, or pass --entry.",
+        "Run `megh build` first, or pass --entry.",
     );
   }
   const env = { ...process.env, NODE_ENV: process.env.NODE_ENV ?? "production" };

@@ -25,7 +25,7 @@ app.useMultipart({
 them. Save them with the injected `FileStorage`:
 
 ```ts [controllers/files.controller.ts]
-import { ApiController, Post, UploadFile, MultipartFile, FileStorage } from '@avleon/core';
+import { ApiController, Post, UploadFile, MultipartFile, FileStorage } from '@meghjs/core';
 
 @ApiController('/files')
 export class FilesController {

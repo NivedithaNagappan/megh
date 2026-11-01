@@ -1,15 +1,15 @@
 import "reflect-metadata";
 import { describe, expect, it } from "vitest";
 import {
-  AvleonMiddleware,
+  MeghMiddleware,
   AppMiddleware,
   UseMiddleware,
   Authorized,
   CanAuthorize,
 } from "./middleware";
 
-describe("AvleonMiddleware", () => {
-  class TestMiddleware extends AvleonMiddleware {
+describe("MeghMiddleware", () => {
+  class TestMiddleware extends MeghMiddleware {
     async invoke(req: any, res?: any) {
       return req;
     }
@@ -28,12 +28,12 @@ describe("AvleonMiddleware", () => {
 });
 
 describe("UseMiddleware", () => {
-  class MW1 extends AvleonMiddleware {
+  class MW1 extends MeghMiddleware {
     async invoke(req: any) {
       return req;
     }
   }
-  class MW2 extends AvleonMiddleware {
+  class MW2 extends MeghMiddleware {
     async invoke(req: any) {
       return req;
     }

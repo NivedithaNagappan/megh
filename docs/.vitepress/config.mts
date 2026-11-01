@@ -2,14 +2,15 @@ import { defineConfig } from 'vitepress';
 
 export default defineConfig({
   srcDir: 'content',
-  title: 'Avleon',
+  title: 'Megh',
   description: 'A TypeScript-first web framework built on Fastify.',
   cleanUrls: true,
   lastUpdated: true,
   head: [['link', { rel: 'icon', href: '/favicon.ico' }]],
 
   themeConfig: {
-    logo: '/avlogo.svg',
+    logo: '/megh-logo.svg',
+    siteTitle: false,
 
     nav: [
       { text: 'Guide', link: '/getting-started/introduction', activeMatch: '^/(getting-started|core-concept|advanced|microservices|ai)/' },
@@ -17,9 +18,10 @@ export default defineConfig({
       {
         text: 'v0.4.1',
         items: [
+          { text: 'Moving from Avleon', link: '/getting-started/upgrading-megh' },
           { text: 'Upgrading to 0.4', link: '/getting-started/upgrading-0.4' },
           { text: 'Upgrading to 0.3', link: '/getting-started/upgrading' },
-          { text: 'Changelog', link: 'https://github.com/avleonjs/avleon/blob/main/packages/core/CHANGELOG.md' },
+          { text: 'Changelog', link: 'https://github.com/meghjs/megh/blob/main/packages/core/CHANGELOG.md' },
         ],
       },
     ],
@@ -31,6 +33,7 @@ export default defineConfig({
           { text: 'Introduction', link: '/getting-started/introduction' },
           { text: 'Installation', link: '/getting-started/installation' },
           { text: 'Usage', link: '/getting-started/usage' },
+          { text: 'Moving from Avleon', link: '/getting-started/upgrading-megh' },
           { text: 'Upgrading to 0.4', link: '/getting-started/upgrading-0.4' },
           { text: 'Upgrading to 0.3', link: '/getting-started/upgrading' },
         ],
@@ -71,12 +74,12 @@ export default defineConfig({
       },
     ],
 
-    socialLinks: [{ icon: 'github', link: 'https://github.com/avleonjs/avleon' }],
+    socialLinks: [{ icon: 'github', link: 'https://github.com/meghjs/megh' }],
 
     search: { provider: 'local' },
 
     editLink: {
-      pattern: 'https://github.com/avleonjs/avleonjs.github.io/edit/main/content/:path',
+      pattern: 'https://github.com/meghjs/meghjs.github.io/edit/main/content/:path',
     },
 
     footer: {

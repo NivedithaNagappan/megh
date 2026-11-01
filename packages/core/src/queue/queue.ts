@@ -24,7 +24,7 @@ import {
 } from "./memory-driver";
 
 const logger = internalLogger("queue");
-const QUEUE_CONFIG = Symbol.for("avleon:queue:config");
+const QUEUE_CONFIG = Symbol.for("megh:queue:config");
 
 export type { Job, JobsOptions };
 
@@ -33,7 +33,7 @@ export type { Job, JobsOptions };
  * method, then collected across the whole prototype chain so that handlers
  * declared on a base class are inherited by subclasses.
  */
-const JOBS_META = Symbol.for("avleon:jobs");
+const JOBS_META = Symbol.for("megh:jobs");
 
 type JobMeta = {
   /** Named job this method processes. */
@@ -47,7 +47,7 @@ type JobMeta = {
  *
  * ```ts
  * @Queue({ name: "email" })
- * class EmailQueue extends AvleonQueue<EmailPayload> {
+ * class EmailQueue extends MeghQueue<EmailPayload> {
  *   @JobHandler("welcome")
  *   async sendWelcome(job: Job<EmailPayload>) { ... }
  * }
@@ -95,13 +95,13 @@ export interface QueueConfig {
   /**
    * Options for the worker that processes this queue, or `false` for a
    * producer-only queue that never starts a worker (the jobs are consumed
-   * elsewhere, e.g. by an `@AvleonWorker` in another process).
+   * elsewhere, e.g. by an `@MeghWorker` in another process).
    */
   worker?: false | Omit<WorkerOptions, "connection">;
   /** Fallback processor used when the class defines no `handler`/`@JobHandler`. */
   handler?: (job: Job) => Promise<any>;
   /**
-   * Backend. Defaults to `setQueueDriver()`, then `AVLEON_QUEUE_DRIVER`, then
+   * Backend. Defaults to `setQueueDriver()`, then `MEGH_QUEUE_DRIVER`, then
    * `"bullmq"`. Use `"memory"` or `"sync"` in tests to run jobs without Redis.
    */
   driver?: QueueDriver;
@@ -117,9 +117,9 @@ export interface QueueConfig {
  * The worker starts lazily on `startWorker()`, which `@Queue` calls for you.
  *
  * bullmq is an optional peer dependency: it is required only when a queue is
- * actually constructed, so importing `@avleon/core` never pulls it in.
+ * actually constructed, so importing `@meghjs/core` never pulls it in.
  */
-export abstract class AvleonQueue<T = any> {
+export abstract class MeghQueue<T = any> {
   protected queue: BullQueue<T, any, string>;
   protected worker?: BullWorker<T, any, string>;
 
@@ -146,7 +146,7 @@ export abstract class AvleonQueue<T = any> {
     const resolvedName = name ?? config?.name;
     if (!resolvedName) {
       throw new Error(
-        "[AvleonQueue] A queue name is required. Pass one to super(), or decorate the class with @Queue({ name }).",
+        "[MeghQueue] A queue name is required. Pass one to super(), or decorate the class with @Queue({ name }).",
       );
     }
     const resolvedAdapter = adapter ?? config?.adapter;
@@ -208,7 +208,7 @@ export abstract class AvleonQueue<T = any> {
       const fn = (this as any)[meta.method];
       if (typeof fn !== "function") {
         throw new Error(
-          `[AvleonQueue] @JobHandler("${meta.name}") refers to "${meta.method}", which is not a method on ${this.constructor.name}.`,
+          `[MeghQueue] @JobHandler("${meta.name}") refers to "${meta.method}", which is not a method on ${this.constructor.name}.`,
         );
       }
       named.set(meta.name, fn.bind(this));
@@ -227,7 +227,7 @@ export abstract class AvleonQueue<T = any> {
       const handler = named.get(job.name) ?? fallback;
       if (!handler) {
         throw new Error(
-          `[AvleonQueue] No handler registered for job "${job.name}" on queue "${this._name}".`,
+          `[MeghQueue] No handler registered for job "${job.name}" on queue "${this._name}".`,
         );
       }
       return handler(job);
@@ -325,7 +325,7 @@ export abstract class AvleonQueue<T = any> {
   on(event: string, listener: (...args: any[]) => void): this {
     if (!this.worker) {
       throw new Error(
-        `[AvleonQueue] Cannot listen for "${event}" before the worker has started. Call startWorker() first.`,
+        `[MeghQueue] Cannot listen for "${event}" before the worker has started. Call startWorker() first.`,
       );
     }
     this.worker.on(event as any, listener as any);
@@ -393,11 +393,11 @@ export function attachWorkerLogging(
         jobName: job?.name,
         attempts: job?.attemptsMade,
       },
-      `[Avleon Queue] Job "${job?.name ?? "?"}" on "${queue}" failed`,
+      `[Megh Queue] Job "${job?.name ?? "?"}" on "${queue}" failed`,
     );
   });
   worker.on("error", (err: Error) => {
-    logger.error({ err, queue }, `[Avleon Queue] Worker error on "${queue}"`);
+    logger.error({ err, queue }, `[Megh Queue] Worker error on "${queue}"`);
   });
 }
 
@@ -412,7 +412,7 @@ export function attachWorkerLogging(
  *
  * ```ts
  * @Queue({ name: "email", adapter: { connection: { host: "localhost" } } })
- * class EmailQueue extends AvleonQueue<EmailPayload> {
+ * class EmailQueue extends MeghQueue<EmailPayload> {
  *   constructor(private readonly mailer: Mailer) { super(); }
  *
  *   @JobHandler("welcome")
@@ -421,11 +421,11 @@ export function attachWorkerLogging(
  *
  * // Producer only: adds jobs, never consumes them.
  * @Queue({ name: "email", worker: false })
- * class EmailProducer extends AvleonQueue<EmailPayload> {}
+ * class EmailProducer extends MeghQueue<EmailPayload> {}
  * ```
  */
 export function Queue(config: QueueConfig) {
-  return function <T extends new (...args: any[]) => AvleonQueue>(Base: T): T {
+  return function <T extends new (...args: any[]) => MeghQueue>(Base: T): T {
     Object.defineProperty(Base, QUEUE_CONFIG, {
       value: config,
       enumerable: false,

@@ -110,16 +110,16 @@ describe("Migrations", () => {
   it("uses a custom migration table", async () => {
     await new Migrations(db, {
       migrations,
-      table: "avleon_migrations",
-      lockTable: "avleon_migrations_lock",
+      table: "megh_migrations",
+      lockTable: "megh_migrations_lock",
     }).latest();
-    expect(await tables()).toContain("avleon_migrations");
+    expect(await tables()).toContain("megh_migrations");
   });
 
   describe("folder", () => {
     let dir: string;
     beforeEach(() => {
-      dir = fs.mkdtempSync(path.join(os.tmpdir(), "avleon-migrations-"));
+      dir = fs.mkdtempSync(path.join(os.tmpdir(), "megh-migrations-"));
     });
     afterEach(() => {
       fs.rmSync(dir, { recursive: true, force: true });

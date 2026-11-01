@@ -1,4 +1,4 @@
-import { ApiController, Get } from '@avleon/core';
+import { ApiController, Get } from '@meghjs/core';
 
 @ApiController('/{route}')
 export class {ClassName} {

@@ -1,5 +1,5 @@
 // ============================================================
-// Avleon Event System
+// Megh Event System
 // ============================================================
 
 import { Container } from "../di";
@@ -93,22 +93,20 @@ export function parseDelay(input: DelayInput | undefined): number {
 
 // ─── Core Interfaces ────────────────────────────────────────
 
-export interface AvleonEventInterface {
+export interface MeghEventInterface {
   name: string;
   timestamp: number;
 }
 
-export interface AvleonEventListenerInterface<
-  TEvent extends AvleonEventInterface = any,
+export interface MeghEventListenerInterface<
+  TEvent extends MeghEventInterface = any,
 > {
   handler(event: TEvent): void | Promise<void>;
 }
 
 // ─── Base Event ─────────────────────────────────────────────
 
-export abstract class AvleonEvent<
-  TPayload = any,
-> implements AvleonEventInterface {
+export abstract class MeghEvent<TPayload = any> implements MeghEventInterface {
   public readonly name: string;
   public readonly timestamp: number;
 
@@ -120,20 +118,20 @@ export abstract class AvleonEvent<
 
 // ─── Base Listener ──────────────────────────────────────────
 
-export abstract class AvleonEventListener<
-  TEvent extends AvleonEvent = AvleonEvent,
-> implements AvleonEventListenerInterface<TEvent> {
+export abstract class MeghEventListener<
+  TEvent extends MeghEvent = MeghEvent,
+> implements MeghEventListenerInterface<TEvent> {
   abstract handler(event: TEvent): void | Promise<void>;
 }
 
 // ─── Event Registry ─────────────────────────────────────────
 
-type EventClass<TEvent extends AvleonEvent = AvleonEvent> = abstract new (
+type EventClass<TEvent extends MeghEvent = MeghEvent> = abstract new (
   ...args: any[]
 ) => TEvent;
 
 type ListenerEntry = {
-  listener: AvleonEventListenerInterface;
+  listener: MeghEventListenerInterface;
   once: boolean;
 };
 
@@ -153,25 +151,25 @@ export class EventRegistry {
   }
 
   /** Register a persistent listener for an event class. */
-  register<TEvent extends AvleonEvent>(
+  register<TEvent extends MeghEvent>(
     eventClass: EventClass<TEvent>,
-    listener: AvleonEventListenerInterface<TEvent>,
+    listener: MeghEventListenerInterface<TEvent>,
   ): void {
     this._add(eventClass, listener, false);
   }
 
   /** Register a listener that fires exactly once, on the next occurrence. */
-  once<TEvent extends AvleonEvent>(
+  once<TEvent extends MeghEvent>(
     eventClass: EventClass<TEvent>,
-    listener: AvleonEventListenerInterface<TEvent>,
+    listener: MeghEventListenerInterface<TEvent>,
   ): void {
     this._add(eventClass, listener, true);
   }
 
   /** Remove a specific listener for an event class. */
-  unregister<TEvent extends AvleonEvent>(
+  unregister<TEvent extends MeghEvent>(
     eventClass: EventClass<TEvent>,
-    listener: AvleonEventListenerInterface<TEvent>,
+    listener: MeghEventListenerInterface<TEvent>,
   ): void {
     const entries = this.registry.get(eventClass) ?? [];
     this._set(
@@ -181,7 +179,7 @@ export class EventRegistry {
   }
 
   /** Active listener entries for an event class or event instance. */
-  getListeners(eventOrClass: AvleonEvent | EventClass): ListenerEntry[] {
+  getListeners(eventOrClass: MeghEvent | EventClass): ListenerEntry[] {
     return [...(this.registry.get(keyOf(eventOrClass)) ?? [])];
   }
 
@@ -190,7 +188,7 @@ export class EventRegistry {
    * are removed from the registry here, before they run, so concurrent
    * dispatches can never fire them twice.
    */
-  claim(eventOrClass: AvleonEvent | EventClass): ListenerEntry[] {
+  claim(eventOrClass: MeghEvent | EventClass): ListenerEntry[] {
     const key = keyOf(eventOrClass);
     const entries = this.registry.get(key) ?? [];
     if (entries.some((e) => e.once)) {
@@ -210,7 +208,7 @@ export class EventRegistry {
 
   private _add(
     key: Function,
-    listener: AvleonEventListenerInterface,
+    listener: MeghEventListenerInterface,
     once: boolean,
   ): void {
     const entries = this.registry.get(key) ?? [];
@@ -223,28 +221,28 @@ export class EventRegistry {
   }
 }
 
-function keyOf(eventOrClass: AvleonEvent | EventClass): Function {
+function keyOf(eventOrClass: MeghEvent | EventClass): Function {
   return typeof eventOrClass === "function"
     ? eventOrClass
     : eventOrClass.constructor;
 }
 
-function listenerName(listener: AvleonEventListenerInterface): string {
+function listenerName(listener: MeghEventListenerInterface): string {
   return listener?.constructor?.name ?? "listener";
 }
 
 // ─── Queue (In-Memory) ──────────────────────────────────────
 
 type QueuedJob = {
-  event: AvleonEvent;
+  event: MeghEvent;
   entries: ListenerEntry[];
   option: DispatchOption;
 };
 
 /** A listener that kept failing after its retries. */
 export interface FailedEventJob {
-  event: AvleonEvent;
-  listener: AvleonEventListenerInterface;
+  event: MeghEvent;
+  listener: MeghEventListenerInterface;
   error: unknown;
   attempts: number;
   failedAt: number;
@@ -273,7 +271,7 @@ export class EventQueue {
    * `option.delay` postpones the job.
    */
   enqueue(
-    event: AvleonEvent,
+    event: MeghEvent,
     option: DispatchOption,
     entries?: ListenerEntry[],
   ): void {
@@ -398,7 +396,7 @@ export class EventQueue {
 // ─── Broadcast ──────────────────────────────────────────────
 
 async function broadcastSocket(
-  event: AvleonEvent,
+  event: MeghEvent,
   option: SocketBroadcastOption,
 ): Promise<void> {
   if (!Container.has(SocketIoServer)) {
@@ -412,7 +410,7 @@ async function broadcastSocket(
 }
 
 async function handleBroadcast(
-  event: AvleonEvent,
+  event: MeghEvent,
   broadcastOption: BroadcastOption,
 ): Promise<void> {
   if (!broadcastOption) return;
@@ -423,7 +421,7 @@ async function handleBroadcast(
     return;
   }
   throw new Error(
-    `[EventDispatcher] Broadcast transport "${type}" is not implemented in Avleon 1.0. ` +
+    `[EventDispatcher] Broadcast transport "${type}" is not implemented in Megh 1.0. ` +
       "Only { type: \"socket\" } is supported.",
   );
 }
@@ -447,7 +445,7 @@ export class EventDispatcher {
    * `once` listeners fire exactly once: they are claimed by the first
    * dispatch, before any listener runs.
    */
-  async dispatch(event: AvleonEvent, option?: DispatchOption): Promise<void> {
+  async dispatch(event: MeghEvent, option?: DispatchOption): Promise<void> {
     const finalOption: DispatchOption = option ?? defaultDispatchOption;
     const wait = parseDelay(finalOption.delay);
 
@@ -470,7 +468,7 @@ export class EventDispatcher {
   }
 
   private async invokeListeners(
-    event: AvleonEvent,
+    event: MeghEvent,
     entries: ListenerEntry[],
   ): Promise<void> {
     for (const entry of entries) {

@@ -19,7 +19,7 @@ export type ServeOptions = {
 };
 
 const logServe = tagged("SERVE", c.cyan);
-const logApp = tagged("AVLEON", c.green);
+const logApp = tagged("MEGH", c.green);
 const logWatch = tagged("WATCH", c.yellow);
 const logErr = (category: string) => tagged(category, c.red);
 
@@ -46,7 +46,7 @@ export async function serve(opts: ServeOptions = {}): Promise<void> {
   let typeChecker: ChildProcess | null = null;
   const watchers: Array<{ close(): Promise<void> }> = [];
 
-  console.log(c.bold(c.cyan("Avleon development server")));
+  console.log(c.bold(c.cyan("Megh development server")));
   logServe(`Project: ${root}`);
 
   // ── Initial build ───────────────────────────────────────────────────────
@@ -68,9 +68,9 @@ export async function serve(opts: ServeOptions = {}): Promise<void> {
   function startApp() {
     const entry = resolveEntry(candidates, opts.entry);
     if (!entry) {
-      logErr("AVLEON")(
+      logErr("MEGH")(
         `No entry file found. Tried:\n  ${candidates.map((p) => path.relative(root, p)).join("\n  ")}\n` +
-          `Set "avleon": { "entry": "dist/serve.js" } or "main" in package.json, or pass --entry.`,
+          `Set "megh": { "entry": "dist/serve.js" } or "main" in package.json, or pass --entry.`,
       );
       return;
     }
@@ -85,10 +85,10 @@ export async function serve(opts: ServeOptions = {}): Promise<void> {
     child.on("exit", (code, signal) => {
       if (app === child) app = null;
       if (stopping) return;
-      if (code) logErr("AVLEON")(`Process exited with code ${code}. Waiting for changes...`);
+      if (code) logErr("MEGH")(`Process exited with code ${code}. Waiting for changes...`);
       else if (signal) logApp(`Process terminated by ${signal}. Waiting for changes...`);
     });
-    child.on("error", (err) => logErr("AVLEON")(`Failed to start: ${err.message}`));
+    child.on("error", (err) => logErr("MEGH")(`Failed to start: ${err.message}`));
   }
 
   function reportFailures() {

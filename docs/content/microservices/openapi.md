@@ -5,7 +5,7 @@ description: Generating API documentation from your controllers.
 
 # OpenAPI
 
-Avleon generates an OpenAPI document from your controllers and serves a browsable
+Megh generates an OpenAPI document from your controllers and serves a browsable
 UI. Since 0.3 the UI packages are optional peer dependencies. Install the one you
 use:
 
@@ -21,15 +21,15 @@ npm i @fastify/swagger @scalar/fastify-api-reference
 ## Enabling
 
 ```sh
-npx avleon make:config openapi
+npx megh make:config openapi
 ```
 
 ::: code-group
 ```ts [config/openapi.config.ts]
-import { AppConfig, AvleonConfig, Environment, OpenApiUiOptions } from '@avleon/core';
+import { AppConfig, MeghConfig, Environment, OpenApiUiOptions } from '@meghjs/core';
 
 @AppConfig
-export class OpenApiConfig extends AvleonConfig<OpenApiUiOptions> {
+export class OpenApiConfig extends MeghConfig<OpenApiUiOptions> {
   config(env: Environment): OpenApiUiOptions {
     return {
       info: {
@@ -44,11 +44,11 @@ export class OpenApiConfig extends AvleonConfig<OpenApiUiOptions> {
 ```
 
 ```ts [app.ts]
-import { Avleon } from '@avleon/core';
+import { Megh } from '@meghjs/core';
 import { OpenApiConfig } from './config/openapi.config';
 import { WelcomeController } from './controllers/welcome.controller';
 
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 
 if (app.isDevelopment()) {
   app.useOpenApi(OpenApiConfig);
@@ -99,7 +99,7 @@ app.useOpenApi({
 });
 ```
 
-The CLI can wire this up for you — pick *Scalar UI* when running `avleon new`.
+The CLI can wire this up for you — pick *Scalar UI* when running `megh new`.
 
 ## Documenting routes
 
@@ -107,7 +107,7 @@ Use `@OpenApi` on a controller or a route method to enrich the generated
 document.
 
 ```ts [controllers/welcome.controller.ts]
-import { ApiController, Get, OpenApi } from '@avleon/core';
+import { ApiController, Get, OpenApi } from '@meghjs/core';
 
 @OpenApi({ tags: ['welcome'] })
 @ApiController('/welcome')
@@ -173,7 +173,7 @@ create(@Body() body: CreateUserDto) {}
   requestBody: {
     required: false,
     schema: { type: 'object', properties: { q: { type: 'string' } } },
-    example: { q: 'avleon' },
+    example: { q: 'megh' },
   },
 })
 
@@ -199,11 +199,11 @@ Routes registered with `mapGet` and friends return a chainable object, so they
 can carry their own OpenAPI metadata:
 
 ```ts [app.ts]
-import { Avleon } from '@avleon/core';
+import { Megh } from '@meghjs/core';
 
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 
-app.mapGet('/', () => 'Welcome to Avleon.').useOpenApi({
+app.mapGet('/', () => 'Welcome to Megh.').useOpenApi({
   tags: ['welcome'],
   summary: 'Root greeting',
 });

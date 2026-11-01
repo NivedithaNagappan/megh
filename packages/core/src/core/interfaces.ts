@@ -5,9 +5,9 @@
  * @url https://github.com/xtareq
  */
 import { Constructor } from "../common/helpers";
-import { AvleonMiddleware } from "../http/middleware";
-import { AvleonConfig } from "../config/config";
-import type { AvleonAuthentication } from "../security/authentication";
+import { MeghMiddleware } from "../http/middleware";
+import { MeghConfig } from "../config/config";
+import type { MeghAuthentication } from "../security/authentication";
 import { OpenApiUiOptions } from "../openapi/openapi";
 import {
   FastifyServerOptions,
@@ -48,7 +48,7 @@ export type GlobalOptions = {
   staticFiles?: any;
 };
 
-export type AvleonApplicationOptions = PluginOptions & {
+export type MeghApplicationOptions = PluginOptions & {
   server?: FastifyServerOptions;
 };
 
@@ -65,19 +65,17 @@ export type CacheOptions = {
 /** A function run at a stage of the application lifecycle. */
 export type LifecycleHook = () => void | Promise<void>;
 
-export interface IAvleonApplication {
+export interface IMeghApplication {
   // all use
   useCors: (options: CorsOptions) => this;
   useCache: (options?: CacheOptions) => this;
   useMultipart: (options?: any) => this;
   useOpenApi: (
-    options?: OpenApiUiOptions | Constructor<AvleonConfig<OpenApiUiOptions>>,
+    options?: OpenApiUiOptions | Constructor<MeghConfig<OpenApiUiOptions>>,
   ) => this;
-  useMiddlewares: (middlewares: Constructor<AvleonMiddleware>[]) => this;
+  useMiddlewares: (middlewares: Constructor<MeghMiddleware>[]) => this;
   /** Register the global authentication handler that populates `request.user`. */
-  useAuthentication: (
-    authentication: Constructor<AvleonAuthentication>,
-  ) => this;
+  useAuthentication: (authentication: Constructor<MeghAuthentication>) => this;
   useAuthorization: (authorization: Constructor<any>) => this;
   useSerialization: () => this;
   useControllers: (controllers: Constructor[] | AutoControllerOptions) => this;

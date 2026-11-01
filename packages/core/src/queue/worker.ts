@@ -34,11 +34,11 @@ export interface WorkerConfig {
    * The worker never starts on import.
    */
   autoStart?: boolean;
-  /** Backend. Defaults to `setQueueDriver()`, then `AVLEON_QUEUE_DRIVER`, then `"bullmq"`. */
+  /** Backend. Defaults to `setQueueDriver()`, then `MEGH_QUEUE_DRIVER`, then `"bullmq"`. */
   driver?: QueueDriver;
 }
 
-const WORKER_CONFIG = Symbol.for("avleon:worker:config");
+const WORKER_CONFIG = Symbol.for("megh:worker:config");
 
 const workerRegistry = new Set<Function>();
 
@@ -47,18 +47,18 @@ const workerRegistry = new Set<Function>();
  *
  * Use this when the consumer lives apart from the producer — a separate worker
  * process, say. For a queue that produces and consumes in one place, prefer
- * `AvleonQueue` with `@JobHandler`.
+ * `MeghQueue` with `@JobHandler`.
  *
  * ```ts
- * @AvleonWorker({ queue: "email", concurrency: 5 })
- * class EmailWorker extends AvleonWorkerBase<EmailPayload> {
+ * @MeghWorker({ queue: "email", concurrency: 5 })
+ * class EmailWorker extends MeghWorkerBase<EmailPayload> {
  *   async process(job: Job<EmailPayload>) {
  *     await sendMail(job.data);
  *   }
  * }
  * ```
  */
-export abstract class AvleonWorkerBase<T = any> {
+export abstract class MeghWorkerBase<T = any> {
   protected worker?: BullWorker<T>;
 
   /** Process a single job. */
@@ -74,7 +74,7 @@ export abstract class AvleonWorkerBase<T = any> {
   onError?(error: Error): void | Promise<void>;
 
   /**
-   * Start consuming. Reads the config supplied by `@AvleonWorker`; calling this
+   * Start consuming. Reads the config supplied by `@MeghWorker`; calling this
    * twice is a no-op.
    */
   start(): this {
@@ -85,7 +85,7 @@ export abstract class AvleonWorkerBase<T = any> {
     ];
     if (!config) {
       throw new Error(
-        `[AvleonWorker] ${this.constructor.name} is missing its @AvleonWorker({ queue }) decorator.`,
+        `[MeghWorker] ${this.constructor.name} is missing its @MeghWorker({ queue }) decorator.`,
       );
     }
 
@@ -123,7 +123,7 @@ export abstract class AvleonWorkerBase<T = any> {
           jobName: job?.name,
           attempts: job?.attemptsMade,
         },
-        `[Avleon Worker] Job "${job?.name ?? "?"}" on "${queue}" failed`,
+        `[Megh Worker] Job "${job?.name ?? "?"}" on "${queue}" failed`,
       );
       if (this.onFailed)
         this.safeCall(
@@ -136,7 +136,7 @@ export abstract class AvleonWorkerBase<T = any> {
       else
         logger.error(
           { err, queue },
-          `[Avleon Worker] Worker error on "${queue}"`,
+          `[Megh Worker] Worker error on "${queue}"`,
         );
     });
 
@@ -162,14 +162,14 @@ export abstract class AvleonWorkerBase<T = any> {
         (result as Promise<void>).catch((err) =>
           logger.error(
             { err },
-            `[Avleon Worker] ${this.constructor.name}.${hook} threw`,
+            `[Megh Worker] ${this.constructor.name}.${hook} threw`,
           ),
         );
       }
     } catch (err) {
       logger.error(
         { err },
-        `[Avleon Worker] ${this.constructor.name}.${hook} threw`,
+        `[Megh Worker] ${this.constructor.name}.${hook} threw`,
       );
     }
   }
@@ -183,13 +183,13 @@ export abstract class AvleonWorkerBase<T = any> {
  * explicit `start()`, so configuration and DI are ready first.
  *
  * bullmq is an optional peer dependency and is loaded only when the worker
- * starts, so importing `@avleon/core` never requires it.
+ * starts, so importing `@meghjs/core` never requires it.
  */
-export function AvleonWorker(config: WorkerConfig): ClassDecorator {
+export function MeghWorker(config: WorkerConfig): ClassDecorator {
   return function (target: any) {
     if (!config?.queue) {
       throw new Error(
-        "[AvleonWorker] A queue name is required, e.g. @AvleonWorker({ queue: \"email\" }).",
+        "[MeghWorker] A queue name is required, e.g. @MeghWorker({ queue: \"email\" }).",
       );
     }
 
@@ -206,22 +206,22 @@ export function AvleonWorker(config: WorkerConfig): ClassDecorator {
   } as ClassDecorator;
 }
 
-/** Every class decorated with `@AvleonWorker`, in declaration order. */
+/** Every class decorated with `@MeghWorker`, in declaration order. */
 export function getRegisteredWorkers(): Function[] {
   return [...workerRegistry];
 }
 
 /**
- * Resolve and start every `@AvleonWorker` class whose `autoStart` is not
+ * Resolve and start every `@MeghWorker` class whose `autoStart` is not
  * `false`. Workers already started are returned as they are. The application
  * calls this once at boot and closes the returned workers on shutdown.
  */
-export function startRegisteredWorkers(): AvleonWorkerBase[] {
-  const started: AvleonWorkerBase[] = [];
+export function startRegisteredWorkers(): MeghWorkerBase[] {
+  const started: MeghWorkerBase[] = [];
   for (const target of workerRegistry) {
     const config: WorkerConfig = (target as any)[WORKER_CONFIG];
     if (config?.autoStart === false) continue;
-    const instance = Container.get(target as any) as AvleonWorkerBase;
+    const instance = Container.get(target as any) as MeghWorkerBase;
     if (!instance.getWorker()) instance.start();
     started.push(instance);
   }

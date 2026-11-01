@@ -4,11 +4,11 @@
  * @email xtrinsic96@gmail.com
  * @url https://github.com/xtareq
  */
-import { AvleonApplication } from "./application";
+import { MeghApplication } from "./application";
 import { Container } from "../di";
 import { Constructor } from "../common/helpers";
 import {
-  AvleonApplicationOptions,
+  MeghApplicationOptions,
   TestApplication,
   TestAppOptions,
 } from "./interfaces";
@@ -16,7 +16,7 @@ import { InjectOptions } from "fastify";
 import { ValidationErrorException } from "../common/exceptions";
 import { SystemUseError } from "../common/exceptions/system-exception";
 
-export class AvleonTest {
+export class MeghTest {
   private constructor() {
     process.env.NODE_ENV = "test";
   }
@@ -43,15 +43,15 @@ export class AvleonTest {
   }
 
   static createTestApplication(options: TestAppOptions) {
-    const app = AvleonApplication.getInternalApp();
+    const app = MeghApplication.getInternalApp();
     // We need to cast options.controllers to any or Constructor[] for compatibility
     if (options.controllers) {
       app.useControllers(options.controllers as Constructor[]);
     }
-    return AvleonTest.from(app);
+    return MeghTest.from(app);
   }
 
-  static from(app: AvleonApplication): TestApplication {
+  static from(app: MeghApplication): TestApplication {
     // Logic to return a TestApplication wrapper around the running app
     // This effectively manually builds the routes map if it wasn't run?
     // In icore.ts getTestApp() logic was doing a lot of things manually.
@@ -64,7 +64,7 @@ export class AvleonTest {
       // Note: In original code, getTestApp did _mapControllers().
       // We should access private methods or expose public init method.
       // Since we are in separate file, we can't access private easily.
-      // Best approach: add `initForTest()` on AvleonApplication
+      // Best approach: add `initForTest()` on MeghApplication
 
       // Assuming we added public method or we just cast to any to call private methods (naughty but works)
       (app as any)._mapControllers().catch((e: any) => console.error(e));
@@ -99,7 +99,7 @@ export class AvleonTest {
         options: async (url: string, options?: InjectOptions) =>
           app.app.inject({ method: "OPTIONS", url, ...options }),
         getController: <T>(controller: Constructor<T>, deps: any[] = []) => {
-          return AvleonTest.getController(controller, deps);
+          return MeghTest.getController(controller, deps);
         },
       };
     } catch (error) {
@@ -112,13 +112,13 @@ export class AvleonTest {
   }
 }
 
-export class Avleon {
-  static createApplication(options?: AvleonApplicationOptions) {
-    const app = AvleonApplication.getApp(options);
+export class Megh {
+  static createApplication(options?: MeghApplicationOptions) {
+    const app = MeghApplication.getApp(options);
     return app;
   }
   static createTestApplication(options: TestAppOptions) {
-    const app = AvleonTest.createTestApplication(options);
+    const app = MeghTest.createTestApplication(options);
     return app;
   }
 }

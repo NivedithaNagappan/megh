@@ -1,6 +1,6 @@
 ---
 title: Middleware
-description: Creating and applying Avleon middleware.
+description: Creating and applying Megh middleware.
 ---
 
 # Middleware
@@ -9,16 +9,16 @@ Middleware runs before your route handler and can inspect or modify the request,
 or reject it outright.
 
 ```sh
-npx avleon make:middleware logger
+npx megh make:middleware logger
 ```
 
 The command generates:
 
 ```ts [src/middlewares/logger.middleware.ts]
-import { AppMiddleware, AvleonMiddleware, IRequest, IResponse } from '@avleon/core';
+import { AppMiddleware, MeghMiddleware, IRequest, IResponse } from '@meghjs/core';
 
 @AppMiddleware
-export class LoggerMiddleware extends AvleonMiddleware {
+export class LoggerMiddleware extends MeghMiddleware {
   /**
    * Return the request to continue, or throw to stop the pipeline.
    */
@@ -29,14 +29,14 @@ export class LoggerMiddleware extends AvleonMiddleware {
 }
 ```
 
-A middleware extends `AvleonMiddleware` and implements `invoke`. Returning the
+A middleware extends `MeghMiddleware` and implements `invoke`. Returning the
 request continues the pipeline; throwing an `HttpExceptions` error stops it:
 
 ```ts
-import { AppMiddleware, AvleonMiddleware, IRequest, HttpExceptions } from '@avleon/core';
+import { AppMiddleware, MeghMiddleware, IRequest, HttpExceptions } from '@meghjs/core';
 
 @AppMiddleware
-export class ApiKeyMiddleware extends AvleonMiddleware {
+export class ApiKeyMiddleware extends MeghMiddleware {
   async invoke(req: IRequest) {
     if (req.headers['x-api-key'] !== process.env.API_KEY) {
       throw HttpExceptions.unauthorized('Invalid API key');
@@ -55,10 +55,10 @@ Middleware can be applied at three levels.
 Runs for every request. Note the plural — `useMiddlewares`:
 
 ```ts [app.ts]
-import { Avleon } from '@avleon/core';
+import { Megh } from '@meghjs/core';
 import { LoggerMiddleware } from './middlewares/logger.middleware';
 
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 
 app.useMiddlewares([LoggerMiddleware]);
 
@@ -75,7 +75,7 @@ In 0.3.0, passing a middleware **class** to `@UseMiddleware` crashes
 Runs for every route on that controller:
 
 ```ts
-import { ApiController, Get, UseMiddleware } from '@avleon/core';
+import { ApiController, Get, UseMiddleware } from '@meghjs/core';
 import { LoggerMiddleware } from '../middlewares/logger.middleware';
 
 @UseMiddleware(new LoggerMiddleware())
@@ -93,7 +93,7 @@ export class HomeController {
 Runs for a single route:
 
 ```ts
-import { ApiController, Get, UseMiddleware } from '@avleon/core';
+import { ApiController, Get, UseMiddleware } from '@meghjs/core';
 import { LoggerMiddleware } from '../middlewares/logger.middleware';
 
 @ApiController('/home')

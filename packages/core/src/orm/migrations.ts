@@ -8,7 +8,7 @@
  *
  * A migration is a module exporting `up(db)` and, to be reversible,
  * `down(db)`. Migrations run in file-name order, so names start with a
- * timestamp: `20261101093000_create_users_table.ts`. `avleon make:migration`
+ * timestamp: `20261101093000_create_users_table.ts`. `megh make:migration`
  * creates them.
  */
 import fs from "node:fs";
@@ -90,7 +90,7 @@ export async function readMigrationFolder(
     const migration = typeof mod?.up === "function" ? mod : mod?.default;
     if (typeof migration?.up !== "function") {
       throw new Error(
-        `[Avleon ORM] Migration ${file} must export an \`up(db)\` function.`,
+        `[Megh ORM] Migration ${file} must export an \`up(db)\` function.`,
       );
     }
     out[file.replace(EXTENSIONS, "")] = migration;
@@ -123,9 +123,7 @@ export class Migrations {
     private readonly options: MigrationsOptions,
   ) {
     if (!options.folder && !options.migrations) {
-      throw new Error(
-        "[Avleon ORM] Migrations need a `folder` or `migrations`.",
-      );
+      throw new Error("[Megh ORM] Migrations need a `folder` or `migrations`.");
     }
   }
 

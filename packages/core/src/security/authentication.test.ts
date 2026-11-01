@@ -1,18 +1,18 @@
 import "reflect-metadata";
 import { afterEach, describe, expect, it, test } from "vitest";
 import { Container, Injectable } from "../di";
-import { AvleonApplication } from "../core/application";
-import { AvleonTest } from "../core/testing";
+import { MeghApplication } from "../core/application";
+import { MeghTest } from "../core/testing";
 import { ApiController } from "../http/controller";
 import { Get } from "../http/route-methods";
 import { AuthUser } from "../http/params";
-import { AvleonAuthentication } from "./authentication";
+import { MeghAuthentication } from "./authentication";
 import { IRequest } from "../core/types";
 
 type User = { id: number; name: string };
 
 @Injectable()
-class HeaderAuthentication extends AvleonAuthentication<User> {
+class HeaderAuthentication extends MeghAuthentication<User> {
   async authenticate(request: IRequest): Promise<User | null> {
     const token = request.headers["x-token"];
     return token === "valid" ? { id: 1, name: "Tareq" } : null;
@@ -27,7 +27,7 @@ class MeController {
   }
 }
 
-describe("AvleonAuthentication", () => {
+describe("MeghAuthentication", () => {
   it("resolves the user for valid credentials", async () => {
     const handler = new HeaderAuthentication();
     const req = { headers: { "x-token": "valid" } } as unknown as IRequest;
@@ -58,23 +58,23 @@ describe("useAuthentication", () => {
   });
 
   it("rejects anything that is not a class", () => {
-    const app = AvleonApplication.getInternalApp();
+    const app = MeghApplication.getInternalApp();
     expect(() => (app as any).useAuthentication({ not: "a class" })).toThrow(
       /expects an authentication class/,
     );
   });
 
   it("is chainable", () => {
-    const app = AvleonApplication.getInternalApp();
+    const app = MeghApplication.getInternalApp();
     expect(app.useAuthentication(HeaderAuthentication)).toBe(app);
   });
 
   it("populates request.user, which @AuthUser() injects", async () => {
-    const app = AvleonApplication.getInternalApp();
+    const app = MeghApplication.getInternalApp();
     app.useAuthentication(HeaderAuthentication);
     app.useControllers([MeController]);
 
-    const test = AvleonTest.from(app);
+    const test = MeghTest.from(app);
     const res = await test.get("/me", { headers: { "x-token": "valid" } });
 
     expect(res.statusCode).toBe(200);
@@ -82,11 +82,11 @@ describe("useAuthentication", () => {
   });
 
   it("leaves request.user unset when authentication returns null", async () => {
-    const app = AvleonApplication.getInternalApp();
+    const app = MeghApplication.getInternalApp();
     app.useAuthentication(HeaderAuthentication);
     app.useControllers([MeController]);
 
-    const test = AvleonTest.from(app);
+    const test = MeghTest.from(app);
     const res = await test.get("/me", { headers: { "x-token": "bad" } });
 
     expect(res.statusCode).toBe(200);
@@ -94,10 +94,10 @@ describe("useAuthentication", () => {
   });
 
   it("leaves request.user unset when no handler is registered", async () => {
-    const app = AvleonApplication.getInternalApp();
+    const app = MeghApplication.getInternalApp();
     app.useControllers([MeController]);
 
-    const test = AvleonTest.from(app);
+    const test = MeghTest.from(app);
     const res = await test.get("/me", { headers: { "x-token": "valid" } });
 
     expect(res.statusCode).toBe(200);

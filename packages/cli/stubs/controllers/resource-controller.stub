@@ -1,4 +1,4 @@
-import { ApiController, Get, Post, Put, Delete, Param, Query, Body, HttpExceptions } from '@avleon/core';
+import { ApiController, Get, Post, Put, Delete, Param, Query, Body, HttpExceptions } from '@meghjs/core';
 import { {ServiceClass} } from '{serviceImport}';
 
 @ApiController('/{route}')

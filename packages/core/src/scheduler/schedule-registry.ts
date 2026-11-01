@@ -7,10 +7,10 @@
 
 // ─── Metadata keys ───────────────────────────────────────────────────────────
 
-export const SCHEDULED_TASK_META_KEY = Symbol("avleon:scheduled_task");
-export const CRON_META_KEY = Symbol("avleon:cron");
-export const INTERVAL_META_KEY = Symbol("avleon:interval");
-export const TIMEOUT_META_KEY = Symbol("avleon:timeout");
+export const SCHEDULED_TASK_META_KEY = Symbol("megh:scheduled_task");
+export const CRON_META_KEY = Symbol("megh:cron");
+export const INTERVAL_META_KEY = Symbol("megh:interval");
+export const TIMEOUT_META_KEY = Symbol("megh:timeout");
 
 // ─── Job descriptor shapes ────────────────────────────────────────────────────
 

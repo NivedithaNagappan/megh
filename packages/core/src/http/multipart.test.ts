@@ -30,7 +30,7 @@ describe("UploadFileFromRequest", () => {
   let dest: string;
 
   beforeEach(() => {
-    dest = fs.mkdtempSync(path.join(os.tmpdir(), "avleon-multipart-"));
+    dest = fs.mkdtempSync(path.join(os.tmpdir(), "megh-multipart-"));
   });
 
   afterEach(() => {

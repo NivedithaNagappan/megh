@@ -10,7 +10,7 @@ import type { Readable } from "stream";
  * Non-enumerable marker the router reads to pick the response status code for
  * a plain object (see `HttpResponse.Created`). It never appears in the JSON.
  */
-export const HTTP_STATUS_KEY = Symbol.for("avleon:http-status");
+export const HTTP_STATUS_KEY = Symbol.for("megh:http-status");
 
 /** Attach a status code to a plain response object without changing its JSON. */
 export function withStatus<T extends object>(body: T, statusCode: number): T {

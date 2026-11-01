@@ -14,8 +14,8 @@ import { MultipartFile } from "../http/multipart";
 import { OpenApiUiOptions } from "../openapi/openapi";
 import { Constructor } from "../common/helpers";
 import type {
-  IAvleonApplication,
-  AvleonApplicationOptions,
+  IMeghApplication,
+  MeghApplicationOptions,
   CorsOptions,
   GlobalOptions,
   AutoControllerOptions,
@@ -25,8 +25,8 @@ import type {
 
 // Re-export types imported from interfaces
 export {
-  IAvleonApplication,
-  AvleonApplicationOptions,
+  IMeghApplication,
+  MeghApplicationOptions,
   CorsOptions,
   GlobalOptions,
   AutoControllerOptions,

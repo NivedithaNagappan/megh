@@ -1,7 +1,7 @@
-# Avleon Documentation
+# Megh Documentation
 
-Source for [avleonjs.github.io](https://avleonjs.github.io/), the documentation
-site for [Avleon](https://github.com/avleonjs/avleon-core), a TypeScript-first
+Source for [meghjs.github.io](https://meghjs.github.io/), the documentation
+site for [Megh](https://github.com/meghjs/megh), a TypeScript-first
 web framework built on Fastify. The site is built with
 [VitePress](https://vitepress.dev).
 

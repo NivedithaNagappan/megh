@@ -1,7 +1,7 @@
-import { AppConfig, AvleonConfig, Environment } from '@avleon/core';
+import { AppConfig, MeghConfig, Environment } from '@meghjs/core';
 
 @AppConfig
-export class {ClassName} extends AvleonConfig {
+export class {ClassName} extends MeghConfig {
   config(env: Environment) {
     // Return this config's values, e.g. { secret: env.get('JWT_SECRET') }.
     return {};

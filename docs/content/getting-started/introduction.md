@@ -1,13 +1,13 @@
 ---
 title: Introduction
-description: What Avleon is.
+description: What Megh is.
 ---
 
 # Introduction
 
 ## Overview
 
-Avleon is a TypeScript-first web framework built on [Fastify](https://fastify.dev),
+Megh is a TypeScript-first web framework built on [Fastify](https://fastify.dev),
 for building REST APIs with minimal boilerplate. It gives you:
 
 - Decorator-based controllers and routes
@@ -23,6 +23,6 @@ for building REST APIs with minimal boilerplate. It gives you:
 
 Integrations are optional peer dependencies, so you install only what you use.
 
-> **Upgrading from 0.3?** Database support moved to `@avleon/data`. See
-> [Upgrading to 0.4](/getting-started/upgrading-0.4). Coming from 0.2, read
-> [Upgrading to 0.3](/getting-started/upgrading) first.
+> **Coming from Avleon?** Avleon is now Megh. See
+> [Moving from Avleon to Megh](/getting-started/upgrading-megh). On 0.3 or
+> earlier, read [Upgrading to 0.4](/getting-started/upgrading-0.4) first.

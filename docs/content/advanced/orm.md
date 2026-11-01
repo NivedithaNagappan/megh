@@ -1,11 +1,11 @@
 ---
 title: Models (ORM)
-description: "Avleon's built-in, type-safe models on top of Kysely: queries, relations, timestamps, soft deletes, casts and migrations."
+description: "Megh's built-in, type-safe models on top of Kysely: queries, relations, timestamps, soft deletes, casts and migrations."
 ---
 
 # Models (ORM)
 
-`@avleon/core` includes a model layer in the style of Laravel's Eloquent. It is
+`@meghjs/core` includes a model layer in the style of Laravel's Eloquent. It is
 built on [Kysely](https://kysely.dev): your models are plain classes, and
 column names, value types and loaded relations are checked by TypeScript.
 
@@ -36,7 +36,7 @@ npm i kysely better-sqlite3
 :::
 
 ::: info Node.js version
-Kysely 0.29 ships ES modules only and needs Node.js 22 or later. Avleon apps
+Kysely 0.29 ships ES modules only and needs Node.js 22 or later. Megh apps
 compile to CommonJS, which loads them through `require()` support for ES
 modules (Node.js 22.12+). On older Node.js versions, use Kysely 0.27.
 :::
@@ -87,10 +87,10 @@ export default db;
 Then hand it to the app:
 
 ```ts [app.ts]
-import { Avleon } from '@avleon/core';
+import { Megh } from '@meghjs/core';
 import db from './database/connection';
 
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 app.useDatabase(db);
 ```
 
@@ -103,7 +103,7 @@ scripts and tests, call `Model.useConnection(db)` instead.
 Extend `Model`, name the table, and declare the columns as fields:
 
 ```ts [src/models/user.model.ts]
-import { Model, hasMany } from '@avleon/core';
+import { Model, hasMany } from '@meghjs/core';
 import { Post } from './post.model';
 
 export class User extends Model {
@@ -178,7 +178,7 @@ rows[0].name;  // compile error
 
 ### Pagination
 
-`paginate()` returns the same `{ data, meta }` shape as the rest of Avleon:
+`paginate()` returns the same `{ data, meta }` shape as the rest of Megh:
 
 ```ts
 const page = await Post.query().orderBy('id').paginate({ page: 2, perPage: 20 });
@@ -412,7 +412,7 @@ it throws. A nested `Model.transaction()` joins the outer one.
 `Model.transaction()`). Type it from your models with `DatabaseOf`:
 
 ```ts
-import { Model, type DatabaseOf } from '@avleon/core';
+import { Model, type DatabaseOf } from '@meghjs/core';
 
 type DB = DatabaseOf<typeof User | typeof Post>;
 
@@ -426,9 +426,9 @@ const rows = await Model.db<DB>()
 The connection is also registered in the container under `ORM_CONNECTION`:
 
 ```ts
-import { AvleonContainer, ORM_CONNECTION } from '@avleon/core';
+import { MeghContainer, ORM_CONNECTION } from '@meghjs/core';
 
-const db = AvleonContainer.get(ORM_CONNECTION); // Kysely<any>
+const db = MeghContainer.get(ORM_CONNECTION); // Kysely<any>
 ```
 
 ## Migrations
@@ -441,7 +441,7 @@ Migrations run in file-name order, so names start with a timestamp.
 Create one with the CLI:
 
 ```sh
-npx avleon make:migration create_users_table
+npx megh make:migration create_users_table
 ```
 
 ```ts [src/database/migrations/20261101093000_create_users_table.ts]
@@ -477,11 +477,11 @@ Then run them:
 
 | Command | |
 |---|---|
-| `avleon migrate` | Run pending migrations |
-| `avleon migrate:status` | Show which have run (`--json` for JSON) |
-| `avleon migrate:rollback` | Undo the last migration; `--step <n>` for more |
-| `avleon migrate:reset` | Undo every migration |
-| `avleon migrate:refresh` | Undo every migration, then run them all again |
+| `megh migrate` | Run pending migrations |
+| `megh migrate:status` | Show which have run (`--json` for JSON) |
+| `megh migrate:rollback` | Undo the last migration; `--step <n>` for more |
+| `megh migrate:reset` | Undo every migration |
+| `megh migrate:refresh` | Undo every migration, then run them all again |
 
 The commands compile `src/` with SWC, load `.env`, and import the Kysely
 instance from `src/database/connection.ts` (its default export, or an export
@@ -489,7 +489,7 @@ named `db`). To use other locations, set them in `package.json`:
 
 ```json [package.json]
 {
-  "avleon": {
+  "megh": {
     "database": "src/db/index.ts",
     "migrations": "migrations"
   }
@@ -513,7 +513,7 @@ projects already using Kysely migrations keep their history.
 at deploy time:
 
 ```ts
-import { Migrations } from '@avleon/core';
+import { Migrations } from '@meghjs/core';
 import db from './database/connection';
 
 const migrations = new Migrations(db, { folder: `${__dirname}/database/migrations` });

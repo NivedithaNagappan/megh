@@ -5,7 +5,7 @@ description: Realtime communication with Socket.IO.
 
 # WebSocket
 
-Avleon's realtime layer is built on [Socket.IO](https://socket.io). It and its
+Megh's realtime layer is built on [Socket.IO](https://socket.io). It and its
 Fastify adapter are optional peer dependencies:
 
 ```sh
@@ -18,10 +18,10 @@ Call `useSocketIo` during app setup. Options are passed straight through to the
 Socket.IO server.
 
 ```ts [app.ts]
-import { Avleon } from '@avleon/core';
+import { Megh } from '@meghjs/core';
 import { ChatSubscriber } from './subscribers/chat.subscriber';
 
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 
 app.useSocketIo({
   cors: { origin: '*' },
@@ -40,7 +40,7 @@ client event. The class must be registered with the container — `@AppService`
 does that.
 
 ```ts [subscribers/chat.subscriber.ts]
-import { AppService, Subscribe } from '@avleon/core';
+import { AppService, Subscribe } from '@meghjs/core';
 
 @AppService
 export class ChatSubscriber {
@@ -64,7 +64,7 @@ through `SocketContextService` for the duration of the call.
 Inject `SocketEventDispatcher` to push events out:
 
 ```ts [services/chat.service.ts]
-import { AppService, SocketEventDispatcher } from '@avleon/core';
+import { AppService, SocketEventDispatcher } from '@meghjs/core';
 
 @AppService
 export class ChatService {
@@ -101,7 +101,7 @@ export class ChatService {
 connecting socket — use it for per-user streams:
 
 ```ts
-import { AppService, Subscribe, PrivateChannel } from '@avleon/core';
+import { AppService, Subscribe, PrivateChannel } from '@meghjs/core';
 
 @AppService
 export class NotificationSubscriber {
@@ -118,9 +118,9 @@ export class NotificationSubscriber {
 For anything the helpers do not cover, resolve the Socket.IO `Server` itself:
 
 ```ts
-import { AvleonContainer, SocketIoServer } from '@avleon/core';
+import { MeghContainer, SocketIoServer } from '@meghjs/core';
 
-const io = AvleonContainer.get(SocketIoServer);
+const io = MeghContainer.get(SocketIoServer);
 io.emit('ping', Date.now());
 ```
 
@@ -129,7 +129,7 @@ io.emit('ping', Date.now());
 enabled. Resolving it during module load will fail.
 :::
 
-Use `AvleonContainer`, not `typedi` directly. Avleon may replace the underlying
+Use `MeghContainer`, not `typedi` directly. Megh may replace the underlying
 container in a future release.
 
 ## Broadcasting events

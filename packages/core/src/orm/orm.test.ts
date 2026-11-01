@@ -4,7 +4,7 @@ import Database from "better-sqlite3";
 import { Kysely, SqliteDialect, sql } from "kysely";
 import { Container } from "../di";
 import { NotFoundException } from "../common/exceptions";
-import { AvleonApplication } from "../core/application";
+import { MeghApplication } from "../core/application";
 import {
   Model,
   ORM_CONNECTION,
@@ -329,7 +329,7 @@ describe("app.useDatabase", () => {
       await destroy();
     };
 
-    const app = AvleonApplication.getInternalApp();
+    const app = MeghApplication.getInternalApp();
     app.useDatabase(other);
     expect(Container.get(ORM_CONNECTION)).toBe(other);
     await app.close();

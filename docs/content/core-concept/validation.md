@@ -5,11 +5,11 @@ description: Validating request bodies and query strings with DTOs.
 
 # Validation
 
-Avleon validates request input with [class-validator](https://github.com/typestack/class-validator)
+Megh validates request input with [class-validator](https://github.com/typestack/class-validator)
 DTOs. Annotate a class, use it as the type of a `@Body()` or `@Query()`
 parameter, and validation runs automatically before your handler.
 
-Install `class-validator` and `class-transformer` alongside `@avleon/core`; they
+Install `class-validator` and `class-transformer` alongside `@meghjs/core`; they
 are peer dependencies since 0.3.
 
 ## Defining a DTO
@@ -40,7 +40,7 @@ export class CreateUserDto {
 Type the `@Body()` parameter with the DTO — that is all that is needed:
 
 ```ts [controllers/users.controller.ts]
-import { ApiController, Post, Body } from '@avleon/core';
+import { ApiController, Post, Body } from '@meghjs/core';
 import { CreateUserDto } from '../dtos/create-user.dto';
 
 @ApiController('/users')
@@ -86,7 +86,7 @@ such as `address.city`.
 
 ### Without decorator metadata
 
-tsx, esbuild and SWC do not emit decorator metadata, so Avleon cannot see the
+tsx, esbuild and SWC do not emit decorator metadata, so Megh cannot see the
 parameter type. Pass it explicitly:
 
 ```ts
@@ -123,14 +123,14 @@ come along with the properties.
 | `OmitType(Dto, ['a'])` | Everything except the named properties |
 
 ```ts [dtos/update-user.dto.ts]
-import { PartialType } from '@avleon/core';
+import { PartialType } from '@meghjs/core';
 import { CreateUserDto } from './create-user.dto';
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {}
 ```
 
 ```ts
-import { PickType, OmitType } from '@avleon/core';
+import { PickType, OmitType } from '@meghjs/core';
 
 export class UserCredentialsDto extends PickType(CreateUserDto, ['email']) {}
 export class PublicUserDto extends OmitType(CreateUserDto, ['email']) {}
@@ -138,10 +138,10 @@ export class PublicUserDto extends OmitType(CreateUserDto, ['email']) {}
 
 ## Extra validators
 
-Avleon adds validators on top of the class-validator set:
+Megh adds validators on top of the class-validator set:
 
 ```ts
-import { IsArrayNotEmpty } from '@avleon/core';
+import { IsArrayNotEmpty } from '@meghjs/core';
 
 export class CreateOrderDto {
   @IsArrayNotEmpty({ message: 'An order needs at least one item' })
@@ -155,7 +155,7 @@ For input that does not come from a DTO, `validateOrThrow` checks a plain object
 against a rule map and throws a `BadRequestException` on failure:
 
 ```ts
-import { validateOrThrow } from '@avleon/core';
+import { validateOrThrow } from '@meghjs/core';
 
 validateOrThrow(
   { page: 1 },
@@ -174,7 +174,7 @@ Supported rule types are `string`, `number` (with `min`, `max`, `exact`) and
 To run the DTO pipeline by hand, use `transformAndValidate`:
 
 ```ts
-import { transformAndValidate } from '@avleon/core';
+import { transformAndValidate } from '@meghjs/core';
 
 const { value, errors } = await transformAndValidate(CreateUserDto, input);
 ```

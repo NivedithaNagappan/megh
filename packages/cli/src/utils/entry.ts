@@ -25,7 +25,7 @@ export function projectLayout(root: string, preferBuildConfig = false): ProjectL
 const DEFAULT_ENTRIES = ["serve.js", "server.js", "main.js", "index.js"];
 
 /**
- * Candidate entry files, most specific first: `--entry`, `avleon.entry` in
+ * Candidate entry files, most specific first: `--entry`, `megh.entry` in
  * package.json, `main` (mapped from `src/*.ts` to the output dir), then the
  * conventional names in the output dir.
  */
@@ -37,7 +37,7 @@ export function entryCandidates(
   const list: string[] = [];
   const add = (p: string) => list.push(path.resolve(layout.root, p));
   if (explicit) add(explicit);
-  if (typeof pkg?.avleon?.entry === "string") add(pkg.avleon.entry);
+  if (typeof pkg?.megh?.entry === "string") add(pkg.megh.entry);
   if (typeof pkg?.main === "string") {
     const main = path.resolve(layout.root, pkg.main);
     const rel = path.relative(layout.srcDir, main);

@@ -9,13 +9,7 @@ import { CONTROLLER_META_KEY, ROUTE_META_KEY } from "../common/container";
 import { OpenApiOptions } from "../openapi/openapi";
 
 export type RouteMethods =
-  | "GET"
-  | "POST"
-  | "PUT"
-  | "PATCH"
-  | "DELETE"
-  | "OPTIONS"
-  | "ALL";
+  "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS" | "ALL";
 
 export type RouteMethodOptions = {
   method?: RouteMethods;
@@ -107,7 +101,7 @@ export const All = (
   maybeOptions?: RouteMethodOptions,
 ) => Route("ALL", pathOrOptions, maybeOptions);
 
-export const HTTP_CODE_META_KEY = Symbol.for("avleon:http-code");
+export const HTTP_CODE_META_KEY = Symbol.for("megh:http-code");
 
 /**
  * Set the status code for a successful response from this route.
@@ -120,7 +114,7 @@ export const HTTP_CODE_META_KEY = Symbol.for("avleon:http-code");
 export function HttpCode(statusCode: number): MethodDecorator {
   if (!Number.isInteger(statusCode) || statusCode < 100 || statusCode > 599) {
     throw new Error(
-      `[Avleon] @HttpCode expects a status code between 100 and 599, got ${statusCode}.`,
+      `[Megh] @HttpCode expects a status code between 100 and 599, got ${statusCode}.`,
     );
   }
   return function (target, propertyKey) {

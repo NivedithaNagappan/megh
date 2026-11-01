@@ -17,7 +17,7 @@ export function requireProjectRoot(start: string): string {
   const root = findProjectRoot(start);
   if (!root) {
     throw new CliError(
-      `No package.json found in ${path.resolve(start)} or any parent directory. Run this command inside an Avleon project.`,
+      `No package.json found in ${path.resolve(start)} or any parent directory. Run this command inside a Megh project.`,
     );
   }
   return root;

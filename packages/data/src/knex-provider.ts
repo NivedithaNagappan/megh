@@ -1,30 +1,30 @@
 import {
-  AvleonContainer as Container,
+  MeghContainer as Container,
   Injectable,
   Token,
   normalizePageRequest,
   paginated,
   type PageRequest,
   type Paginated,
-} from "@avleon/core";
+} from "@meghjs/core";
 import type { Knex } from "knex";
 
 /** DI token holding the initialized Knex instance. Set by `app.useKnex(...)`. */
-export const AVLEON_KNEX_DB = new Token<Knex>("AVLEON_KNEX_DB");
+export const MEGH_KNEX_DB = new Token<Knex>("MEGH_KNEX_DB");
 
 /**
  * Injectable accessor for the application's Knex connection.
  *
  * The connection itself is created by `app.useKnex(...)`, which registers it
- * under {@link AVLEON_KNEX_DB}. Resolving this service before that call throws.
+ * under {@link MEGH_KNEX_DB}. Resolving this service before that call throws.
  */
 @Injectable()
 export class KnexDB {
   private readonly connection: Knex;
 
   constructor() {
-    const existing = Container.has(AVLEON_KNEX_DB)
-      ? Container.get<Knex>(AVLEON_KNEX_DB)
+    const existing = Container.has(MEGH_KNEX_DB)
+      ? Container.get<Knex>(MEGH_KNEX_DB)
       : null;
 
     if (!existing) {

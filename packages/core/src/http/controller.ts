@@ -12,9 +12,9 @@ import {
   registerController,
 } from "../common/container";
 
-export const REQUEST_METADATA_KEY = Symbol("avleon:request");
+export const REQUEST_METADATA_KEY = Symbol("megh:request");
 
-export function AvleonRequest(): ParameterDecorator {
+export function MeghRequest(): ParameterDecorator {
   return (target, propertyKey: any, parameterIndex) => {
     const existingParams =
       Reflect.getMetadata(REQUEST_METADATA_KEY, target, propertyKey) || [];

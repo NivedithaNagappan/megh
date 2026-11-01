@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Push the docs folder's history to its standalone repository, which deploys
 # GitHub Pages on push to main:
-#   docs -> avleonjs/avleonjs.github.io
+#   docs -> meghjs/meghjs.github.io
 #
 # The npm packages are no longer mirrored: they are versioned and published
 # from this repository with Lerna (see README.md).
@@ -25,7 +25,7 @@ prefix_of() {
 
 remote_of() {
   case "$1" in
-    docs) echo "https://github.com/avleonjs/avleonjs.github.io.git" ;;
+    docs) echo "https://github.com/meghjs/meghjs.github.io.git" ;;
   esac
 }
 

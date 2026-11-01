@@ -1,6 +1,6 @@
 ---
 title: Controller
-description: Avleon Controller
+description: Megh Controller
 ---
 
 # Controller
@@ -11,11 +11,11 @@ methods with a route decorator — `@Get`, `@Post`, `@Put`, `@Patch`, `@Delete`.
 ## Basic Controller
 
 ```sh
-npx avleon make:controller welcome
+npx megh make:controller welcome
 ```
 
 ```ts [src/controllers/welcome.controller.ts]
-import { ApiController, Get } from '@avleon/core';
+import { ApiController, Get } from '@meghjs/core';
 
 @ApiController('/welcome')
 export class WelcomeController {
@@ -29,10 +29,10 @@ export class WelcomeController {
 Register it on the app:
 
 ```ts [app.ts]
-import { Avleon } from '@avleon/core';
+import { Megh } from '@meghjs/core';
 import { WelcomeController } from './controllers/welcome.controller';
 
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 app.useControllers([WelcomeController]);
 
 export default app;
@@ -68,13 +68,13 @@ findOne(@Param('id') id: number) {
 database required.
 
 ```sh
-npx avleon make:controller users --model user --rest
+npx megh make:controller users --model user --rest
 ```
 
 or shorthand
 
 ```sh
-npx avleon m:c users -m user -r
+npx megh m:c users -m user -r
 ```
 
 ::: code-group
@@ -89,7 +89,7 @@ import {
   Body,
   Collection,
   HttpExceptions,
-} from '@avleon/core';
+} from '@meghjs/core';
 import { User } from '../models/user';
 
 @ApiController('/users')
@@ -157,13 +157,13 @@ With `--orm` the generated controller delegates to a service holding a TypeORM
 repository, which keeps data access out of the controller.
 
 ```sh
-npx avleon make:controller users --model user --rest --orm
+npx megh make:controller users --model user --rest --orm
 ```
 
 or shorthand
 
 ```sh
-npx avleon m:c users -m user -r --orm
+npx megh m:c users -m user -r --orm
 ```
 
 ::: code-group
@@ -178,7 +178,7 @@ import {
   Query,
   Body,
   HttpExceptions,
-} from '@avleon/core';
+} from '@meghjs/core';
 import { UserService } from '../services/user.service';
 import { User } from '../models/user';
 
@@ -223,8 +223,8 @@ export class UsersController {
 ```
 
 ```ts [services/user.service.ts]
-import { AppService } from '@avleon/core';
-import { InjectRepository, PaginatedRepository } from '@avleon/data';
+import { AppService } from '@meghjs/core';
+import { InjectRepository, PaginatedRepository } from '@meghjs/data';
 import { User } from '../models/user';
 
 @AppService

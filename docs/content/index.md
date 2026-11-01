@@ -2,22 +2,22 @@
 layout: home
 
 hero:
-  name: AVLEON
+  name: MEGH
   text: TypeScript-first web framework built on Fastify
   tagline: Decorator-based routing, dependency injection, validation and OpenAPI docs, with minimal boilerplate.
   image:
-    src: /avlogo.svg
-    alt: Avleon
+    src: /megh-logo.svg
+    alt: Megh
   actions:
     - theme: brand
       text: Get Started
       link: /getting-started/introduction
     - theme: alt
-      text: Upgrading to 0.4
-      link: /getting-started/upgrading-0.4
+      text: Moving from Avleon
+      link: /getting-started/upgrading-megh
     - theme: alt
       text: GitHub
-      link: https://github.com/avleonjs/avleon
+      link: https://github.com/meghjs/megh
 
 features:
   - title: Decorator-based routing
@@ -28,26 +28,26 @@ features:
     details: Type-safe models and migrations, TypeORM and Knex, events, BullMQ queues, scheduling, caching, Socket.IO and structured logging.
 ---
 
-## Hello, Avleon
+## Hello, Megh
 
 ::: code-group
 ```ts [welcome.controller.ts]
-import { ApiController, Get } from '@avleon/core';
+import { ApiController, Get } from '@meghjs/core';
 
 @ApiController
 export class WelcomeController {
   @Get()
   sayHello() {
-    return 'Hello, Avleon!';
+    return 'Hello, Megh!';
   }
 }
 ```
 
 ```ts [app.ts]
-import { Avleon } from '@avleon/core';
+import { Megh } from '@meghjs/core';
 import { WelcomeController } from './welcome.controller';
 
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 app.useControllers([WelcomeController]);
 app.run(); // or app.run(4000)
 ```

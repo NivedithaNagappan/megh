@@ -56,7 +56,7 @@ describe("FileStorage", () => {
   let consoleSpy: MockInstance;
 
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), "avleon-storage-"));
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "megh-storage-"));
     baseDir = path.join(root, "public");
     fs.mkdirSync(baseDir);
     storage = new FileStorage().configure({ baseDir });

@@ -31,7 +31,7 @@ export class PivotRelation<R, Pivot = {}> {
     const key = this.parent[this.def.localKey];
     if (key === null || key === undefined) {
       throw new Error(
-        `[Avleon ORM] Save the ${this.parent.constructor.name} before changing its "${this.pivot.table}" pivot rows.`,
+        `[Megh ORM] Save the ${this.parent.constructor.name} before changing its "${this.pivot.table}" pivot rows.`,
       );
     }
     return key;

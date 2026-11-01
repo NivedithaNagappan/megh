@@ -1,6 +1,6 @@
 ---
 title: Usage
-description: How to create a basic avleon application.
+description: How to create a basic megh application.
 ---
 
 # Usage
@@ -15,17 +15,17 @@ constructor. This is the approach the CLI scaffolds.
 
 ::: code-group
 ```ts [app.ts]
-import { Avleon } from '@avleon/core';
+import { Megh } from '@meghjs/core';
 import { WelcomeController } from './controllers/welcome.controller';
 
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 app.useControllers([ WelcomeController ]);
 
 app.run();
 ```
 
 ```ts [controllers/welcome.controller.ts]
-import { ApiController, Get } from '@avleon/core';
+import { ApiController, Get } from '@meghjs/core';
 
 @ApiController
 export class WelcomeController {
@@ -48,11 +48,11 @@ For small apps, register handlers directly on the app with `mapGet`, `mapPost`,
 
 ::: code-group
 ```ts [app.ts]
-import { Avleon } from '@avleon/core';
+import { Megh } from '@meghjs/core';
 
-const app = Avleon.createApplication();
+const app = Megh.createApplication();
 
-app.mapGet('/', () => 'Welcome to Avleon.');
+app.mapGet('/', () => 'Welcome to Megh.');
 
 app.run(); // by default run on :4000
 ```
@@ -82,7 +82,7 @@ Returning an object or array sends JSON; returning a string sends it as-is.
 To send an error status, throw an `HttpExceptions` error:
 
 ```ts
-import { HttpExceptions } from '@avleon/core';
+import { HttpExceptions } from '@meghjs/core';
 
 throw HttpExceptions.notFound('User not found');
 ```
@@ -111,7 +111,7 @@ app.run(3000);  // :3000
 Read the port from the environment to make it configurable:
 
 ```ts [serve.ts]
-import { Environment, inject } from '@avleon/core';
+import { Environment, inject } from '@meghjs/core';
 import app from './app';
 
 async function serve() {

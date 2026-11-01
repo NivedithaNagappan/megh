@@ -68,7 +68,7 @@ export * from "./plugins";
 
 // ─── Dependency injection ────────────────────────────────────────────────────
 export {
-  Container as AvleonContainer,
+  Container as MeghContainer,
   Token,
   Injectable,
   createInjectDecorator,

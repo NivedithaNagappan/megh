@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { IsOptional, IsString, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
-import { AvleonApplication } from "../core/application";
+import { MeghApplication } from "../core/application";
 import { ApiController } from "../http/controller";
 import { Get, Post } from "../http/route-methods";
 import { Body } from "../http/params";
@@ -175,7 +175,7 @@ class RbController {
       description: "Search filter",
       required: false,
       schema: { type: "object", properties: { q: { type: "string" } } },
-      example: { q: "avleon" },
+      example: { q: "megh" },
     },
   })
   @Post("/inline")
@@ -202,11 +202,11 @@ class RbController {
 }
 
 describe("generated OpenAPI document", () => {
-  let app: AvleonApplication;
+  let app: MeghApplication;
   let spec: any;
 
   beforeAll(async () => {
-    app = AvleonApplication.getInternalApp();
+    app = MeghApplication.getInternalApp();
     app.useOpenApi({ info: { title: "t", version: "1" } });
     app.useControllers([RbController]);
     app
@@ -257,7 +257,7 @@ describe("generated OpenAPI document", () => {
       content: {
         "application/json": {
           schema: { type: "object", properties: { q: { type: "string" } } },
-          example: { q: "avleon" },
+          example: { q: "megh" },
         },
       },
     });

@@ -1,13 +1,13 @@
 ---
 title: Plugins
-description: Add features to an Avleon app from a separate package.
+description: Add features to a Megh app from a separate package.
 ---
 
 # Plugins
 
-A plugin is a package that adds features to an Avleon app: new `app.use*`
+A plugin is a package that adds features to a Megh app: new `app.use*`
 methods, services in the container, lifecycle hooks and Fastify hooks.
-Installing a plugin is enough; Avleon finds it among the app's dependencies
+Installing a plugin is enough; Megh finds it among the app's dependencies
 when the app is created.
 
 ## Writing a plugin
@@ -15,7 +15,7 @@ when the app is created.
 Export a plugin from the package and point to it from `package.json`:
 
 ```ts [src/plugin.ts]
-import { definePlugin, Token } from '@avleon/core';
+import { definePlugin, Token } from '@meghjs/core';
 import { createClient, type Client } from 'some-db';
 
 export const DB = new Token<Client>('DB');
@@ -33,10 +33,10 @@ export default definePlugin({
   },
 });
 
-declare module '@avleon/core' {
-  interface AvleonApplication {
+declare module '@meghjs/core' {
+  interface MeghApplication {
     /** Connect to the database when the app starts. */
-    useDb(url: string): AvleonApplication;
+    useDb(url: string): MeghApplication;
   }
 }
 ```
@@ -45,12 +45,12 @@ declare module '@avleon/core' {
 {
   "name": "@acme/db",
   "main": "dist/index.js",
-  "avleon": { "plugin": "./dist/plugin.js" },
-  "peerDependencies": { "@avleon/core": "^0.4.0" }
+  "megh": { "plugin": "./dist/plugin.js" },
+  "peerDependencies": { "@meghjs/core": "^0.4.0" }
 }
 ```
 
-List `@avleon/core` as a **peer dependency**, not a dependency, so the plugin
+List `@meghjs/core` as a **peer dependency**, not a dependency, so the plugin
 shares the app's container instead of getting its own copy.
 
 `register(ctx)` runs once, when the app is created, and must be synchronous so
@@ -80,7 +80,7 @@ runtime. Pass plugins yourself in that case, or in tests:
 ```ts
 import db from '@acme/db/plugin';
 
-const app = Avleon.createApplication({
+const app = Megh.createApplication({
   plugins: [db],
   autoloadPlugins: false, // optional: skip discovery
 });

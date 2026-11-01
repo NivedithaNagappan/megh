@@ -13,7 +13,7 @@ import type { Kysely, Transaction } from "kysely";
 import { Container, Token } from "../di";
 
 /** DI token holding the ORM's root Kysely instance. */
-export const ORM_CONNECTION = new Token<Kysely<any>>("AVLEON_ORM_CONNECTION");
+export const ORM_CONNECTION = new Token<Kysely<any>>("MEGH_ORM_CONNECTION");
 
 const currentTransaction = new AsyncLocalStorage<Transaction<any>>();
 
@@ -24,7 +24,7 @@ export function setConnection(db: Kysely<any>) {
 function rootConnection(): Kysely<any> {
   if (!Container.has(ORM_CONNECTION)) {
     throw new Error(
-      "[Avleon ORM] No database connection. Call app.useDatabase(kysely) " +
+      "[Megh ORM] No database connection. Call app.useDatabase(kysely) " +
         "(or Model.useConnection(kysely) outside an app) first.",
     );
   }

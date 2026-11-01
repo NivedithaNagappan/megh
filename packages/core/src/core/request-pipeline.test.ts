@@ -21,7 +21,7 @@ import {
 } from "class-validator";
 import { transformAndValidate } from "../common/utils/validation-utils";
 import { Type } from "class-transformer";
-import { AvleonApplication } from "./application";
+import { MeghApplication } from "./application";
 import { ApiController } from "../http/controller";
 import { Get, Post } from "../http/route-methods";
 import { Body, Query } from "../http/params";
@@ -140,8 +140,8 @@ class DenyByReturningFalse {
 
 // ─── Harness ────────────────────────────────────────────────────────────────
 
-async function boot(setup: (app: AvleonApplication) => void) {
-  const app = AvleonApplication.getInternalApp();
+async function boot(setup: (app: MeghApplication) => void) {
+  const app = MeghApplication.getInternalApp();
   setup(app);
   const before = {
     SIGTERM: process.listeners("SIGTERM"),
@@ -209,7 +209,7 @@ describe("request pipeline", () => {
     });
 
     it("refuses to boot when a named authorizer is not registered", async () => {
-      const app = AvleonApplication.getInternalApp();
+      const app = MeghApplication.getInternalApp();
       app
         .useAuthorization({ jwt: DenyByReturningFalse })
         .useControllers([NamedController]);
@@ -221,7 +221,7 @@ describe("request pipeline", () => {
   });
 
   describe("DTO validation", () => {
-    let app: AvleonApplication;
+    let app: MeghApplication;
 
     beforeAll(async () => {
       vi.spyOn(console, "log").mockImplementation(() => {});
@@ -349,9 +349,9 @@ describe("request pipeline", () => {
 
     it("treats an unset NODE_ENV as production", () => {
       delete process.env.NODE_ENV;
-      expect(AvleonApplication.getInternalApp().isDevelopment()).toBe(false);
+      expect(MeghApplication.getInternalApp().isDevelopment()).toBe(false);
       process.env.NODE_ENV = "development";
-      expect(AvleonApplication.getInternalApp().isDevelopment()).toBe(true);
+      expect(MeghApplication.getInternalApp().isDevelopment()).toBe(true);
     });
 
     it.each([undefined, "production"])(

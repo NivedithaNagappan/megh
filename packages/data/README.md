@@ -1,23 +1,23 @@
-# @avleon/data
+# @meghjs/data
 
-TypeORM and Knex integration for [Avleon](https://avleonjs.github.io).
+TypeORM and Knex integration for [Megh](https://meghjs.github.io).
 
-`@avleon/data` is an Avleon [plugin](https://avleonjs.github.io/advanced/plugins).
+`@meghjs/data` is a Megh [plugin](https://meghjs.github.io/advanced/plugins).
 Once it is installed, the app gains `app.useTypeORM()` and `app.useKnex()`; nothing
 needs to be imported to enable them.
 
 ```bash
-npm install @avleon/data typeorm pg   # TypeORM
-npm install @avleon/data knex pg      # Knex
+npm install @meghjs/data typeorm pg   # TypeORM
+npm install @meghjs/data knex pg      # Knex
 ```
 
-Projects created with `avleon new` load the plugin's types through the generated
-`avleon-env.d.ts`. In other projects, add the file yourself and include it in
+Projects created with `megh new` load the plugin's types through the generated
+`megh-env.d.ts`. In other projects, add the file yourself and include it in
 `tsconfig.json`:
 
 ```typescript
-// avleon-env.d.ts
-/// <reference types="@avleon/data" />
+// megh-env.d.ts
+/// <reference types="@meghjs/data" />
 ```
 
 Both methods connect before they resolve, register the connection with the
@@ -26,10 +26,10 @@ For a bundled app, which has no `package.json` to discover plugins from, pass th
 plugin explicitly:
 
 ```typescript
-import { Avleon } from "@avleon/core";
-import { dataPlugin } from "@avleon/data";
+import { Megh } from "@meghjs/core";
+import { dataPlugin } from "@meghjs/data";
 
-const app = Avleon.createApplication({ plugins: [dataPlugin] });
+const app = Megh.createApplication({ plugins: [dataPlugin] });
 ```
 
 ## Knex
@@ -52,11 +52,11 @@ await app.useKnex({
 Using a config class:
 
 ```typescript
-import { AppConfig, AvleonConfig, Environment } from "@avleon/core";
+import { AppConfig, MeghConfig, Environment } from "@meghjs/core";
 import type { Knex } from "knex";
 
 @AppConfig
-export class KnexConfig extends AvleonConfig<Knex.Config> {
+export class KnexConfig extends MeghConfig<Knex.Config> {
   config(env: Environment): Knex.Config {
     return {
       client: "mysql",
@@ -77,8 +77,8 @@ await app.useKnex(KnexConfig);
 Using in a service:
 
 ```typescript
-import { AppService } from "@avleon/core";
-import { KnexDB } from "@avleon/data";
+import { AppService } from "@meghjs/core";
+import { KnexDB } from "@meghjs/data";
 
 @AppService
 export class UsersService {
@@ -110,7 +110,7 @@ await app.useTypeORM({
   port: 5432,
   username: "postgres",
   password: "password",
-  database: "avleon",
+  database: "megh",
   entities: [User],
   synchronize: true,
 });
@@ -119,11 +119,11 @@ await app.useTypeORM({
 Using a config class:
 
 ```typescript
-import { AppConfig, AvleonConfig, Environment } from "@avleon/core";
+import { AppConfig, MeghConfig, Environment } from "@meghjs/core";
 import type { DataSourceOptions } from "typeorm";
 
 @AppConfig
-export class DataSourceConfig extends AvleonConfig<DataSourceOptions> {
+export class DataSourceConfig extends MeghConfig<DataSourceOptions> {
   config(env: Environment): DataSourceOptions {
     return {
       type: "postgres",
@@ -131,7 +131,7 @@ export class DataSourceConfig extends AvleonConfig<DataSourceOptions> {
       port: Number(env.get("DB_PORT")) || 5432,
       username: env.get("DB_USER") || "postgres",
       password: env.get("DB_PASS") || "password",
-      database: env.get("DB_NAME") || "avleon",
+      database: env.get("DB_NAME") || "megh",
       entities: [User],
       synchronize: true,
     };
@@ -145,8 +145,8 @@ await app.useTypeORM(DataSourceConfig);
 plus a `paginate()` method:
 
 ```typescript
-import { AppService } from "@avleon/core";
-import { InjectRepository, PaginatedRepository } from "@avleon/data";
+import { AppService } from "@meghjs/core";
+import { InjectRepository, PaginatedRepository } from "@meghjs/data";
 import { User } from "./user.entity";
 
 @AppService
@@ -166,18 +166,18 @@ export class UserService {
 }
 ```
 
-**Custom repositories.** Extend `AvleonRepository` for pagination, transactions
+**Custom repositories.** Extend `MeghRepository` for pagination, transactions
 and your own query methods. Query operators (`Like`, `In`, `Not`, `Between`,
-`IsNull`, `Equal`, `ArrayContains`, …) are exported from `@avleon/data`.
+`IsNull`, `Equal`, `ArrayContains`, …) are exported from `@meghjs/data`.
 
 In 0.3.0, give the class an explicit constructor that calls `super()`, even if
 it has no dependencies (see [Known Issues](#known-issues-in-030)):
 
 ```typescript
-import { AvleonRepository, Repository, Like } from "@avleon/data";
+import { MeghRepository, Repository, Like } from "@meghjs/data";
 
 @Repository(User)
-export class UserRepository extends AvleonRepository<User> {
+export class UserRepository extends MeghRepository<User> {
   constructor(private readonly audit: AuditService) {
     super();
   }
@@ -204,9 +204,9 @@ one. `withManager(manager)` returns a copy of the repository bound to another
 
 ## Pagination
 
-`repo.paginate()`, `AvleonRepository.paginate()`, `KnexDB.paginate()` and
+`repo.paginate()`, `MeghRepository.paginate()`, `KnexDB.paginate()` and
 `paginateKnex()` return core's unified `{ data, meta }` shape; see
-[Pagination](https://github.com/avleonjs/avleon/tree/main/packages/core#pagination).
+[Pagination](https://github.com/meghjs/megh/tree/main/packages/core#pagination).
 
 ## License
 

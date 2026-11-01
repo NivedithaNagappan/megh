@@ -451,7 +451,7 @@ export async function loadBelongsToMany(
 export function assertSoftDeletes(cls: ModelClass) {
   if (!cls.softDeletes) {
     throw new Error(
-      `[Avleon ORM] ${cls.name} does not use soft deletes. Add \`static readonly softDeletes = true\`.`,
+      `[Megh ORM] ${cls.name} does not use soft deletes. Add \`static readonly softDeletes = true\`.`,
     );
   }
 }

@@ -34,7 +34,7 @@ import {
 } from "./types";
 import { BadRequestException, ForbiddenException } from "../common/exceptions";
 import { contentDisposition } from "../common/utils/path-utils";
-import { AvleonMiddleware } from "../http/middleware";
+import { MeghMiddleware } from "../http/middleware";
 import { REQUEST_METADATA_KEY } from "../http/controller";
 import { OpenApiOptions } from "../openapi/openapi";
 import {
@@ -134,10 +134,10 @@ function sendValidationError(
 // Router
 // ---------------------------------------------------------------------------
 
-export class AvleonRouter {
+export class MeghRouter {
   private routeSet = new Set<string>();
   private metaCache = new Map<string, MethodParamMeta>();
-  private middlewares: Map<string, AvleonMiddleware> = new Map();
+  private middlewares: Map<string, MeghMiddleware> = new Map();
   private rMap = new Map<string, FuncRoute>();
   private app: FastifyInstance;
   private authorizeMiddleware?: Constructor<any>;
@@ -183,7 +183,7 @@ export class AvleonRouter {
       const named = this.authorizeMiddlewareMap.get(options.name);
       if (!named) {
         throw new Error(
-          `[Avleon] No authorization handler registered under the name "${options.name}". ` +
+          `[Megh] No authorization handler registered under the name "${options.name}". ` +
             `Did you call useAuthorization({ ${options.name}: YourClass })?`,
         );
       }
@@ -192,7 +192,7 @@ export class AvleonRouter {
     return this.authorizeMiddleware;
   }
 
-  registerMiddleware(name: string, instance: AvleonMiddleware) {
+  registerMiddleware(name: string, instance: MeghMiddleware) {
     this.middlewares.set(name, instance);
   }
 
@@ -409,7 +409,7 @@ export class AvleonRouter {
         (authClsMethodMeata.authorize && !_mthdAuthInst);
       if (_authMissing) {
         console.warn(
-          `[Avleon] ${methodmetaOptions.method.toUpperCase()} ${routePath} uses @Authorized ` +
+          `[Megh] ${methodmetaOptions.method.toUpperCase()} ${routePath} uses @Authorized ` +
             "but no authorization handler is registered; every request will be denied (403). " +
             "Call app.useAuthorization(YourAuthorization).",
         );
@@ -419,8 +419,8 @@ export class AvleonRouter {
       const _authnInst = this.authenticationHandler
         ? (Container.get(this.authenticationHandler) as any)
         : null;
-      const _resolvedMw: AvleonMiddleware[] = classMiddlewares.map((m: any) =>
-        Container.get<AvleonMiddleware>(m.constructor),
+      const _resolvedMw: MeghMiddleware[] = classMiddlewares.map((m: any) =>
+        Container.get<MeghMiddleware>(m.constructor),
       );
 
       this.app.route({
@@ -705,12 +705,12 @@ export class AvleonRouter {
     });
 
     const route = {
-      useMiddleware: <M extends AvleonMiddleware>(
-        middlewares: Constructor<AvleonMiddleware>[],
+      useMiddleware: <M extends MeghMiddleware>(
+        middlewares: Constructor<MeghMiddleware>[],
       ) => {
         const midds = Array.isArray(middlewares) ? middlewares : [middlewares];
         const ms: any[] = (midds as unknown as any[]).map((mclass) => {
-          const cls = Container.get<AvleonMiddleware>(mclass);
+          const cls = Container.get<MeghMiddleware>(mclass);
           this.middlewares.set(mclass.name, cls);
           return cls.invoke;
         });

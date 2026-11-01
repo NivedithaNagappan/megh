@@ -2,12 +2,12 @@ import "reflect-metadata";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   AppConfig,
-  AvleonApplication,
-  AvleonConfig,
-  AvleonContainer,
+  MeghApplication,
+  MeghConfig,
+  MeghContainer,
   Injectable,
   type Environment,
-} from "@avleon/core";
+} from "@meghjs/core";
 import type { Knex } from "knex";
 import { Column, DataSource, Entity, PrimaryGeneratedColumn } from "typeorm";
 import { dataPlugin } from "./plugin";
@@ -15,9 +15,9 @@ import { KnexDB } from "./knex-provider";
 import { InjectRepository, type PaginatedRepository } from "./repository";
 import { getDataSource } from "./datasource";
 
-const apps: AvleonApplication[] = [];
+const apps: MeghApplication[] = [];
 function createApp() {
-  const app = AvleonApplication.getInternalApp({ plugins: [dataPlugin], autoloadPlugins: false });
+  const app = MeghApplication.getInternalApp({ plugins: [dataPlugin], autoloadPlugins: false });
   apps.push(app);
   return app;
 }
@@ -25,7 +25,7 @@ function createApp() {
 afterEach(async () => {
   await Promise.all(apps.splice(0).map((app) => app.close()));
   // Services such as KnexDB hold the connection they were built with.
-  AvleonContainer.reset();
+  MeghContainer.reset();
 });
 
 const sqlite: Knex.Config = {
@@ -41,7 +41,7 @@ describe("useKnex", () => {
     const returned = await app.useKnex(sqlite);
 
     expect(returned).toBe(app);
-    const db = AvleonContainer.get(KnexDB);
+    const db = MeghContainer.get(KnexDB);
     await db.client.schema.createTable("users", (t) => {
       t.increments("id");
       t.string("name");
@@ -54,7 +54,7 @@ describe("useKnex", () => {
 
   it("builds the config from an @AppConfig class", async () => {
     @AppConfig
-    class DbConfig extends AvleonConfig<Knex.Config> {
+    class DbConfig extends MeghConfig<Knex.Config> {
       config(_env: Environment) {
         return sqlite;
       }
@@ -63,14 +63,14 @@ describe("useKnex", () => {
 
     await app.useKnex(DbConfig);
 
-    const row = await AvleonContainer.get(KnexDB).client.raw("select 1 as one");
+    const row = await MeghContainer.get(KnexDB).client.raw("select 1 as one");
     expect(row).toEqual([{ one: 1 }]);
   });
 
   it("destroys the connection when the app closes", async () => {
     const app = createApp();
     await app.useKnex(sqlite);
-    const client = AvleonContainer.get(KnexDB).client;
+    const client = MeghContainer.get(KnexDB).client;
 
     await app.close();
 
@@ -114,8 +114,8 @@ describe("useTypeORM", () => {
     const returned = await app.useTypeORM(options);
 
     expect(returned).toBe(app);
-    expect(AvleonContainer.get(DataSource).isInitialized).toBe(true);
-    const { posts } = AvleonContainer.get(PostService);
+    expect(MeghContainer.get(DataSource).isInitialized).toBe(true);
+    const { posts } = MeghContainer.get(PostService);
     await posts.save([{ title: "one" }, { title: "two" }, { title: "three" }]);
     const page = await posts.paginate({ page: 1, perPage: 2 });
     expect(page.data.map((p) => p.title)).toEqual(["one", "two"]);

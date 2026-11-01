@@ -24,7 +24,7 @@ const states = new WeakMap<object, InstanceState>();
 export function tableOf(cls: ModelClass): string {
   if (!cls.table) {
     throw new Error(
-      `[Avleon ORM] ${cls.name} has no table. Add \`static readonly table = "..."\`.`,
+      `[Megh ORM] ${cls.name} has no table. Add \`static readonly table = "..."\`.`,
     );
   }
   return cls.table;

@@ -1,4 +1,4 @@
-import { AppService } from '@avleon/core';
+import { AppService } from '@meghjs/core';
 
 @AppService
 export class HomeService {
