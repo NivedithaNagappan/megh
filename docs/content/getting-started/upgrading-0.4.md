@@ -5,6 +5,11 @@ description: Breaking changes from 0.3 and what is new in 0.4.
 
 # Upgrading to 0.4
 
+::: info Avleon is now Megh
+This guide predates the rename and uses the old `@avleon/*` names. After
+upgrading, follow [Moving from Avleon to Megh](/getting-started/upgrading-megh).
+:::
+
 0.4 moves the database integrations into their own package, adds plugins and
 lifecycle hooks, and fixes security issues in optional dependencies. `@avleon/core`,
 `@avleon/cli` and the new `@avleon/data` are released together and share a

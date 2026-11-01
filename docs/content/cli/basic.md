@@ -1,14 +1,14 @@
 ---
-title: Avleon Commands
+title: Megh Commands
 description: Useful commands
 ---
 
-# Avleon Commands
+# Megh Commands
 
 Install the CLI globally, or run it with `npx`:
 
 ```sh
-npm i -g @avleon/cli
+npm i -g @meghjs/cli
 ```
 
 ## Command Overview
@@ -35,7 +35,7 @@ Every `make:*` command takes `-f` / `--force` to overwrite an existing file.
 ## Application
 
 ```sh
-npx @avleon/cli new myapi
+npx @meghjs/cli new myapi
 ```
 
 You are prompted for a package manager and optional features — OpenAPI docs,
@@ -49,24 +49,24 @@ npm run start:dev
 ## Development Server
 
 ```sh
-npx avleon serve
+npx megh serve
 ```
 
 Compiles `src/` with SWC into `dist/`, starts the app and restarts it on change.
-The entry point comes from `avleon.entry` in `package.json`, falling back to `main`.
+The entry point comes from `megh.entry` in `package.json`, falling back to `main`.
 
 ## Controller
 
 ```sh
-npx avleon make:controller user
+npx megh make:controller user
 # shorthand
-npx avleon m:c user
+npx megh m:c user
 ```
 
 Pass `-r` for a full REST skeleton, and `-m <model>` to bind it to a model:
 
 ```sh
-npx avleon m:c user -m user -r
+npx megh m:c user -m user -r
 ```
 
 With `-m`, the matching service is generated in `src/services` and the controller
@@ -78,44 +78,44 @@ to emit `@ApiController` without a route prefix.
 ## Service
 
 ```sh
-npx avleon make:service user
+npx megh make:service user
 ```
 
 A resource service uses an in-memory `Collection` by default:
 
 ```sh
-npx avleon make:service user -m user -r
+npx megh make:service user -m user -r
 ```
 
 Add `--orm` for one backed by a TypeORM repository:
 
 ```sh
-npx avleon make:service user -m user -r --orm
+npx megh make:service user -m user -r --orm
 ```
 
 ## Model
 
 ```sh
 # plain class
-npx avleon make:model user
+npx megh make:model user
 
 # TypeORM entity
-npx avleon m:m user --orm
+npx megh m:m user --orm
 ```
 
 ## Middleware
 
 ```sh
-npx avleon make:middleware auth
+npx megh make:middleware auth
 ```
 
-Generates a class extending `AvleonMiddleware`:
+Generates a class extending `MeghMiddleware`:
 
 ```ts [src/middlewares/auth.middleware.ts]
-import { AppMiddleware, AvleonMiddleware, IRequest, IResponse } from '@avleon/core';
+import { AppMiddleware, MeghMiddleware, IRequest, IResponse } from '@meghjs/core';
 
 @AppMiddleware
-export class AuthMiddleware extends AvleonMiddleware {
+export class AuthMiddleware extends MeghMiddleware {
   async invoke(req: IRequest, res?: IResponse) {
     // your logic goes here
     return req;
@@ -126,16 +126,16 @@ export class AuthMiddleware extends AvleonMiddleware {
 ## Config
 
 ```sh
-npx avleon make:config jwt
+npx megh make:config jwt
 ```
 
-Generates a class extending `AvleonConfig` and registered with `@AppConfig`:
+Generates a class extending `MeghConfig` and registered with `@AppConfig`:
 
 ```ts [src/config/jwt.config.ts]
-import { AppConfig, AvleonConfig, Environment } from '@avleon/core';
+import { AppConfig, MeghConfig, Environment } from '@meghjs/core';
 
 @AppConfig
-export class JwtConfig extends AvleonConfig {
+export class JwtConfig extends MeghConfig {
   config(env: Environment) {
     return {};
   }
@@ -145,8 +145,8 @@ export class JwtConfig extends AvleonConfig {
 ## Migrations
 
 ```sh
-npx avleon make:migration create_users_table
-npx avleon migrate
+npx megh make:migration create_users_table
+npx megh migrate
 ```
 
 `make:migration` writes `src/database/migrations/<timestamp>_<name>.ts`.
@@ -155,13 +155,13 @@ A `create_<table>_table` name gives a create-table migration, and
 `--table <table>` choose explicitly.
 
 The `migrate` commands load the Kysely instance exported from
-`src/database/connection.ts`. Set `avleon.database` and `avleon.migrations` in
+`src/database/connection.ts`. Set `megh.database` and `megh.migrations` in
 `package.json` to use other paths. See [Models (ORM): Migrations](/advanced/orm#migrations).
 
 ## Build
 
 ```sh
-npx avleon build
+npx megh build
 ```
 
 Removes `dist/` and compiles the project with `tsconfig.build.json`.

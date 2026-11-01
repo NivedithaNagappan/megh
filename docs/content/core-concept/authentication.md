@@ -5,7 +5,7 @@ description: Identifying callers and protecting routes.
 
 # Authentication
 
-Avleon splits access control into two steps:
+Megh splits access control into two steps:
 
 - **Authentication** works out *who* the caller is and sets `request.user`.
 - **Authorization** decides whether that caller may use a route marked
@@ -13,14 +13,14 @@ Avleon splits access control into two steps:
 
 ## Authentication
 
-Extend `AvleonAuthentication` and return the user, or `null` for an anonymous
+Extend `MeghAuthentication` and return the user, or `null` for an anonymous
 request. Whatever you return becomes `request.user`:
 
 ```ts [auth/jwt.authentication.ts]
-import { AvleonAuthentication, AppService, IRequest } from '@avleon/core';
+import { MeghAuthentication, AppService, IRequest } from '@meghjs/core';
 
 @AppService
-export class JwtAuthentication extends AvleonAuthentication<User> {
+export class JwtAuthentication extends MeghAuthentication<User> {
   async authenticate(request: IRequest) {
     const header = request.headers.authorization;
     if (!header?.startsWith('Bearer ')) return null;
@@ -55,7 +55,7 @@ Authorization is **deny-by-default**. Write a class with an `authorize` method
 and mark it `@CanAuthorize`:
 
 ```ts [auth/jwt.authorization.ts]
-import { CanAuthorize, IRequest, HttpExceptions } from '@avleon/core';
+import { CanAuthorize, IRequest, HttpExceptions } from '@meghjs/core';
 
 @CanAuthorize
 export class JwtAuthorization {
@@ -103,7 +103,7 @@ export class ReportsController {
 ```
 
 ::: warning
-If no authorizer is registered, Avleon logs a warning at boot and every
+If no authorizer is registered, Megh logs a warning at boot and every
 `@Authorized` route answers **403**.
 :::
 

@@ -1,40 +1,40 @@
 ---
 title: Events
-description: Dispatching and handling events in an Avleon application.
+description: Dispatching and handling events in a Megh application.
 ---
 
 # Events
 
 Events let one part of your application announce that something happened
-without knowing who reacts to it. Avleon's event system is typed, supports
+without knowing who reacts to it. Megh's event system is typed, supports
 synchronous, delayed and queued delivery, and can broadcast over Socket.IO.
 
 ## Defining an event
 
-An event extends `AvleonEvent<TPayload>`. The payload type is yours; the base
+An event extends `MeghEvent<TPayload>`. The payload type is yours; the base
 class fills in `name` and `timestamp`.
 
 ```ts [events/user-created.event.ts]
-import { AvleonEvent } from '@avleon/core';
+import { MeghEvent } from '@meghjs/core';
 
 export type UserCreatedPayload = {
   userId: number;
   name: string;
 };
 
-export class UserCreatedEvent extends AvleonEvent<UserCreatedPayload> {}
+export class UserCreatedEvent extends MeghEvent<UserCreatedPayload> {}
 ```
 
 ## Defining a listener
 
-A listener extends `AvleonEventListener<TEvent>` and implements `handler`. It
+A listener extends `MeghEventListener<TEvent>` and implements `handler`. It
 may be synchronous or return a promise.
 
 ```ts [listeners/user-created.listener.ts]
-import { AvleonEventListener } from '@avleon/core';
+import { MeghEventListener } from '@meghjs/core';
 import { UserCreatedEvent } from '../events/user-created.event';
 
-export class UserCreatedListener extends AvleonEventListener<UserCreatedEvent> {
+export class UserCreatedListener extends MeghEventListener<UserCreatedEvent> {
   async handler(event: UserCreatedEvent): Promise<void> {
     console.log(`User created → id=${event.payload.userId}, name=${event.payload.name}`);
   }
@@ -46,7 +46,7 @@ export class UserCreatedListener extends AvleonEventListener<UserCreatedEvent> {
 `EventRegistry` is a singleton. Register listeners once during app setup.
 
 ```ts [app.ts]
-import { EventRegistry } from '@avleon/core';
+import { EventRegistry } from '@meghjs/core';
 import { UserCreatedEvent } from './events/user-created.event';
 import { UserCreatedListener } from './listeners/user-created.listener';
 
@@ -70,7 +70,7 @@ registry.once(UserCreatedEvent, {
 ## Dispatching
 
 ```ts [services/user.service.ts]
-import { AppService, EventDispatcher } from '@avleon/core';
+import { AppService, EventDispatcher } from '@meghjs/core';
 import { UserCreatedEvent } from '../events/user-created.event';
 
 @AppService
@@ -109,7 +109,7 @@ Jobs that still fail after their last retry are kept, up to 1000 of them, and
 logged:
 
 ```ts
-import { EventQueue } from '@avleon/core';
+import { EventQueue } from '@meghjs/core';
 
 const queue = EventQueue.getInstance();
 const failed = queue.getFailedJobs(); // FailedEventJob[]

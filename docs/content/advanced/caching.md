@@ -26,7 +26,7 @@ Inject `CacheManager`. `set` takes a key, a value, a TTL in seconds, and
 optional tags:
 
 ```ts [services/users.service.ts]
-import { AppService, CacheManager } from '@avleon/core';
+import { AppService, CacheManager } from '@meghjs/core';
 
 @AppService
 export class UsersService {

@@ -5,6 +5,11 @@ description: Breaking changes from 0.2 and known issues in 0.3.0.
 
 # Upgrading to 0.3
 
+::: info Avleon is now Megh
+This guide predates the rename and uses the old `@avleon/*` names. After
+upgrading, follow [Moving from Avleon to Megh](/getting-started/upgrading-megh).
+:::
+
 `@avleon/core` 0.3 closes several security holes and unifies APIs that were
 inconsistent in 0.2. Most apps need a few changes, listed below.
 

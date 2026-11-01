@@ -1,14 +1,19 @@
-/* Rose brand colour, carried over from the previous docs theme. */
+/* Megh brand: the logo's cloud blues. */
 :root {
-  --vp-c-brand-1: #e11d48;
-  --vp-c-brand-2: #f43f5e;
-  --vp-c-brand-3: #be123c;
-  --vp-c-brand-soft: rgba(225, 29, 72, 0.14);
+  --vp-c-brand-1: #016ad3;
+  --vp-c-brand-2: #0183ef;
+  --vp-c-brand-3: #0157ad;
+  --vp-c-brand-soft: rgba(1, 106, 211, 0.14);
 }
 
 .dark {
-  --vp-c-brand-1: #fb7185;
-  --vp-c-brand-2: #f43f5e;
-  --vp-c-brand-3: #e11d48;
-  --vp-c-brand-soft: rgba(251, 113, 133, 0.16);
+  --vp-c-brand-1: #3ab3f4;
+  --vp-c-brand-2: #0183ef;
+  --vp-c-brand-3: #016ad3;
+  --vp-c-brand-soft: rgba(58, 179, 244, 0.16);
+}
+
+/* The logo is a wordmark, so give it room in the nav bar. */
+.VPNavBarTitle .logo {
+  height: 36px;
 }
