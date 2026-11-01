@@ -1,6 +1,6 @@
 {
   "name": "@meghjs/core",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "TypeScript-first web framework built on Fastify",
   "author": "Tareq Hossain",
   "license": "MIT",
