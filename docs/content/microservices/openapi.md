@@ -86,6 +86,34 @@ app.useOpenApi({
 | `tags` | Tag definitions |
 | `security` | Global security requirements |
 | `components` | Reusable schemas and security schemes |
+| `logo` | Swagger UI top-bar logo. Defaults to the Megh logo |
+| `theme` | Swagger UI `title`, `css`, `js` and `favicon`. Defaults to the Megh favicon |
+
+### Logo and favicon
+
+Swagger UI shows the Megh logo and favicon. To use your own, pass a `logo`
+(an image as a string or `Buffer`, with its MIME type) and a `favicon` in `theme`:
+
+```ts
+import { readFileSync } from 'fs';
+
+app.useOpenApi({
+  info: { title: 'My API', version: '1.0.0' },
+  logo: {
+    type: 'image/svg+xml',
+    content: readFileSync('public/logo.svg'),
+    href: 'https://example.com', // where the logo links to; defaults to the app root
+  },
+  theme: {
+    title: 'My API docs',
+    favicon: [
+      { filename: 'favicon.png', rel: 'icon', type: 'image/png', sizes: '32x32', content: readFileSync('public/favicon.png') },
+    ],
+  },
+});
+```
+
+Set `logo: null` for Swagger UI's own logo.
 
 ### Scalar UI
 

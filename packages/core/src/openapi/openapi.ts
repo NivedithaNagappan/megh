@@ -37,7 +37,15 @@ export interface ServerVariableObject {
 }
 
 export type OpenApiUiOptions = {
+  /**
+   * Swagger UI top-bar logo, e.g. `{ type: "image/svg+xml", content, href? }`.
+   * Defaults to the Megh logo; `null` shows Swagger UI's own logo.
+   */
   logo?: any;
+  /**
+   * Swagger UI theme (`title`, `css`, `js`, `favicon`). Defaults to the Megh
+   * favicon; any key given here replaces the default.
+   */
   theme?: any;
   provider?: "default" | "scalar";
   ui?: "default" | "scalar";

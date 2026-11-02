@@ -22,6 +22,7 @@ import { SystemUseError } from "../common/exceptions/system-exception";
 import { Constructor, inject, loadPackageFromClient } from "../common/helpers";
 import { generateSwaggerSchema } from "../openapi/swagger-schema";
 import { applyRequestBodyExtensions } from "../openapi/request-body";
+import { swaggerUiBranding } from "../openapi/branding";
 import { OpenApiUiOptions } from "../openapi/openapi";
 import { MeghMiddleware } from "../http/middleware";
 import { MeghScheduler } from "../scheduler";
@@ -287,6 +288,7 @@ export class MeghApplication implements IMeghApplication {
       await this.app.register(requireSwaggerUi(), {
         // ✅ lazy
         routePrefix,
+        ...swaggerUiBranding({ logo: options?.logo, theme: options?.theme }),
         uiConfig: {
           docExpansion: "full",
           deepLinking: false,
