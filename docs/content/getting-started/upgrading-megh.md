@@ -9,6 +9,9 @@ Avleon has been renamed to **Megh** (মেঘ, Bengali for "cloud"). The framew
 is the same: only the names change. The `@avleon/*` packages are deprecated
 and get no new releases; new versions are published as `@meghjs/*`.
 
+The rename shipped in **0.5.0**: Avleon 0.4.1 is the last `@avleon/*` release,
+and `@meghjs/*` starts at 0.5.0 with the same features.
+
 | Before | After |
 |---|---|
 | `@avleon/core` | `@meghjs/core` |
