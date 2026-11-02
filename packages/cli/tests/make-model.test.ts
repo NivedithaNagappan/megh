@@ -5,7 +5,7 @@ import path from "path";
 import { runCli } from "../src/program";
 import { makeModel } from "../src/generators/make";
 import { readMigrationSchema } from "../src/generators/migration-schema";
-import { fieldType, pluralize } from "../src/generators/orm-model";
+import { fieldType, pluralRoute, pluralize, singularize } from "../src/generators/orm-model";
 
 let tmp: string;
 
@@ -140,6 +140,24 @@ describe("type mapping", () => {
     expect(pluralize("category")).toBe("categories");
     expect(pluralize("status")).toBe("statuses");
     expect(pluralize("person")).toBe("people");
+  });
+
+  it("singularizes plurals without mangling singulars like status", () => {
+    expect(singularize("users")).toBe("user");
+    expect(singularize("blog_posts")).toBe("blog_post");
+    expect(singularize("categories")).toBe("category");
+    expect(singularize("statuses")).toBe("status");
+    expect(singularize("people")).toBe("person");
+    expect(singularize("user")).toBe("user");
+    expect(singularize("status")).toBe("status");
+  });
+
+  it("builds a plural route even when the name is already plural", () => {
+    expect(pluralRoute("user")).toBe("users");
+    expect(pluralRoute("users")).toBe("users");
+    expect(pluralRoute("status")).toBe("statuses");
+    expect(pluralRoute("statuses")).toBe("statuses");
+    expect(pluralRoute("category")).toBe("categories");
   });
 });
 

@@ -27,6 +27,34 @@ export function pluralize(snake: string): string {
   return [...parts, plural].join("_");
 }
 
+const IRREGULAR_SINGULAR: Record<string, string> = Object.fromEntries(
+  Object.entries(IRREGULAR).map(([singular, plural]) => [plural, singular]),
+);
+
+/**
+ * Singular of a snake_case name, inflecting the last word: `blog_posts` → `blog_post`.
+ * Leaves already-singular words alone (including `status`, which must not become `statu`).
+ * Only accepts a candidate when `pluralize(candidate)` rebuilds `snake`.
+ */
+export function singularize(snake: string): string {
+  const parts = snake.split("_");
+  const last = parts.pop() ?? "";
+  const take = (candidate: string) => (pluralize(candidate) === last ? candidate : null);
+  let singular: string | null = null;
+  if (IRREGULAR_SINGULAR[last]) singular = IRREGULAR_SINGULAR[last];
+  else if (/ies$/.test(last) && last.length > 3) singular = take(last.slice(0, -3) + "y");
+  else if (/(?:s|x|z|ch|sh)es$/.test(last)) singular = take(last.slice(0, -2));
+  if (!singular && /s$/.test(last) && !/(?:us|ss|is|ous)$/.test(last)) {
+    singular = take(last.slice(0, -1));
+  }
+  return [...parts, singular ?? last].join("_");
+}
+
+/** Plural form for a route segment, even when `snake` is already plural. */
+export function pluralRoute(snake: string): string {
+  return pluralize(singularize(snake));
+}
+
 type Cast = "boolean" | "number" | "json" | "date" | "datetime";
 
 interface FieldType {

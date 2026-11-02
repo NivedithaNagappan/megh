@@ -7,7 +7,7 @@ import { installedVersion, requireProjectRoot, writeFileSafe } from "../utils/pr
 import { renderStub } from "../utils/stubs";
 import { databasePaths } from "../commands/migrate";
 import { readMigrationSchema } from "./migration-schema";
-import { pluralize, renderBlankOrmModel, renderOrmModel } from "./orm-model";
+import { pluralRoute, pluralize, renderBlankOrmModel, renderOrmModel } from "./orm-model";
 import { readModelSchema, renderResourceDto, type ResourceSchema } from "./resource";
 
 export type MakeBaseOptions = {
@@ -107,7 +107,8 @@ function renderEntityModel(model: string) {
 
 /** The URL segment for a resource: `admin/BlogPost` → `admin/blog-posts`. */
 function resourceRoute(dirs: string[], base: string): string {
-  return [...dirs, pluralize(snakeCase(base)).replace(/_/g, "-")].join("/");
+  // Singularize first so already-plural names (`Users`) become `/users`, not `/userses`.
+  return [...dirs, pluralRoute(snakeCase(base)).replace(/_/g, "-")].join("/");
 }
 
 const relPath = (projectRoot: string, file: string) => path.relative(projectRoot, file).split(path.sep).join("/");
