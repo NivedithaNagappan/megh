@@ -1,4 +1,6 @@
 import "reflect-metadata";
+import fs from "fs";
+import path from "path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MeghApplication } from "../core/application";
 import { ApiController } from "../http/controller";
@@ -27,6 +29,19 @@ describe("swaggerUiBranding", () => {
     });
     // ICO header: reserved 0, type 1.
     expect([...favicon.content.subarray(0, 4)]).toEqual([0, 0, 1, 0]);
+  });
+
+  it("embeds the same logo and favicon as the docs site", () => {
+    const docs = path.resolve(__dirname, "../../../../docs/content/public");
+    const { logo, theme } = swaggerUiBranding();
+    expect((logo as { content: Buffer }).content.toString("utf8")).toBe(
+      fs.readFileSync(path.join(docs, "megh-logo.svg"), "utf8").trim(),
+    );
+    expect(
+      theme.favicon[0].content.equals(
+        fs.readFileSync(path.join(docs, "favicon.ico")),
+      ),
+    ).toBe(true);
   });
 
   it("keeps the app's own logo and theme", () => {
