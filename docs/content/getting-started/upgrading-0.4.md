@@ -112,7 +112,7 @@ metadata. Existing projects are not changed.
 
 ### 0.4.1
 
-- [Models (ORM)](/advanced/orm): type-safe models built on Kysely, with
+- [MeghORM](/advanced/orm): type-safe models built on Kysely, with
   relations and eager loading, timestamps, soft deletes, casts and
   transactions. Connect them with `app.useDatabase(db)`.
 - [Migrations](/advanced/orm#migrations): `avleon make:migration` and the

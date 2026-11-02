@@ -227,7 +227,7 @@ A `create_<table>_table` name gives a create-table migration, and
 
 The `migrate` commands load the Kysely instance exported from
 `src/database/connection.ts`. Set `megh.database` and `megh.migrations` in
-`package.json` to use other paths. See [Models (ORM): Migrations](/advanced/orm#migrations).
+`package.json` to use other paths. See [MeghORM: Migrations](/advanced/orm#migrations).
 
 ## Build
 

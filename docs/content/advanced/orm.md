@@ -1,9 +1,9 @@
 ---
-title: Models (ORM)
+title: MeghORM
 description: "Megh's built-in, type-safe models on top of Kysely: queries, relations, timestamps, soft deletes, casts and migrations."
 ---
 
-# Models (ORM)
+# MeghORM
 
 `@meghjs/core` includes a model layer in the style of Laravel's Eloquent. It is
 built on [Kysely](https://kysely.dev): your models are plain classes, and
