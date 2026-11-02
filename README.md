@@ -2,6 +2,8 @@
   <img src="resources/megh-logo.png" alt="MeghJs" width="320" />
 </p>
 
+<p align="center"><b>English</b> | <a href="README.bn.md">বাংলা</a></p>
+
 # Megh
 
 ![npm version](https://img.shields.io/npm/v/@meghjs/core.svg)
