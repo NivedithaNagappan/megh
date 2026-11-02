@@ -33,14 +33,15 @@ jobs:
           fi
 
       - run: npm ci
+      # Build first: @meghjs/data type-checks and tests against core's dist.
+      - name: Build
+        run: npm run build
       - name: Type-check
         run: npm run typecheck
       - name: Lint
         run: npm run lint
       - name: Test
         run: npm test
-      - name: Build
-        run: npm run build
 
       - name: Publish to npm
         run: npx lerna publish from-package --yes
