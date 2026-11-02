@@ -41,7 +41,7 @@ Documentation: **https://meghjs.github.io**
   - [Logging](#logging)
   - [OpenAPI Documentation](#openapi-documentation)
 - [Advanced Features](#advanced-features)
-  - [MeghORM](#models-orm)
+  - [MeghORM](#meghorm)
   - [Database](#database)
   - [Pagination](#pagination)
   - [Events](#events)
