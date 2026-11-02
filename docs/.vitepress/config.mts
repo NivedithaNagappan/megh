@@ -16,7 +16,7 @@ export default defineConfig({
       { text: 'Guide', link: '/getting-started/introduction', activeMatch: '^/(getting-started|core-concept|advanced|microservices|ai)/' },
       { text: 'CLI', link: '/cli/basic', activeMatch: '^/cli/' },
       {
-        text: 'v0.4.1',
+        text: 'v0.5.0',
         items: [
           { text: 'Moving from Avleon', link: '/getting-started/upgrading-megh' },
           { text: 'Upgrading to 0.4', link: '/getting-started/upgrading-0.4' },
