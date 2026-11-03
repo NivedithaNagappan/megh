@@ -157,6 +157,24 @@ describe("generators", () => {
     expect(read("src", "dtos", "product.dto.ts")).toContain("class CreateProductDto");
   });
 
+  it("uses a singular route when the controller name is already plural", () => {
+    const migrations = path.join(tmp, "src", "database", "migrations");
+    fs.mkdirSync(migrations, { recursive: true });
+    fs.writeFileSync(
+      path.join(migrations, "20260101000000_create_users_table.ts"),
+      `export async function up(db) {
+  await db.schema.createTable("users")
+    .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
+    .addColumn("name", "text", (col) => col.notNull())
+    .execute();
+}`,
+    );
+    makeController("Users", { cwd: tmp, resource: true });
+    const ctrl = read("src", "controllers", "users.controller.ts");
+    expect(ctrl).toContain("@ApiController('/users')");
+    expect(ctrl).not.toContain("/userses");
+  });
+
   it("refuses a resource controller without a model or migration, writing nothing", () => {
     expect(() => makeController("product", { cwd: tmp, model: "product" })).toThrow(/make:migration create_products_table/);
     expect(exists("src")).toBe(false);
