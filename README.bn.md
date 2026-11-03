@@ -10,89 +10,89 @@
 ![CI](https://github.com/meghjs/megh/actions/workflows/ci.yml/badge.svg)
 ![License](https://img.shields.io/npm/l/@meghjs/core.svg)
 
-Megh হলো [Fastify](https://fastify.dev)-এর ওপর তৈরি একটি TypeScript-first ওয়েব ফ্রেমওয়ার্ক, যা ন্যূনতম বয়লারপ্লেট দিয়ে স্কেলযোগ্য ও রক্ষণাবেক্ষণযোগ্য REST API তৈরির জন্য ডিজাইন করা হয়েছে। এটি ডেকোরেটর-ভিত্তিক রাউটিং, বিল্ট-ইন ডিপেন্ডেন্সি ইনজেকশন, স্বয়ংক্রিয় OpenAPI ডকুমেন্টেশন এবং প্রথম সারির ভ্যালিডেশন সাপোর্ট দেয়।
+Megh হলো [Fastify](https://fastify.dev)-এর ওপর তৈরি একটি TypeScript-first web framework, যা কম boilerplate দিয়ে scalable ও maintainable REST API তৈরির জন্য বানানো হয়েছে। এতে আছে decorator-based routing, built-in dependency injection, স্বয়ংক্রিয় OpenAPI documentation এবং first-class validation support।
 
 > **আগে এর নাম ছিল Avleon।** `@avleon/*` এখন `@meghjs/*`। দেখুন
-> [Avleon থেকে Megh-এ স্থানান্তর](https://meghjs.github.io/getting-started/upgrading-megh)।
+> [Moving from Avleon to Megh](https://meghjs.github.io/getting-started/upgrading-megh)।
 
-ডকুমেন্টেশন: **https://meghjs.github.io**
+Documentation: **https://meghjs.github.io**
 
-> **0.2 থেকে আপগ্রেড করছেন?** 0.3-এ অথরাইজেশন, ভ্যালিডেশন,
-> পেজিনেশন, ফাইল স্টোরেজ এবং ডিপেন্ডেন্সিতে ব্রেকিং পরিবর্তন আছে। দেখুন [0.3-এ আপগ্রেড করা](#03-এ-আপগ্রেড-করা)।
+> **0.2 থেকে upgrade করছেন?** 0.3-এ authorization, validation,
+> pagination, file storage এবং dependency-তে breaking change আছে। দেখুন [Upgrading to 0.3](#upgrading-to-03)।
 
 ---
 
 ## সূচিপত্র
 
-- [ফিচারসমূহ](#ফিচারসমূহ)
-- [ইনস্টলেশন](#ইনস্টলেশন)
-- [দ্রুত শুরু](#দ্রুত-শুরু)
-- [মূল ধারণাসমূহ](#মূল-ধারণাসমূহ)
-  - [অ্যাপ্লিকেশন](#অ্যাপ্লিকেশন)
-  - [কন্ট্রোলার](#কন্ট্রোলার)
-  - [রাউট মেথড](#রাউট-মেথড)
-  - [প্যারামিটার ডেকোরেটর](#প্যারামিটার-ডেকোরেটর)
-  - [এরর হ্যান্ডলিং](#এরর-হ্যান্ডলিং)
-  - [মিডলওয়্যার](#মিডলওয়্যার)
-  - [অথেনটিকেশন](#অথেনটিকেশন)
-  - [অথরাইজেশন](#অথরাইজেশন)
-  - [ভ্যালিডেশন](#ভ্যালিডেশন)
-  - [কনফিগারেশন](#কনফিগারেশন)
-  - [লগিং](#লগিং)
-  - [OpenAPI ডকুমেন্টেশন](#openapi-ডকুমেন্টেশন)
-- [অ্যাডভান্সড ফিচারসমূহ](#উন্নত-ফিচারসমূহ)
-  - [মডেল (ORM)](#মডেল-orm)
-  - [ডেটাবেস](#ডেটাবেস)
-  - [পেজিনেশন](#পেজিনেশন)
-  - [ইভেন্ট](#ইভেন্ট)
-  - [কিউ ও ওয়ার্কার](#কিউ-ও-ওয়ার্কার)
-  - [টাস্ক শিডিউলিং](#টাস্ক-শিডিউলিং)
-  - [ক্যাশিং](#ক্যাশিং)
-  - [ফাইল আপলোড](#ফাইল-আপলোড)
-  - [স্ট্যাটিক ফাইল](#স্ট্যাটিক-ফাইল)
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [মূল ধারণা](#মূল-ধারণা)
+  - [Application](#application)
+  - [Controllers](#controllers)
+  - [Route Methods](#route-methods)
+  - [Parameter Decorators](#parameter-decorators)
+  - [Error Handling](#error-handling)
+  - [Middleware](#middleware)
+  - [Authentication](#authentication)
+  - [Authorization](#authorization)
+  - [Validation](#validation)
+  - [Configuration](#configuration)
+  - [Logging](#logging)
+  - [OpenAPI Documentation](#openapi-documentation)
+- [Advanced Features](#advanced-features)
+  - [MeghORM](#meghorm)
+  - [Database](#database)
+  - [Pagination](#pagination)
+  - [Events](#events)
+  - [Queues & Workers](#queues--workers)
+  - [Task Scheduling](#task-scheduling)
+  - [Caching](#caching)
+  - [File Uploads](#file-uploads)
+  - [Static Files](#static-files)
   - [WebSocket (Socket.IO)](#websocket-socketio)
-- [রাউট ম্যাপিং (ফাংশনাল স্টাইল)](#রাউট-ম্যাপিং-ফাংশনাল-স্টাইল)
-- [টেস্টিং](#টেস্টিং)
-- [প্রোডাকশন](#প্রোডাকশন)
-- [0.3-এ আপগ্রেড করা](#03-এ-আপগ্রেড-করা)
-- [0.3.0-এর পরিচিত সমস্যাসমূহ](#030-এর-জানা-সমস্যাসমূহ)
-- [1.0.0 পর্যন্ত রোডম্যাপ](#100-এর-রোডম্যাপ)
-- [রিপোজিটরির গঠন](#রিপোজিটরির-গঠন)
+- [Route Mapping (Functional Style)](#route-mapping-functional-style)
+- [Testing](#testing)
+- [Production](#production)
+- [Upgrading to 0.3](#upgrading-to-03)
+- [Known Issues in 0.3.0](#known-issues-in-030)
+- [Roadmap to 1.0.0](#roadmap-to-100)
+- [Repository-র গঠন](#repository-র-গঠন)
 - [Megh-এ কাজ করা](#megh-এ-কাজ-করা)
-- [পাবলিশিং ও ডিপ্লয়মেন্ট](#প্রকাশ-ও-ডিপ্লয়মেন্ট)
-- [রিলিজ ও ভার্সনিং](#রিলিজ-ও-ভার্সনিং)
+- [Publishing ও deployment](#publishing-ও-deployment)
+- [Release ও versioning](#release-ও-versioning)
 - [নিরাপত্তা](#নিরাপত্তা)
-- [লাইসেন্স](#লাইসেন্স)
+- [License](#license)
 
 ---
 
-## ফিচারসমূহ
+## Features
 
-- 🎯 **ডেকোরেটর-ভিত্তিক রাউটিং** — TypeScript ডেকোরেটর দিয়ে কন্ট্রোলার ও রাউট সংজ্ঞায়িত করুন
-- 💉 **ডিপেন্ডেন্সি ইনজেকশন** — `MeghContainer`, `@Injectable` এবং `Token`, বর্তমানে [TypeDI](https://github.com/typestack/typedi)-এর ওপর ভিত্তি করে
-- 📄 **OpenAPI / Swagger** — Swagger UI বা [Scalar](https://scalar.com) দিয়ে স্বয়ংক্রিয় ডকুমেন্টেশন
-- ✅ **ভ্যালিডেশন** — [class-validator](https://github.com/typestack/class-validator)-এর মাধ্যমে রিকোয়েস্ট DTO ভ্যালিডেট ও হোয়াইটলিস্ট করা হয়
-- 🔑 **অথেনটিকেশন** — প্লাগযোগ্য হ্যান্ডলার যা `request.user` পূরণ করে
-- 🔒 **অথরাইজেশন** — ডিফল্টভাবে প্রবেশাধিকার নিষিদ্ধ (deny-by-default) `@Authorized` রাউট
-- 📁 **ফাইল আপলোড** — নিরাপদ, সীমাবদ্ধ স্টোরেজসহ multipart সাপোর্ট
-- 🧬 **মডেল ও মাইগ্রেশন** — [Kysely](https://kysely.dev)-এর ওপর তৈরি টাইপ-সেফ, Eloquent-স্টাইলের মডেল ও মাইগ্রেশন
-- 🗄️ **ডেটাবেস** — একই পেজিনেশন কাঠামোসহ TypeORM ও Knex ইন্টিগ্রেশন
-- ⚙️ **কনফিগ** — টাইপড, এনভায়রনমেন্ট-সচেতন কনফিগ ক্লাস
-- 📣 **ইভেন্ট** — কিউ-ভিত্তিক ডেলিভারি ও Socket.IO ব্রডকাস্টসহ টাইপড ইভেন্ট
-- 📬 **কিউ ও ওয়ার্কার** — [BullMQ](https://docs.bullmq.io)-এ ব্যাকগ্রাউন্ড জব, টেস্টের জন্য ইন-মেমরি ড্রাইভারসহ
-- ⏰ **টাস্ক শিডিউলিং** — cron, interval ও timeout জব
-- 🗃️ **ক্যাশিং** — ইন-মেমরি বা Redis, TTL ও ট্যাগ-ভিত্তিক ইনভ্যালিডেশনসহ
-- 📝 **লগিং** — [pino](https://getpino.io)-এর মাধ্যমে স্ট্রাকচার্ড JSON লগ
-- 🔌 **WebSocket** — Socket.IO ইন্টিগ্রেশন
-- 🧪 **টেস্টিং** — বিল্ট-ইন টেস্ট ইউটিলিটি
+- 🎯 **Decorator-based routing** — TypeScript decorator দিয়ে controller ও route তৈরি করুন
+- 💉 **Dependency injection** — `MeghContainer`, `@Injectable` এবং `Token`, বর্তমানে [TypeDI](https://github.com/typestack/typedi)-এর ওপর ভিত্তি করে
+- 📄 **OpenAPI / Swagger** — Swagger UI বা [Scalar](https://scalar.com) দিয়ে স্বয়ংক্রিয় documentation
+- ✅ **Validation** — [class-validator](https://github.com/typestack/class-validator) দিয়ে request DTO validate ও whitelist করা হয়
+- 🔑 **Authentication** — pluggable handler, যা `request.user` সেট করে
+- 🔒 **Authorization** — deny-by-default `@Authorized` route
+- 📁 **File uploads** — নিরাপদ, সীমাবদ্ধ storage-সহ multipart support
+- 🧬 **Models & migrations** — [Kysely](https://kysely.dev)-এর ওপর তৈরি type-safe, Eloquent-style model ও migration
+- 🗄️ **Database** — একই pagination কাঠামোসহ TypeORM ও Knex integration
+- ⚙️ **Config** — typed, environment-aware config class
+- 📣 **Events** — queue-based delivery ও Socket.IO broadcast-সহ typed event
+- 📬 **Queues & workers** — [BullMQ](https://docs.bullmq.io)-এ background job, test-এর জন্য in-memory driver-সহ
+- ⏰ **Task scheduling** — cron, interval ও timeout job
+- 🗃️ **Caching** — in-memory বা Redis, TTL ও tag-based invalidation-সহ
+- 📝 **Logging** — [pino](https://getpino.io) দিয়ে structured JSON log
+- 🔌 **WebSocket** — Socket.IO integration
+- 🧪 **Testing** — built-in test utility
 
 ---
 
-## ইনস্টলেশন
+## Installation
 
-Megh-এর জন্য **Node.js 22 বা তার নতুন ভার্সন** প্রয়োজন।
+Megh চালাতে **Node.js 22 বা তার নতুন version** লাগবে।
 
-CLI ব্যবহার করে একটি নতুন প্রজেক্ট তৈরি করুন:
+CLI দিয়ে একটি নতুন project তৈরি করুন:
 
 ```bash
 npx @meghjs/cli new myapp
@@ -102,16 +102,16 @@ yarn dlx @meghjs/cli new myapp
 pnpm dlx @meghjs/cli new myapp
 ```
 
-অথবা ম্যানুয়ালি ইনস্টল করুন:
+অথবা নিজে install করুন:
 
 ```bash
 npm install @meghjs/core reflect-metadata class-validator class-transformer
 ```
 
-`class-validator` ও `class-transformer` ঐচ্ছিক peer হিসেবে ঘোষিত, কিন্তু
-প্যাকেজটি লোড হওয়ার সময়ই এগুলো ইমপোর্ট করে, তাই প্রতিটি প্রজেক্টে এগুলো ইনস্টল করুন।
+`class-validator` ও `class-transformer` optional peer হিসেবে ঘোষিত, কিন্তু
+package-টি load হওয়ার সময়ই এগুলো import করে, তাই প্রতিটি project-এ এগুলো install করুন।
 
-`tsconfig.json`-এ ডেকোরেটর চালু করুন:
+`tsconfig.json`-এ decorator চালু করুন:
 
 ```json
 {
@@ -122,39 +122,39 @@ npm install @meghjs/core reflect-metadata class-validator class-transformer
 }
 ```
 
-### ঐচ্ছিক ডিপেন্ডেন্সি
+### Optional dependencies
 
-Megh ইন্টিগ্রেশনগুলোকে মূল ইনস্টলের বাইরে রাখে। শুধু যা ব্যবহার করবেন তা-ই যোগ করুন।
-এগুলোর কোনোটি ছাড়াই প্যাকেজটি ঠিকঠাক ইমপোর্ট হয়, আর কোনো ফিচারের যখনই এগুলোর একটি প্রয়োজন হয়,
-তখনই আপনি একটি স্পষ্ট এরর পাবেন:
+Megh integration-গুলোকে মূল install-এর বাইরে রাখে। শুধু যা ব্যবহার করবেন সেটাই যোগ করুন।
+এগুলোর কোনোটি ছাড়াই package-টি ঠিকঠাক import হয়, আর কোনো feature-এর যখন এগুলোর একটি দরকার হয়,
+তখন আপনি একটি স্পষ্ট error পাবেন:
 
-| ফিচার                                      | ইনস্টল                                                                           |
+| Feature                                    | Install                                                                           |
 | -------------------------------------------- | --------------------------------------------------------------------------------- |
 | CORS (`useCors`)                             | `npm i @fastify/cors`                                                             |
-| ফাইল আপলোড (`useMultipart`, `@UploadFile`) | `npm i @fastify/multipart`                                                        |
-| স্ট্যাটিক ফাইল (`useStaticFiles`)              | `npm i @fastify/static`                                                           |
-| Swagger UI সহ OpenAPI                      | `npm i @fastify/swagger @fastify/swagger-ui`                                      |
-| Scalar সহ OpenAPI                          | `npm i @fastify/swagger @scalar/fastify-api-reference`                            |
-| মডেল ও মাইগ্রেশন (`useDatabase`)        | `npm i kysely` + একটি ড্রাইভার (`pg`, `mysql2`, `better-sqlite3`)                      |
-| TypeORM                                      | `npm i typeorm` + একটি ড্রাইভার (`pg`, `mysql2`, `sqlite3`, `better-sqlite3`, `mssql`) |
-| Knex                                         | `npm i knex` + একটি ড্রাইভার                                                           |
-| কিউ ও ওয়ার্কার                             | `npm i bullmq ioredis` (`memory`/`sync` ড্রাইভারের সাথে প্রয়োজন নেই)              |
-| Redis ক্যাশ                                  | `npm i ioredis`                                                                   |
+| File uploads (`useMultipart`, `@UploadFile`) | `npm i @fastify/multipart`                                                      |
+| Static files (`useStaticFiles`)            | `npm i @fastify/static`                                                           |
+| OpenAPI with Swagger UI                    | `npm i @fastify/swagger @fastify/swagger-ui`                                      |
+| OpenAPI with Scalar                        | `npm i @fastify/swagger @scalar/fastify-api-reference`                            |
+| Models & migrations (`useDatabase`)        | `npm i kysely` + একটি driver (`pg`, `mysql2`, `better-sqlite3`)                    |
+| TypeORM                                    | `npm i typeorm` + একটি driver (`pg`, `mysql2`, `sqlite3`, `better-sqlite3`, `mssql`) |
+| Knex                                       | `npm i knex` + একটি driver                                                         |
+| Queues & workers                           | `npm i bullmq ioredis` (`memory`/`sync` driver-এ দরকার নেই)                         |
+| Redis cache                                | `npm i ioredis`                                                                   |
 | WebSocket                                    | `npm i socket.io fastify-socket.io`                                               |
-| `FileStorage`-এ ইমেজ ট্রান্সফর্ম            | `npm i sharp`                                                                     |
-| সুন্দর ফরম্যাটের ডেভ লগ                              | `npm i -D pino-pretty`                                                            |
+| `FileStorage`-এ image transform            | `npm i sharp`                                                                     |
+| সুন্দরভাবে format করা dev log             | `npm i -D pino-pretty`                                                            |
 
-### মডিউল ফরম্যাট
+### Module format
 
-`@meghjs/core` একটিমাত্র CommonJS বিল্ড সরবরাহ করে। ESM প্রজেক্টগুলোও
-`import { ... } from '@meghjs/core'` ব্যবহার করতে পারে। শুধু প্যাকেজ রুট এক্সপোর্ট করা হয়:
-`@meghjs/core/dist/...`-এর মতো ডিপ ইমপোর্ট সমর্থিত নয়।
+`@meghjs/core` একটিমাত্র CommonJS build দেয়। ESM project-ও
+`import { ... } from '@meghjs/core'` ব্যবহার করতে পারে। শুধু package root export করা হয়:
+`@meghjs/core/dist/...`-এর মতো deep import সমর্থিত নয়।
 
 ---
 
-## দ্রুত শুরু
+## Quick Start
 
-### ন্যূনতম (ফাংশনাল স্টাইল)
+### Minimal (functional style)
 
 ```typescript
 import { Megh } from "@meghjs/core";
@@ -166,7 +166,7 @@ app.mapGet("/", () => ({ message: "Hello, Megh!" }));
 app.run(4000);
 ```
 
-### কন্ট্রোলার স্টাইল
+### Controller style
 
 ```typescript
 import { Megh, ApiController, Get } from "@meghjs/core";
@@ -186,9 +186,9 @@ app.run(4000);
 
 ---
 
-## মূল ধারণাসমূহ
+## মূল ধারণা
 
-### অ্যাপ্লিকেশন
+### Application
 
 ```typescript
 import { Megh } from "@meghjs/core";
@@ -204,11 +204,11 @@ app.run(4000);
 ```
 
 `app.isDevelopment()` শুধু তখনই true হয় যখন `NODE_ENV=development`। সেট না করা
-`NODE_ENV` প্রোডাকশন হিসেবে গণ্য হয়।
+`NODE_ENV` production হিসেবে ধরা হয়।
 
 ---
 
-### কন্ট্রোলার
+### Controllers
 
 ```typescript
 import { ApiController, Get, Post, Put, Delete } from '@meghjs/core';
@@ -231,9 +231,9 @@ class UserController {
 
 ---
 
-### রাউট মেথড
+### Route Methods
 
-| ডেকোরেটর        | HTTP মেথড |
+| Decorator       | HTTP method |
 | ---------------- | ----------- |
 | `@Get(path?)`    | GET         |
 | `@Post(path?)`   | POST        |
@@ -243,7 +243,7 @@ class UserController {
 
 ---
 
-### প্যারামিটার ডেকোরেটর
+### Parameter Decorators
 
 ```typescript
 @Get('/:id')
@@ -259,16 +259,16 @@ async getUser(
 }
 ```
 
-| ডেকোরেটর       | উৎস                     |
+| Decorator       | উৎস                     |
 | --------------- | -------------------------- |
-| `@Param(key?)`  | রাউট পাথের প্যারামিটার          |
-| `@Query(key?)`  | কোয়েরি স্ট্রিং               |
-| `@Body()`       | রিকোয়েস্ট বডি               |
-| `@Header(key?)` | রিকোয়েস্ট হেডার            |
-| `@AuthUser()`   | বর্তমান অথেনটিকেটেড ইউজার |
+| `@Param(key?)`  | route path-এর parameter |
+| `@Query(key?)`  | query string            |
+| `@Body()`       | request body            |
+| `@Header(key?)` | request header          |
+| `@AuthUser()`   | বর্তমান authenticated user |
 
-আপনি যদি tsx, esbuild বা SWC দিয়ে কম্পাইল করেন, তাহলে কম্পাইলার ডেকোরেটর
-মেটাডেটা তৈরি করে না। ভ্যালিডেশন যেন তবুও চলে, সেজন্য DTO টাইপটি স্পষ্টভাবে পাস করুন:
+আপনি যদি tsx, esbuild বা SWC দিয়ে compile করেন, তাহলে compiler decorator
+metadata তৈরি করে না। Validation যেন তবুও চলে, সেজন্য DTO type-টি স্পষ্টভাবে পাস করুন:
 
 ```typescript
 create(@Body({ type: CreateUserDto }) body: CreateUserDto) { ... }
@@ -276,9 +276,9 @@ create(@Body({ type: CreateUserDto }) body: CreateUserDto) { ... }
 
 ---
 
-### এরর হ্যান্ডলিং
+### Error Handling
 
-200 ছাড়া অন্য কোনো রেসপন্স পাঠাতে একটি `HttpExceptions` এরর থ্রো করুন:
+200 ছাড়া অন্য কোনো response পাঠাতে একটি `HttpExceptions` error throw করুন:
 
 ```typescript
 import { HttpExceptions } from '@meghjs/core';
@@ -295,16 +295,16 @@ async getUser(@Param('id') id: string) {
 }
 ```
 
-উপলব্ধ এক্সেপশনসমূহ: `badRequest` (400), `unauthorized` (401), `forbidden` (403),
+যেসব exception আছে: `badRequest` (400), `unauthorized` (401), `forbidden` (403),
 `notFound` (404), `validationError` এবং `internalError` (500)।
 
-এরর রেসপন্সের গঠন হলো `{ code, status: "Error", message, data? }`।
-ডেভেলপমেন্ট ছাড়া অন্য পরিবেশে, 5xx রেসপন্স message ও data লুকিয়ে রাখে এবং
-`"Internal Server Error"` রিটার্ন করে।
+Error response-এর গঠন হলো `{ code, status: "Error", message, data? }`।
+Development ছাড়া অন্য environment-এ 5xx response message ও data লুকিয়ে রাখে এবং
+`"Internal Server Error"` return করে।
 
 ---
 
-### মিডলওয়্যার
+### Middleware
 
 ```typescript
 import { AppMiddleware, MeghMiddleware, IRequest } from "@meghjs/core";
@@ -321,9 +321,9 @@ class LoggingMiddleware extends MeghMiddleware {
 app.useMiddlewares([LoggingMiddleware]);
 ```
 
-`@UseMiddleware` দিয়ে মিডলওয়্যারকে একটি কন্ট্রোলার বা রাউটের মধ্যে সীমাবদ্ধ করুন। 0.3.0-এ
-একটি **ইনস্ট্যান্স** পাস করুন। ক্লাস রূপটি বুট করার সময় ক্র্যাশ করে (দেখুন
-[পরিচিত সমস্যা](#030-এর-জানা-সমস্যাসমূহ)):
+`@UseMiddleware` দিয়ে middleware-কে একটি controller বা route-এর মধ্যে সীমাবদ্ধ করুন। 0.3.0-এ
+একটি **instance** পাস করুন। Class পাস করলে boot-এর সময় crash করে (দেখুন
+[known issues](#known-issues-in-030)):
 
 ```typescript
 // Apply to entire controller
@@ -340,23 +340,23 @@ class UserController {
 }
 ```
 
-রিকোয়েস্টগুলো ক্রমানুসারে এই ধাপগুলোর মধ্য দিয়ে যায়:
+Request-গুলো ক্রমানুসারে এই ধাপগুলোর মধ্য দিয়ে যায়:
 
-1. গ্লোবাল মিডলওয়্যার (`useMiddlewares`)
-2. অথেনটিকেশন
-3. ক্লাসের `@Authorized`, তারপর মেথডের `@Authorized`
-4. ক্লাসের `@UseMiddleware`, তারপর মেথডের `@UseMiddleware`
-5. প্যারামিটার ভ্যালিডেশন
-6. হ্যান্ডলার
+1. Global middleware (`useMiddlewares`)
+2. Authentication
+3. Class-এর `@Authorized`, তারপর method-এর `@Authorized`
+4. Class-এর `@UseMiddleware`, তারপর method-এর `@UseMiddleware`
+5. Parameter validation
+6. Handler
 
 ---
 
-### অথেনটিকেশন
+### Authentication
 
-অথেনটিকেশন নির্ধারণ করে কলার _কে_। একটি হ্যান্ডলার রেজিস্টার করুন; সেটি যা
-রিটার্ন করে তা-ই `request.user` হয়, এবং `@AuthUser()` এই মানটিই ইনজেক্ট করে।
+Authentication ঠিক করে caller _কে_। একটি handler register করুন; সেটি যা
+return করে তা-ই `request.user` হয়, এবং `@AuthUser()` এই মানটিই inject করে।
 
-**1 — আপনার অথেনটিকেশন ক্লাস ডিফাইন করুন:**
+**1 — আপনার authentication class লিখুন:**
 
 ```typescript
 import { MeghAuthentication, AppService, IRequest } from "@meghjs/core";
@@ -371,13 +371,13 @@ export class JwtAuthentication extends MeghAuthentication<User> {
 }
 ```
 
-**2 — অ্যাপে রেজিস্টার করুন:**
+**2 — App-এ register করুন:**
 
 ```typescript
 app.useAuthentication(JwtAuthentication);
 ```
 
-**3 — যেকোনো কন্ট্রোলারে ইউজারকে পড়ুন:**
+**3 — যেকোনো controller-এ user পড়ুন:**
 
 ```typescript
 @ApiController("/me")
@@ -389,18 +389,18 @@ class MeController {
 }
 ```
 
-`null` রিটার্ন করলে `request.user` সেট হয় না। অথেনটিকেশন শুধু কলারকে শনাক্ত
-করে; অজ্ঞাতপরিচয় (anonymous) রিকোয়েস্ট প্রত্যাখ্যান করা অথরাইজেশনের কাজ।
+`null` return করলে `request.user` সেট হয় না। Authentication শুধু caller-কে শনাক্ত
+করে; anonymous request প্রত্যাখ্যান করা authorization-এর কাজ।
 
 ---
 
-### অথরাইজেশন
+### Authorization
 
-অথরাইজেশন **ডিফল্টভাবে নিষেধ (deny-by-default)**। `@Authorized` চিহ্নিত কোনো রাউট
-**403** দেয়, যদি না একটি অথরাইজার রেজিস্টার করা থাকে এবং সেটি রিকোয়েস্টটি অনুমোদন করে।
+Authorization **deny-by-default**। `@Authorized` চিহ্নিত কোনো route
+**403** দেয়, যদি না একটি authorizer register করা থাকে এবং সেটি request-টি অনুমোদন করে।
 
-**1 — আপনার অথরাইজেশন ক্লাস ডিফাইন করুন।** নিষেধ করতে `false` (→ 403) রিটার্ন করুন অথবা একটি
-`HttpExceptions` এরর থ্রো করুন। অন্য যেকোনো রিটার্ন মান রিকোয়েস্টটি অনুমোদন করে:
+**1 — আপনার authorization class লিখুন।** নিষেধ করতে `false` (→ 403) return করুন অথবা একটি
+`HttpExceptions` error throw করুন। অন্য যেকোনো return মান request-টি অনুমোদন করে:
 
 ```typescript
 import { CanAuthorize, IRequest, HttpExceptions } from "@meghjs/core";
@@ -414,7 +414,7 @@ class JwtAuthorization {
 }
 ```
 
-**2 — অ্যাপে রেজিস্টার করুন:**
+**2 — App-এ register করুন:**
 
 ```typescript
 app.useAuthorization(JwtAuthorization);
@@ -423,7 +423,7 @@ app.useAuthorization(JwtAuthorization);
 app.useAuthorization({ jwt: JwtAuthorization, apiKey: ApiKeyAuthorization });
 ```
 
-**3 — কন্ট্রোলার বা রাউট সুরক্ষিত করুন:**
+**3 — Controller বা route সুরক্ষিত করুন:**
 
 ```typescript
 // Protect entire controller
@@ -445,15 +445,15 @@ class AdminController {
 }
 ```
 
-কোনো অথরাইজার রেজিস্টার করা না থাকলে, Megh বুট করার সময় একটি সতর্কবার্তা লগ করে এবং প্রতিটি
-`@Authorized` রাউট 403 রিটার্ন করে। যে নামে কোনো হ্যান্ডলার রেজিস্টার করা নেই, সেই নামে `@Authorized('name')`
+কোনো authorizer register করা না থাকলে Megh boot-এর সময় একটি warning log করে এবং প্রতিটি
+`@Authorized` route 403 return করে। যে নামে কোনো handler register করা নেই, সেই নামে `@Authorized('name')`
 ব্যবহার করলে `app.run()` ব্যর্থ হয়।
 
 ---
 
-### ভ্যালিডেশন
+### Validation
 
-ভ্যালিডেশন `class-validator` দ্বারা পরিচালিত। আপনার DTO-গুলোতে ডেকোরেটর যোগ করুন, আর Megh স্বয়ংক্রিয়ভাবে `@Body()` ও `@Query()` ভ্যালিডেট করবে:
+Validation চালায় `class-validator`। আপনার DTO-তে decorator যোগ করুন, আর Megh স্বয়ংক্রিয়ভাবে `@Body()` ও `@Query()` validate করবে:
 
 ```typescript
 import { IsString, IsNotEmpty, IsEmail, IsInt, Min, Max, IsOptional } from 'class-validator';
@@ -482,12 +482,12 @@ async createUser(@Body() body: CreateUserDto) {
 }
 ```
 
-- হ্যান্ডলার **রূপান্তরিত DTO ইনস্ট্যান্স** পায়, তাই `class-transformer`
-  ডেকোরেটর যেমন `@Type(() => Number)` প্রযোজ্য হয়।
-- DTO-তে ঘোষণা করা হয়নি এমন প্রপার্টি **প্রত্যাখ্যাত** হয় (`whitelist` +
-  `forbidNonWhitelisted`), যা mass assignment প্রতিরোধ করে।
+- Handler **transform করা DTO instance** পায়, তাই `class-transformer`
+  decorator যেমন `@Type(() => Number)` কাজ করে।
+- DTO-তে ঘোষণা করা হয়নি এমন property **প্রত্যাখ্যাত** হয় (`whitelist` +
+  `forbidNonWhitelisted`), যা mass assignment ঠেকায়।
 
-ভ্যালিডেশন ব্যর্থ হলে **400** রিটার্ন করে:
+Validation ব্যর্থ হলে **400** return করে:
 
 ```json
 {
@@ -500,17 +500,17 @@ async createUser(@Body() body: CreateUserDto) {
 }
 ```
 
-নেস্টেড এররগুলো ডট-যুক্ত পাথ ব্যবহার করে (`address.city`)।
+Nested error-গুলো dotted path ব্যবহার করে (`address.city`)।
 
-একই নিয়মে কোনো মান নিজে ভ্যালিডেট করতে
-`transformAndValidate(Dto, value)` কল করুন। এটি `{ value, errors }` রিটার্ন করে।
+একই নিয়মে কোনো মান নিজে validate করতে
+`transformAndValidate(Dto, value)` call করুন। এটি `{ value, errors }` return করে।
 
 ---
 
-### কনফিগারেশন
+### Configuration
 
-কনফিগ ক্লাস environment variable-গুলোকে টাইপড, ইনজেক্ট করা যায় এমন সেটিংসে রূপান্তর করে।
-`MeghConfig` extend করুন এবং `@AppConfig` দিয়ে রেজিস্টার করুন:
+Config class environment variable-গুলোকে typed, inject করা যায় এমন setting-এ রূপান্তর করে।
+`MeghConfig` extend করুন এবং `@AppConfig` দিয়ে register করুন:
 
 ```typescript
 import { AppConfig, MeghConfig, Environment, GetConfig } from "@meghjs/core";
@@ -530,16 +530,16 @@ export class MailConfig extends MeghConfig<MailSettings> {
 const mail = GetConfig(MailConfig); // MailSettings
 ```
 
-একটি কনফিগ ক্লাসকে অবশ্যই `extend MeghConfig` করতে হবে। `useKnex`, `useTypeORM` বা `useOpenApi`-তে
-কোনো কনফিগ ক্লাস পাস করলে Megh এভাবেই সেটিকে চিনতে পারে।
+একটি config class-কে অবশ্যই `extend MeghConfig` করতে হবে। `useKnex`, `useTypeORM` বা `useOpenApi`-তে
+কোনো config class পাস করলে Megh এভাবেই সেটিকে চিনতে পারে।
 
 ---
 
-### লগিং
+### Logging
 
-`LoggerService` হলো [pino](https://getpino.io)-এর একটি wrapper। ডিফল্টভাবে এটি structured JSON
-লেখে, আর শুধু তখনই সুন্দরভাবে ফরম্যাট করা আউটপুট দেয় যখন `NODE_ENV=development` থাকে এবং `pino-pretty`
-ইনস্টল করা থাকে। ফ্রেমওয়ার্কের লগ (ইভেন্ট, কিউ, ওয়ার্কার, scheduler) একই logger-এর
+`LoggerService` হলো [pino](https://getpino.io)-এর একটি wrapper। Default-ভাবে এটি structured JSON
+লেখে, আর শুধু তখনই সুন্দরভাবে format করা output দেয় যখন `NODE_ENV=development` থাকে এবং `pino-pretty`
+install করা থাকে। Framework-এর log (event, queue, worker, scheduler) একই logger-এর
 মাধ্যমে যায়।
 
 ```typescript
@@ -558,17 +558,17 @@ LoggerService.configure({ level: "debug" });
 const log = LoggerService.child({ module: "billing" });
 ```
 
-Megh এই logger Fastify-কে দেয় না। একটিই pino instance শেয়ার করতে চাইলে সেটি
+Megh এই logger Fastify-কে দেয় না। একটিই pino instance share করতে চাইলে সেটি
 স্পষ্টভাবে পাস করুন: `LoggerService.getPino()`।
 
 ---
 
-### OpenAPI ডকুমেন্টেশন
+### OpenAPI Documentation
 
-প্রথমে আপনার পছন্দের UI ইনস্টল করুন: `@fastify/swagger` সাথে `@fastify/swagger-ui`,
+প্রথমে আপনার পছন্দের UI install করুন: `@fastify/swagger`-এর সাথে `@fastify/swagger-ui`,
 অথবা Scalar-এর জন্য `@scalar/fastify-api-reference`।
 
-**ইনলাইন কনফিগ:**
+**Inline config:**
 
 ```typescript
 app.useOpenApi({
@@ -590,7 +590,7 @@ app.useOpenApi({
 });
 ```
 
-**কনফিগ ক্লাস:**
+**Config class:**
 
 ```typescript
 import { AppConfig, MeghConfig, Environment } from "@meghjs/core";
@@ -612,7 +612,7 @@ if (app.isDevelopment()) {
 }
 ```
 
-**`@OpenApi` দিয়ে রাউট-লেভেলের ডকুমেন্টেশন:**
+**`@OpenApi` দিয়ে route-level documentation:**
 
 ```typescript
 import { OpenApi, OpenApiProperty, OpenApiSchema } from '@meghjs/core';
@@ -648,17 +648,17 @@ export class UserQuery {
 getAll(@Query() query: UserQuery) { ... }
 ```
 
-স্কিমা শুধু ডেকোরেট করা প্রপার্টি থেকেই তৈরি হয়, আর nested DTO-গুলো
+Schema শুধু decorate করা property থেকেই তৈরি হয়, আর nested DTO-গুলো
 `components.schemas`-এর অধীনে `$ref` হয়ে যায়।
 
 ---
 
-## উন্নত ফিচারসমূহ
+## Advanced Features
 
-### মডেল (ORM)
+### MeghORM
 
-[Kysely](https://kysely.dev)-এর উপর তৈরি টাইপ-সেফ মডেল: কলামের নাম, মানের
-টাইপ এবং লোড করা রিলেশন TypeScript দিয়ে যাচাই করা হয়।
+[Kysely](https://kysely.dev)-এর ওপর তৈরি type-safe model: column-এর নাম, মানের
+type এবং load করা relation TypeScript দিয়ে যাচাই করা হয়।
 
 ```bash
 npm install kysely pg   # or: mysql2, better-sqlite3
@@ -687,22 +687,22 @@ const users = await User.where("email", "like", "%@acme.io")
   .get();
 ```
 
-মাইগ্রেশনগুলো `src/database/migrations`-এ থাকে এবং CLI দিয়ে চালানো হয়:
+Migration-গুলো `src/database/migrations`-এ থাকে এবং CLI দিয়ে চালানো হয়:
 
 ```bash
 npx megh make:migration create_users_table
 npx megh migrate
 ```
 
-রিলেশন, টাইমস্ট্যাম্প, সফট ডিলিট, কাস্ট, ট্রানজ্যাকশন এবং মাইগ্রেশন
-কমান্ডগুলো [মডেল (ORM) গাইডে](https://meghjs.github.io/advanced/orm) বিস্তারিত আলোচনা করা হয়েছে।
+Relation, timestamp, soft delete, cast, transaction এবং migration
+command-গুলো [MeghORM guide](https://meghjs.github.io/advanced/orm)-এ বিস্তারিত আছে।
 
 ---
 
-### ডেটাবেস
+### Database
 
-TypeORM এবং Knex সাপোর্ট [`@meghjs/data`](https://github.com/meghjs/megh/tree/main/packages/data) নামের একটি প্লাগইনে রয়েছে:
-এটি ইনস্টল করলে `app.useTypeORM()` / `app.useKnex()` ব্যবহারযোগ্য হয়।
+TypeORM এবং Knex support [`@meghjs/data`](https://github.com/meghjs/megh/tree/main/packages/data) নামের একটি plugin-এ আছে:
+এটি install করলে `app.useTypeORM()` / `app.useKnex()` ব্যবহার করা যায়।
 
 ```bash
 npm install @meghjs/data typeorm pg   # or: knex pg
@@ -710,10 +710,10 @@ npm install @meghjs/data typeorm pg   # or: knex pg
 
 ---
 
-### পেজিনেশন
+### Pagination
 
-প্রতিটি পেজিনেটর (`Collection`, `@InjectRepository`, `MeghRepository`,
-`KnexDB`) `{ page, perPage }` গ্রহণ করে এবং একই কাঠামো রিটার্ন করে:
+প্রতিটি paginator (`Collection`, `@InjectRepository`, `MeghRepository`,
+`KnexDB`) `{ page, perPage }` নেয় এবং একই কাঠামো return করে:
 
 ```json
 {
@@ -722,12 +722,12 @@ npm install @meghjs/data typeorm pg   # or: knex pg
 }
 ```
 
-`page`-এর ডিফল্ট মান 1 এবং `perPage`-এর ডিফল্ট মান 10। `Paginated<T>` এবং `PageRequest`
-টাইপগুলো এক্সপোর্ট করা হয়।
+`page`-এর default মান 1 এবং `perPage`-এর default মান 10। `Paginated<T>` এবং `PageRequest`
+type-গুলো export করা হয়।
 
 ---
 
-### ইভেন্ট
+### Events
 
 ```typescript
 import {
@@ -764,27 +764,27 @@ await dispatcher.dispatch(new UserCreated({ userId: 1 }), {
 });
 ```
 
-- লিসেনারগুলো ইভেন্ট ক্লাস অনুযায়ী নিবন্ধিত হয়।
-- `once` লিসেনার ঠিক একবারই চলে, এমনকি একসাথে একাধিক ডিসপ্যাচ হলেও।
-- কিউতে থাকা যে জবগুলো বারবার ব্যর্থ হয় সেগুলো
-  `EventQueue.getInstance().getFailedJobs()`-এ সংরক্ষিত থাকে।
-- Kafka এবং RabbitMQ ব্রডকাস্ট 0.3-এ ইমপ্লিমেন্ট করা হয়নি, এবং এগুলো ব্যবহার করলে
-  এরর থ্রো হয়।
+- Listener-গুলো event class অনুযায়ী register হয়।
+- `once` listener ঠিক একবারই চলে, এমনকি একসাথে একাধিক dispatch হলেও।
+- Queue-তে থাকা যে job-গুলো বারবার ব্যর্থ হয় সেগুলো
+  `EventQueue.getInstance().getFailedJobs()`-এ রাখা থাকে।
+- Kafka এবং RabbitMQ broadcast 0.3-এ implement করা হয়নি, এবং এগুলো ব্যবহার করলে
+  error throw হয়।
 
 ---
 
-### কিউ ও ওয়ার্কার
+### Queues & Workers
 
-ব্যাকগ্রাউন্ড জব [BullMQ](https://docs.bullmq.io)-এর উপর চলে। একটি
-Redis ক্লায়েন্টের সাথে এটি ইনস্টল করুন:
+Background job [BullMQ](https://docs.bullmq.io)-এর ওপর চলে। একটি
+Redis client-এর সাথে এটি install করুন:
 
 ```bash
 npm i bullmq ioredis
 ```
 
-একটি কিউ জব তৈরি এবং প্রসেস দুটোই করে। প্রতিটি জবের নাম `@JobHandler` দিয়ে দিন।
-0.3.0-এ ক্লাসটিতে একটি স্পষ্ট কনস্ট্রাক্টর লাগবে যা `super()` কল করে (দেখুন
-[পরিচিত সমস্যা](#030-এর-জানা-সমস্যাসমূহ)):
+একটি queue job তৈরি এবং process দুটোই করে। প্রতিটি job-এর নাম `@JobHandler` দিয়ে দিন।
+0.3.0-এ class-টিতে একটি স্পষ্ট constructor লাগবে যা `super()` call করে (দেখুন
+[known issues](#known-issues-in-030)):
 
 ```typescript
 import { MeghQueue, Queue, JobHandler, Job } from "@meghjs/core";
@@ -813,7 +813,7 @@ export class EmailQueue extends MeghQueue<EmailPayload> {
 }
 ```
 
-যেখানেই কিউটি ইনজেক্ট করা হয়েছে, সেখান থেকে জব ডিসপ্যাচ করুন:
+যেখানেই queue-টি inject করা হয়েছে, সেখান থেকে job dispatch করুন:
 
 ```typescript
 @AppService
@@ -834,11 +834,11 @@ export class UsersService {
 }
 ```
 
-বেস ক্লাসে ঘোষিত হ্যান্ডলারগুলো ইনহেরিট হয়, এবং একটি সাবক্লাস একই জবের নাম
-পুনরায় ব্যবহার করে যেকোনো হ্যান্ডলার ওভাররাইড করতে পারে।
+Base class-এ ঘোষিত handler-গুলো inherit হয়, এবং একটি subclass একই job-এর নাম
+আবার ব্যবহার করে যেকোনো handler override করতে পারে।
 
-**শুধু-প্রডিউসার কিউ।** অন্য কোনো প্রসেস জবগুলো প্রসেস করলে `worker: false`
-পাস করুন। এতে কোনো ওয়ার্কার চালু হয় না:
+**Producer-only queue।** অন্য কোনো process job-গুলো process করলে `worker: false`
+পাস করুন। এতে কোনো worker চালু হয় না:
 
 ```typescript
 @Queue({ name: "reports", worker: false })
@@ -849,7 +849,7 @@ export class ReportProducer extends MeghQueue<ReportPayload> {
 }
 ```
 
-**স্বতন্ত্র ওয়ার্কার।** কনজিউমার যখন নিজস্ব প্রসেসে চলে, তখন
+**Standalone worker।** Consumer যখন নিজস্ব process-এ চলে, তখন
 `MeghWorkerBase` ব্যবহার করুন:
 
 ```typescript
@@ -867,16 +867,16 @@ export class EmailWorker extends MeghWorkerBase<EmailPayload> {
 }
 ```
 
-কিউ ও ওয়ার্কারগুলো রেজিস্টার করুন, যাতে সেগুলো অ্যাপের সাথে চালু হয় এবং শাটডাউনের সময় বন্ধ হয়।
-শুধু ওয়ার্কার ক্লাসে ডেকোরেটর দিলেই এটি আর চালু হয় না:
+Queue ও worker-গুলো register করুন, যাতে সেগুলো app-এর সাথে চালু হয় এবং shutdown-এর সময় বন্ধ হয়।
+শুধু worker class-এ decorator দিলেই এটি আর চালু হয় না:
 
 ```typescript
 app.useWorker([EmailQueue, EmailWorker]);
 ```
 
-**ইন-মেমরি ড্রাইভার।** টেস্ট ও লোকাল ডেভেলপমেন্টে Redis ছাড়াই কিউ চালান।
-`memory` জবগুলো অ্যাসিঙ্ক্রোনাসভাবে চালায় এবং `delay` মেনে চলে। `sync` প্রতিটি জব
-`add()` রিজলভ হওয়ার আগেই চালায়:
+**In-memory driver।** Test ও local development-এ Redis ছাড়াই queue চালান।
+`memory` job-গুলো asynchronously চালায় এবং `delay` মেনে চলে। `sync` প্রতিটি job
+`add()` resolve হওয়ার আগেই চালায়:
 
 ```typescript
 import {
@@ -894,9 +894,9 @@ resetMemoryQueues();
 
 ---
 
-### টাস্ক শিডিউলিং
+### Task Scheduling
 
-একটি ক্লাসকে `@ScheduledTask()` দিয়ে চিহ্নিত করুন, তারপর এর মেথডগুলো শিডিউল করুন:
+একটি class-কে `@ScheduledTask()` দিয়ে চিহ্নিত করুন, তারপর এর method-গুলো schedule করুন:
 
 ```typescript
 import { ScheduledTask, Cron, Interval, Timeout } from '@meghjs/core';
@@ -918,10 +918,10 @@ export class ReportTask {
 }
 ```
 
-শিডিউল করা মেথডগুলো ইনহেরিট হয়, এবং একটি সাবক্লাস প্রতিটি মেথড আলাদাভাবে
-ওভাররাইড করতে পারে।
+Schedule করা method-গুলো inherit হয়, এবং একটি subclass প্রতিটি method আলাদাভাবে
+override করতে পারে।
 
-টাস্কগুলো সরাসরি রেজিস্টার করুন, অথবা স্বয়ংক্রিয়ভাবে খুঁজে নিতে দিন:
+Task-গুলো সরাসরি register করুন, অথবা স্বয়ংক্রিয়ভাবে খুঁজে নিতে দিন:
 
 ```typescript
 app.useScheduler([ReportTask]);
@@ -931,9 +931,9 @@ app.useScheduler({ path: "src/tasks" });
 
 ---
 
-### ক্যাশিং
+### Caching
 
-ডিফল্টভাবে ইন-মেমোরি; এর বদলে Redis ব্যবহার করতে `provider: 'redis'` দিন।
+Default-ভাবে in-memory; এর বদলে Redis ব্যবহার করতে `provider: 'redis'` দিন।
 
 ```typescript
 app.useCache({ provider: "memory" });
@@ -945,8 +945,8 @@ app.useCache({
 });
 ```
 
-যেখানে প্রয়োজন সেখানে `CacheManager` ইনজেক্ট করুন। এন্ট্রিগুলোতে ট্যাগ থাকতে পারে, ফলে সম্পর্কিত
-কী-গুলো একসাথে ইনভ্যালিডেট হয়:
+যেখানে দরকার সেখানে `CacheManager` inject করুন। Entry-গুলোতে tag থাকতে পারে, ফলে সম্পর্কিত
+key-গুলো একসাথে invalidate হয়:
 
 ```typescript
 import { CacheManager, AppService } from "@meghjs/core";
@@ -971,14 +971,14 @@ export class UsersService {
 }
 ```
 
-TTL সেকেন্ডে হিসাব করা হয়; `0` বা তার কম মানে মেয়াদ শেষ হবে না। মেমোরি স্টোর মেয়াদোত্তীর্ণ
-এন্ট্রিগুলো রিড করার সময় এবং একটি ব্যাকগ্রাউন্ড সুইপে মুছে ফেলে, ডিফল্টভাবে প্রতি 60 s পরপর। এর
-কোনো সাইজ সীমা নেই। প্রতিটি `new CacheManager()`-এর নিজস্ব স্টোর থাকে; `useCache` দিয়ে
-রেজিস্টার করা ইনস্ট্যান্সটি DI-এর মাধ্যমে শেয়ার করা হয়।
+TTL সেকেন্ডে হিসাব করা হয়; `0` বা তার কম মানে মেয়াদ শেষ হবে না। Memory store মেয়াদোত্তীর্ণ
+entry-গুলো read করার সময় এবং একটি background sweep-এ মুছে ফেলে, default-ভাবে প্রতি 60 s পরপর। এর
+কোনো size limit নেই। প্রতিটি `new CacheManager()`-এর নিজস্ব store থাকে; `useCache` দিয়ে
+register করা instance-টি DI-এর মাধ্যমে share করা হয়।
 
 ---
 
-### ফাইল আপলোড
+### File Uploads
 
 ```typescript
 // Configure multipart support (requires @fastify/multipart)
@@ -1016,17 +1016,17 @@ class FileController {
 }
 ```
 
-`FileStorage` ডিফল্টভাবে নিরাপদ:
+`FileStorage` default-ভাবে নিরাপদ:
 
-- সেভ করা ফাইলগুলো এক্সটেনশন বজায় রেখে একটি **র‍্যান্ডম UUID নাম** পায়। নাম বেছে নিতে
+- Save করা file-গুলো extension বজায় রেখে একটি **random UUID নাম** পায়। নাম বেছে নিতে
   `saveAs: 'name.jpg'` অথবা `preserveFilename: true` দিন।
-- `overwrite`-এর ডিফল্ট মান `false`।
-- শুধুমাত্র প্রচলিত নিরাপদ এক্সটেনশনগুলো গ্রহণ করা হয়। HTML, SVG এবং JS প্রত্যাখ্যান করা হয়।
-- ডিফল্ট সাইজ সীমা 50 MB, যা স্ট্রিমিং চলাকালীন প্রয়োগ করা হয়।
-- `to`, `download`, `downloadAs`, `getUploadFile` এবং `remove` সহ প্রতিটি পাথ
-  `baseDir`-এর মধ্যে সীমাবদ্ধ। ফাইল না পাওয়া গেলে 404 দেয়।
+- `overwrite`-এর default মান `false`।
+- শুধু প্রচলিত নিরাপদ extension-গুলো গ্রহণ করা হয়। HTML, SVG এবং JS প্রত্যাখ্যান করা হয়।
+- Default size limit 50 MB, যা streaming চলাকালীন প্রয়োগ করা হয়।
+- `to`, `download`, `downloadAs`, `getUploadFile` এবং `remove`-সহ প্রতিটি path
+  `baseDir`-এর মধ্যে সীমাবদ্ধ। File না পাওয়া গেলে 404 দেয়।
 
-ডিফল্টগুলো একবার কনফিগার করুন, অথবা প্রতিটি কলে ওভাররাইড করুন:
+Default-গুলো একবার configure করুন, অথবা প্রতিটি call-এ override করুন:
 
 ```typescript
 storage.configure({
@@ -1043,7 +1043,7 @@ await storage.save(file, {
 
 ---
 
-### স্ট্যাটিক ফাইল
+### Static Files
 
 ```typescript
 import path from "path";
@@ -1064,7 +1064,7 @@ app.useStaticFiles({
 app.useSocketIo({ cors: { origin: "*" } });
 ```
 
-`SocketEventDispatcher` দিয়ে ক্লায়েন্টদের কাছে ইভেন্ট পুশ করুন:
+`SocketEventDispatcher` দিয়ে client-দের কাছে event push করুন:
 
 ```typescript
 import { AppService, SocketEventDispatcher } from "@meghjs/core";
@@ -1081,13 +1081,13 @@ export class UserService {
 }
 ```
 
-আপনি একটি ডোমেইন ইভেন্টও ব্রডকাস্ট করতে পারেন; দেখুন [ইভেন্ট](#ইভেন্ট)।
+আপনি একটি domain event-ও broadcast করতে পারেন; দেখুন [Events](#events)।
 
 ---
 
-## রাউট ম্যাপিং (ফাংশনাল স্টাইল)
+## Route Mapping (Functional Style)
 
-কন্ট্রোলার ক্লাস ছাড়া সাধারণ রাউটের জন্য:
+Controller class ছাড়া সাধারণ route-এর জন্য:
 
 ```typescript
 app.mapGet("/users", async (req, res) => {
@@ -1107,7 +1107,7 @@ app.mapDelete("/users/:id", async (req, res) => {
 });
 ```
 
-ফাংশনাল রাউটে মিডলওয়্যার এবং OpenAPI ডকুমেন্টেশন যোগ করুন:
+Functional route-এ middleware এবং OpenAPI documentation যোগ করুন:
 
 ```typescript
 app
@@ -1128,14 +1128,14 @@ app
   });
 ```
 
-ফাংশনাল রাউটে অথেনটিকেশন, `@Authorized` চেক বা DTO
-ভ্যালিডেশন চলে না।
+Functional route-এ authentication, `@Authorized` check বা DTO
+validation চলে না।
 
 ---
 
-## টেস্টিং
+## Testing
 
-ডিপেন্ডেন্সি ইনজেক্ট করা অবস্থায় সরাসরি একটি কন্ট্রোলার রিজলভ করুন:
+Dependency inject করা অবস্থায় সরাসরি একটি controller resolve করুন:
 
 ```typescript
 import { MeghTest } from "@meghjs/core";
@@ -1157,7 +1157,7 @@ describe("UserController", () => {
 });
 ```
 
-অথবা কোনো পোর্ট বাইন্ড না করেই আসল রাউটগুলো চালিয়ে দেখুন:
+অথবা কোনো port bind না করেই আসল route-গুলো চালিয়ে দেখুন:
 
 ```typescript
 const app = MeghTest.createTestApplication({ controllers: [UserController] });
@@ -1169,222 +1169,222 @@ const invalid = await app.post("/users", { payload: { unknown: true } });
 expect(invalid.statusCode).toBe(400);
 ```
 
-`get`, `post`, `put`, `patch`, `delete` এবং `options` সবগুলোই পাওয়া যায়, প্রতিটি
-Fastify-এর inject অপশন (`payload`, `headers`, `query`, …) নেয়।
+`get`, `post`, `put`, `patch`, `delete` এবং `options` সবগুলোই আছে, প্রতিটি
+Fastify-এর inject option (`payload`, `headers`, `query`, …) নেয়।
 
-কোনো কন্ট্রোলারের প্রয়োজন হলে স্টাব ডিপেন্ডেন্সিগুলো অবস্থান অনুযায়ী (positionally) পাস করুন:
+কোনো controller-এর দরকার হলে stub dependency-গুলো positionally পাস করুন:
 
 ```typescript
 const controller = MeghTest.getController(UserController, [mockUserService]);
 ```
 
-Redis ছাড়াই জব ডিসপ্যাচ করে এমন কোড টেস্ট করতে `memory` বা `sync` [কিউ ড্রাইভার](#কিউ-ও-ওয়ার্কার)
+Redis ছাড়াই job dispatch করে এমন code test করতে `memory` বা `sync` [queue driver](#queues--workers)
 ব্যবহার করুন।
 
 ---
 
-## প্রোডাকশন
+## Production
 
-- `NODE_ENV=production` সেট করুন। সেট না থাকলেও প্রোডাকশন হিসেবে গণ্য হয়, তবে স্পষ্টভাবে সেট করাই ভালো।
-  প্রোডাকশন মোডে 5xx-এর বিস্তারিত লুকানো থাকে, JSON লগ লেখা হয়, এবং
+- `NODE_ENV=production` সেট করুন। সেট না থাকলেও production হিসেবে ধরা হয়, তবে স্পষ্টভাবে সেট করাই ভালো।
+  Production mode-এ 5xx-এর বিস্তারিত লুকানো থাকে, JSON log লেখা হয়, এবং
   `app.isDevelopment()` false হয়।
-- `app.run(port)`-এর ডিফল্ট পোর্ট 4000। এটি `SIGTERM`/`SIGINT` হ্যান্ডল করে,
-  বন্ধ হওয়ার আগে শিডিউলার থামিয়ে এবং রেজিস্টার করা ওয়ার্কারগুলো বন্ধ করে।
-- `@Authorized` ব্যবহার করলে একটি authorizer রেজিস্টার করুন; সেটি না থাকলে ওই রাউটগুলো
-  403 রিটার্ন করে।
+- `app.run(port)`-এর default port 4000। এটি `SIGTERM`/`SIGINT` handle করে,
+  বন্ধ হওয়ার আগে scheduler থামিয়ে এবং register করা worker-গুলো বন্ধ করে।
+- `@Authorized` ব্যবহার করলে একটি authorizer register করুন; সেটি না থাকলে ওই route-গুলো
+  403 return করে।
 
 ---
 
-## 0.3-এ আপগ্রেড করা
+## Upgrading to 0.3
 
-| ক্ষেত্র | পরিবর্তন |
+| Area | পরিবর্তন |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ডিপেন্ডেন্সি | `@fastify/cors`, `@fastify/multipart`, `@fastify/static`, `@fastify/swagger`, `@fastify/swagger-ui`, `@scalar/fastify-api-reference`, `fastify-socket.io`, `class-validator`, `class-transformer` এবং `pino-pretty` এখন peer ডিপেন্ডেন্সি। আপনি যেগুলো ব্যবহার করেন সেগুলো ইনস্টল করুন ([টেবিল](#ঐচ্ছিক-ডিপেন্ডেন্সি))। |
-| প্যাকেজ | শুধু CommonJS, একটি `exports` ম্যাপসহ। ডিপ ইমপোর্ট (`@meghjs/core/dist/...`) আর রিজলভ হয় না। লাইসেন্স এখন MIT। |
-| এনভায়রনমেন্ট | `isDevelopment()`-এর জন্য `NODE_ENV=development` প্রয়োজন; সেট না থাকলে এখন প্রোডাকশন বোঝায়। |
-| অথরাইজেশন | `@Authorized` ডিফল্টভাবে অনুমতি দেয় না (deny-by-default)। যে authorizer `false` রিটার্ন করে, সেটি এখন অনুমতি প্রত্যাখ্যান করে। `AuthorizeMiddleware`, `AppAuthorization`, `AuthHandler` এবং `AuthReturnTypes` সরিয়ে ফেলা হয়েছে। একটি `authorize()` মেথডসহ সাধারণ `@CanAuthorize` ক্লাস ব্যবহার করুন। |
-| ভ্যালিডেশন | অজানা DTO প্রপার্টি 400 দিয়ে প্রত্যাখ্যান করা হয়। হ্যান্ডলারগুলো DTO ইনস্ট্যান্স পায়। এররের বডি এখন `{ code, status, message, errors[] }` (আগে ছিল `{ code, error: "ValidationError", errors }`)। |
-| পেজিনেশন | সব paginator `{ data, meta: { total, page, perPage, lastPage, next, prev } }` রিটার্ন করে এবং `{ page, perPage }` নেয়। |
-| ফাইল স্টোরেজ | ডিফল্টভাবে র‍্যান্ডম ফাইলনেম, `overwrite: false`, এক্সটেনশন allowlist এবং 50 MB সীমা। `save` অপশনে `saveAs` ব্যবহার হয় (`as` নয়)। `download`/`downloadAs`/`getUploadFile` পাথগুলো `baseDir`-এর সাপেক্ষে রিজলভ করে। `UploadFileFromRequest`-এর `dest` এখন একটি স্ট্রিং পাথ। |
-| ইভেন্ট | `dispatch` একটি `MeghEvent` ইনস্ট্যান্স নেয়। Kafka এবং RabbitMQ broadcast এক্সেপশন থ্রো করে। Socket broadcast-এর জন্য `useSocketIo()` প্রয়োজন। `getListeners` একটি ক্লাস বা ইভেন্ট নেয়, এবং `flushOnce` সরিয়ে ফেলা হয়েছে। |
-| কিউ | `@MeghWorker` আর ইমপোর্টের সময় চালু হয় না; `app.useWorker([...])` দিয়ে রেজিস্টার করুন। |
-| ক্যাশ | মেমোরি স্টোর প্রতিটি ইনস্ট্যান্সের জন্য আলাদা এবং TTL কার্যকর করা হয়। |
-| লগিং | ডিফল্টভাবে JSON; pretty শুধু ডেভেলপমেন্টে, `pino-pretty` ইনস্টল থাকলে। |
-| Results | `Results.Ok(x)` এখন `{ headers, data, statusCode }` হিসেবে সিরিয়ালাইজ হয়। |
-| সরানো এক্সপোর্ট | `registerKnex`, `FEATURE_KEY`, `uuid`, `getLineNumber`, `MatchLocation`, `extrctParamFromUrl`, `findDuplicates`, `isClassValidator`, `validateRequestBody`, `OkOptions`, `Results.code`, `KafkaBroadcastOption`, `RabbitMqBroadcastOption`, এবং `ControllerOptions.version`/`since`/`meta`। |
+| Dependencies | `@fastify/cors`, `@fastify/multipart`, `@fastify/static`, `@fastify/swagger`, `@fastify/swagger-ui`, `@scalar/fastify-api-reference`, `fastify-socket.io`, `class-validator`, `class-transformer` এবং `pino-pretty` এখন peer dependency। আপনি যেগুলো ব্যবহার করেন সেগুলো install করুন ([table](#optional-dependencies))। |
+| Package | শুধু CommonJS, একটি `exports` map-সহ। Deep import (`@meghjs/core/dist/...`) আর resolve হয় না। License এখন MIT। |
+| Environment | `isDevelopment()`-এর জন্য `NODE_ENV=development` লাগে; সেট না থাকলে এখন production বোঝায়। |
+| Authorization | `@Authorized` deny-by-default। যে authorizer `false` return করে, সেটি এখন access নিষেধ করে। `AuthorizeMiddleware`, `AppAuthorization`, `AuthHandler` এবং `AuthReturnTypes` সরিয়ে ফেলা হয়েছে। একটি `authorize()` method-সহ সাধারণ `@CanAuthorize` class ব্যবহার করুন। |
+| Validation | অজানা DTO property 400 দিয়ে প্রত্যাখ্যান করা হয়। Handler-গুলো DTO instance পায়। Error body এখন `{ code, status, message, errors[] }` (আগে ছিল `{ code, error: "ValidationError", errors }`)। |
+| Pagination | সব paginator `{ data, meta: { total, page, perPage, lastPage, next, prev } }` return করে এবং `{ page, perPage }` নেয়। |
+| File storage | Default-ভাবে random filename, `overwrite: false`, extension allowlist এবং 50 MB limit। `save` option-এ `saveAs` ব্যবহার হয় (`as` নয়)। `download`/`downloadAs`/`getUploadFile` path-গুলো `baseDir` থেকে resolve করে। `UploadFileFromRequest`-এর `dest` এখন একটি string path। |
+| Events | `dispatch` একটি `MeghEvent` instance নেয়। Kafka এবং RabbitMQ broadcast exception throw করে। Socket broadcast-এর জন্য `useSocketIo()` লাগে। `getListeners` একটি class বা event নেয়, এবং `flushOnce` সরিয়ে ফেলা হয়েছে। |
+| Queues | `@MeghWorker` আর import-এর সময় চালু হয় না; `app.useWorker([...])` দিয়ে register করুন। |
+| Cache | Memory store প্রতিটি instance-এর জন্য আলাদা এবং TTL কার্যকর করা হয়। |
+| Logging | Default-ভাবে JSON; pretty output শুধু development-এ, `pino-pretty` install থাকলে। |
+| Results | `Results.Ok(x)` এখন `{ headers, data, statusCode }` হিসেবে serialize হয়। |
+| সরানো export | `registerKnex`, `FEATURE_KEY`, `uuid`, `getLineNumber`, `MatchLocation`, `extrctParamFromUrl`, `findDuplicates`, `isClassValidator`, `validateRequestBody`, `OkOptions`, `Results.code`, `KafkaBroadcastOption`, `RabbitMqBroadcastOption`, এবং `ControllerOptions.version`/`since`/`meta`। |
 
 ---
 
-## 0.3.0-এর জানা সমস্যাসমূহ
+## Known Issues in 0.3.0
 
-এগুলো 0.3.0-এর রিগ্রেশন বা ঘাটতি, যেগুলো একটি প্যাচ রিলিজে ঠিক হওয়ার কথা:
+এগুলো 0.3.0-এর regression বা ঘাটতি, যেগুলো একটি patch release-এ ঠিক হওয়ার কথা:
 
-- **`@UseMiddleware(SomeClass)` `app.run()`-কে ক্র্যাশ করায়।** একটি ইনস্ট্যান্স পাস করুন,
+- **`@UseMiddleware(SomeClass)` `app.run()`-কে crash করায়।** একটি instance পাস করুন,
   `@UseMiddleware(new SomeClass())`, অথবা `app.useMiddlewares()` ব্যবহার করুন।
-- **স্পষ্ট constructor ছাড়া `@Repository` এবং `@Queue` ক্লাস ডিপেন্ডেন্সি
-  ইনজেকশনের অধীনে ভেঙে যায়।** `constructor() { super(); }` যোগ করুন।
+- **স্পষ্ট constructor ছাড়া `@Repository` এবং `@Queue` class dependency
+  injection-এর অধীনে ভেঙে যায়।** `constructor() { super(); }` যোগ করুন।
 - **`Results.Created`, `Results.NoContent`,
-  `Results.NotFound`, `HttpResponse.Created` এবং `@HttpCode`-এর স্ট্যাটাস কোড প্রয়োগ হয় না।**
-  রেসপন্স 200 হয়। এরর স্ট্যাটাস পাঠাতে `HttpExceptions` থ্রো করুন।
-- **জেনারেট করা OpenAPI ডকুমেন্টে `@Body()`/`@Query()` DTO অনুপস্থিত।**
-  ভ্যালিডেশন তবুও চলে। আপাতত `@OpenApi({ requestBody, query })` দিয়ে
+  `Results.NotFound`, `HttpResponse.Created` এবং `@HttpCode`-এর status code প্রয়োগ হয় না।**
+  Response 200 হয়। Error status পাঠাতে `HttpExceptions` throw করুন।
+- **Generate করা OpenAPI document-এ `@Body()`/`@Query()` DTO নেই।**
+  Validation তবুও চলে। আপাতত `@OpenApi({ requestBody, query })` দিয়ে
   এগুলো বর্ণনা করুন।
-- **`@All()` `app.run()`-কে ক্র্যাশ করায়।**
-- **আপলোড পলিসি লঙ্ঘনে 500 রিটার্ন হয়**, 400 বা 413 নয়।
-- **`app.run()`-এ কোনো `host` অপশন নেই।** সার্ভার localhost-এ বাইন্ড হয়।
+- **`@All()` `app.run()`-কে crash করায়।**
+- **Upload policy লঙ্ঘনে 500 return হয়**, 400 বা 413 নয়।
+- **`app.run()`-এ কোনো `host` option নেই।** Server localhost-এ bind হয়।
 
 ---
 
-## 1.0.0-এর রোডম্যাপ
+## Roadmap to 1.0.0
 
-1.0.0 হবে স্থিতিশীল API-সহ প্রথম রিলিজ: এর পরে, ব্রেকিং পরিবর্তনগুলো 2.0-এর জন্য
+1.0.0 হবে stable API-সহ প্রথম release: এর পরে breaking change-গুলো 2.0-এর জন্য
 অপেক্ষা করবে। এই তালিকাগুলো দেখায় কী কী যুক্ত হয়েছে এবং কী এখনও 1.0.0-কে আটকে রেখেছে।
 
 ### সম্পন্ন
 
-**নিরাপত্তা**
+**Security**
 
-- [x] `@Authorized` ডিফল্টভাবে অনুমতি দেয় না, এবং `false` রিটার্ন করা authorizer 403 দেয়
-- [x] হ্যান্ডলারগুলো ভ্যালিডেট করা DTO পায়; অজানা প্রপার্টি প্রত্যাখ্যান করা হয় (mass-assignment সুরক্ষা)
-- [x] ফাইল স্টোরেজ প্রতিটি read, write এবং delete `baseDir`-এর মধ্যে সীমাবদ্ধ রাখে, sibling-prefix এবং symlink এস্কেপসহ
-- [x] আপলোড করা ফাইল র‍্যান্ডম নাম পায়, ওভাররাইট করে না, এবং একটি এক্সটেনশন allowlist ও সাইজ সীমার বিপরীতে যাচাই করা হয়
+- [x] `@Authorized` deny-by-default, এবং `false` return করা authorizer 403 দেয়
+- [x] Handler-গুলো validate করা DTO পায়; অজানা property প্রত্যাখ্যান করা হয় (mass-assignment protection)
+- [x] File storage প্রতিটি read, write এবং delete `baseDir`-এর মধ্যে সীমাবদ্ধ রাখে, sibling-prefix এবং symlink escape-সহ
+- [x] Upload করা file random নাম পায়, overwrite করে না, এবং একটি extension allowlist ও size limit দিয়ে যাচাই করা হয়
 - [x] `UploadFileFromRequest`-এ path traversal বন্ধ করা হয়েছে
-- [x] `Content-Disposition` হেডার ইনজেকশন বন্ধ করা হয়েছে
-- [x] ক্রেডেনশিয়াল আর লগ করা হয় না, এবং প্রোডাকশন 5xx-এর বিস্তারিত লুকায় ও ডেভ মোডের জন্য `NODE_ENV=development` প্রয়োজন
-- [x] একসাথে চলা রিকোয়েস্টগুলো আর `FileStorage`-এর transform সেটিং শেয়ার করে না
+- [x] `Content-Disposition` header injection বন্ধ করা হয়েছে
+- [x] Credential আর log করা হয় না, production-এ 5xx-এর বিস্তারিত লুকানো থাকে, এবং dev mode-এর জন্য `NODE_ENV=development` লাগে
+- [x] একসাথে চলা request-গুলো আর `FileStorage`-এর transform setting share করে না
 
-**সঠিকতা**
+**Correctness**
 
-- [x] বিল্ট-ইন `Validator` `0` গ্রহণ করে এবং `min` / `max` / `exact` / `optional` কার্যকর করে
-- [x] ডেকোরেটর মেটাডেটা অনুপস্থিত থাকলে (tsx, esbuild, SWC) আর ক্র্যাশ হয় না; `@Body({ type })` টাইপ সরবরাহ করে
-- [x] TypeORM কোয়েরি অপারেটর রানটাইমে কাজ করে
-- [x] `MeghRepository.transaction()` ট্রানজ্যাকশনের ভেতরে চলে, এবং `useTypeORM()`-এর পরে `@InjectRepository` কাজ করে
-- [x] Collection সংশোধন: `paginate`, `min`, `findAsync`
-- [x] Collection, TypeORM এবং Knex জুড়ে একটিই পেজিনেশন কাঠামো
-- [x] ক্লাস দিয়ে চিহ্নিত ইভেন্ট, ঠিক একবার চলা `once` লিসেনার, কিউতে থাকলে `delay` মানা হয়, ব্যর্থ জব রাখা হয়
-- [x] শিডিউলার ডেকোরেটর আর প্যারেন্ট ক্লাসে ছড়িয়ে পড়ে না
-- [x] ইন-মেমোরি ক্যাশ TTL কার্যকর করে; Redis ট্যাগ সেটের মেয়াদ শেষ হয়
-- [x] প্রোডাকশনে JSON লগ; ফ্রেমওয়ার্কের লগ `LoggerService`-এর মাধ্যমে যায়
-- [x] ক্লাস ইনস্ট্যান্সিয়েট না করেই OpenAPI কম্পোনেন্ট স্কিমা জেনারেট হয়
+- [x] Built-in `Validator` `0` গ্রহণ করে এবং `min` / `max` / `exact` / `optional` কার্যকর করে
+- [x] Decorator metadata না থাকলে (tsx, esbuild, SWC) আর crash হয় না; `@Body({ type })` type দেয়
+- [x] TypeORM query operator runtime-এ কাজ করে
+- [x] `MeghRepository.transaction()` transaction-এর ভেতরে চলে, এবং `useTypeORM()`-এর পরে `@InjectRepository` কাজ করে
+- [x] Collection fix: `paginate`, `min`, `findAsync`
+- [x] Collection, TypeORM এবং Knex জুড়ে একটিই pagination কাঠামো
+- [x] Class দিয়ে চিহ্নিত event, ঠিক একবার চলা `once` listener, queue-তে থাকলে `delay` মানা হয়, ব্যর্থ job রাখা হয়
+- [x] Scheduler decorator আর parent class-এ ছড়িয়ে পড়ে না
+- [x] In-memory cache TTL কার্যকর করে; Redis tag set-এর মেয়াদ শেষ হয়
+- [x] Production-এ JSON log; framework-এর log `LoggerService`-এর মাধ্যমে যায়
+- [x] Class instantiate না করেই OpenAPI component schema generate হয়
 
-**ফিচারসমূহ**
+**Features**
 
-- [x] শুধু প্রডিউসার কিউ (`worker: false`) এবং এমন ওয়ার্কার যেগুলো আর ইমপোর্টের সময় চালু হয় না
-- [x] টেস্টের জন্য ইন-মেমোরি `memory` এবং `sync` কিউ ড্রাইভার
+- [x] Producer-only queue (`worker: false`) এবং এমন worker যেগুলো আর import-এর সময় চালু হয় না
+- [x] Test-এর জন্য in-memory `memory` এবং `sync` queue driver
 - [x] `Results.Created` / `NoContent` / `OkStream` এবং `@HttpCode` API (এখনও প্রয়োগ হয় না; নিচে দেখুন)
 
-**প্যাকেজিং এবং টুলিং**
+**Packaging ও tooling**
 
-- [x] একটি `exports` ম্যাপ এবং `sideEffects`-সহ শুধু CommonJS বিল্ড
-- [x] ইন্টিগ্রেশনগুলো ঐচ্ছিক peer ডিপেন্ডেন্সিতে সরানো হয়েছে
-- [x] 1.0-এর জন্য typedi-কে `MeghContainer`-এর পেছনে রাখা; পরবর্তী কোনো minor রিলিজে এটি বদলানো যেতে পারে
-- [x] MIT লাইসেন্স ফাইল `package.json`-এর সাথে মেলে
-- [x] rimraf ছাড়া বিল্ড, ESLint/Jest কনফিগ ঠিক করা, husky 9, ডিফল্টভাবে কভারেজ বন্ধ
-- [x] Node 22 এবং 24-এ CI (typecheck, lint, test, build) এবং ট্যাগ-ভিত্তিক publish ওয়ার্কফ্লো
-- [x] রিকোয়েস্ট-পাইপলাইন ইন্টিগ্রেশন টেস্ট
+- [x] একটি `exports` map এবং `sideEffects`-সহ শুধু CommonJS build
+- [x] Integration-গুলো optional peer dependency-তে সরানো হয়েছে
+- [x] 1.0-এর জন্য typedi-কে `MeghContainer`-এর পেছনে রাখা; পরের কোনো minor release-এ এটি বদলানো যেতে পারে
+- [x] MIT license file `package.json`-এর সাথে মেলে
+- [x] rimraf ছাড়া build, ESLint/Jest config ঠিক করা, husky 9, default-ভাবে coverage বন্ধ
+- [x] Node 22 এবং 24-এ CI (typecheck, lint, test, build) এবং tag-based publish workflow
+- [x] Request-pipeline integration test
 
-**ডকুমেন্টেশন**
+**Documentation**
 
-- [x] বর্তমান API-এর জন্য README এবং ডকুমেন্টেশন সাইট নতুন করে লেখা হয়েছে, একটি আপগ্রেড গাইডসহ
-- [x] নতুন পেজ: অথেনটিকেশন, ফাইল আপলোড, ক্যাশিং, লগিং
-- [x] ডকুমেন্টেশন সাইট VitePress-এ সরানো হয়েছে, টেমপ্লেট লিংক সরানো হয়েছে এবং বানান ভুল ঠিক করা হয়েছে
+- [x] বর্তমান API-এর জন্য README এবং documentation site নতুন করে লেখা হয়েছে, একটি upgrade guide-সহ
+- [x] নতুন page: authentication, file uploads, caching, logging
+- [x] Documentation site VitePress-এ সরানো হয়েছে, template link সরানো হয়েছে এবং বানান ভুল ঠিক করা হয়েছে
 
 ### 1.0.0-এর জন্য বাকি
 
-**0.3.0-এর রিগ্রেশন** ([জানা সমস্যাসমূহ](#030-এর-জানা-সমস্যাসমূহ) দেখুন)
+**0.3.0-এর regression** ([known issues](#known-issues-in-030) দেখুন)
 
-- [ ] `@UseMiddleware(SomeClass)` বুট ক্র্যাশ করায়
-- [ ] constructor ছাড়া `@Repository` / `@Queue` ক্লাস DI-এর অধীনে ভেঙে যায়
-- [ ] `Results`, `HttpResponse.Created` এবং `@HttpCode`-এর স্ট্যাটাস কোড প্রয়োগ করা
-- [ ] `@Body()` / `@Query()` DTO স্কিমা আবার OpenAPI ডকুমেন্টে যুক্ত করা
-- [ ] আপলোড পলিসি লঙ্ঘনে 500 নয়, 400 / 413 রিটার্ন করা উচিত
+- [ ] `@UseMiddleware(SomeClass)` boot-এ crash করায়
+- [ ] constructor ছাড়া `@Repository` / `@Queue` class DI-এর অধীনে ভেঙে যায়
+- [ ] `Results`, `HttpResponse.Created` এবং `@HttpCode`-এর status code প্রয়োগ করা
+- [ ] `@Body()` / `@Query()` DTO schema আবার OpenAPI document-এ যুক্ত করা
+- [ ] Upload policy লঙ্ঘনে 500 নয়, 400 / 413 return করা উচিত
 
-**মূল সঠিকতা**
+**Core correctness**
 
-- [ ] `useScheduler({ path })` `run()`-কে ক্র্যাশ করায় (ভুল `require` পাথ)
+- [ ] `useScheduler({ path })` `run()`-কে crash করায় (ভুল `require` path)
 - [ ] `@UploadFile` / `@UploadFiles` `saveRequestFiles()`-এর জন্য await করে না
-- [ ] `@All()` রেজিস্ট্রেশনের সময় ক্র্যাশ করে
-- [ ] HTTP-এক্সেপশন নয় এমন এররের ক্ষেত্রে `error.statusCode` (401, 413, 415, 429, …) মেনে চলা
-- [ ] একটি সামঞ্জস্যপূর্ণ মিডলওয়্যার ক্রম; `@UseMiddleware` DI-এর মাধ্যমে রিজলভ করা
-- [ ] রাউট মেটাডেটা ক্যাশ `constructor.name` দিয়ে চিহ্নিত, তাই একই নামের ক্লাসগুলোর মধ্যে সংঘর্ষ হয়
-- [ ] কন্ট্রোলার খুঁজে বের করা: `_resolveControllerDir` তার আর্গুমেন্ট উপেক্ষা করে এবং পাথের প্রথম `src` পুনর্লিখন করে; বারবার `useControllers` কল একে অপরকে ওভাররাইট করে
-- [ ] ফাংশনাল রাউট: `mapPatch` যোগ করা, এবং অথেনটিকেশন, DI ও স্ট্যান্ডার্ড এরর কাঠামো চালু করা
-- [ ] `run()`-এর `host` অপশন (কন্টেইনারে ডিফল্ট `0.0.0.0`)
-- [ ] গ্রেসফুল শাটডাউন: `process.exit(0)`-এর বদলে `app.close()` এবং একটি drain টাইমআউটসহ TypeORM, Knex, Redis ও Socket.IO বন্ধ করা
-- [ ] `PartialType` / `OmitType` / `PickType` class-validator নিয়মগুলো সঠিকভাবে বহন করে না
-- [ ] Scalar `spec.content` স্পেকের বদলে প্লাগইন মডিউল রিটার্ন করে
-- [ ] `Environment` প্রতিটি `get()`-এ `.env` আবার পড়ে, এবং `dotenv` ইমপোর্টের সময় লোড হয়
-- [ ] Socket হ্যান্ডলারের এরর unhandled rejection হয়ে যায়
-- [ ] `@MeghWorker`-এর `autoStart` অ্যাপ বুটের সাথে যুক্ত নয়
-- [ ] ঐচ্ছিক peer হওয়া সত্ত্বেও `class-validator` / `class-transformer` ইমপোর্টের সময় লোড হয়
+- [ ] `@All()` registration-এর সময় crash করে
+- [ ] HTTP exception নয় এমন error-এর ক্ষেত্রে `error.statusCode` (401, 413, 415, 429, …) মেনে চলা
+- [ ] একটি সামঞ্জস্যপূর্ণ middleware ক্রম; `@UseMiddleware` DI-এর মাধ্যমে resolve করা
+- [ ] Route metadata cache `constructor.name` দিয়ে চিহ্নিত, তাই একই নামের class-গুলোর মধ্যে collision হয়
+- [ ] Controller discovery: `_resolveControllerDir` তার argument উপেক্ষা করে এবং path-এর প্রথম `src` বদলে দেয়; বারবার `useControllers` call একে অপরকে override করে
+- [ ] Functional route: `mapPatch` যোগ করা, এবং authentication, DI ও standard error কাঠামো চালু করা
+- [ ] `run()`-এর `host` option (container-এ default `0.0.0.0`)
+- [ ] Graceful shutdown: `process.exit(0)`-এর বদলে `app.close()` এবং একটি drain timeout-সহ TypeORM, Knex, Redis ও Socket.IO বন্ধ করা
+- [ ] `PartialType` / `OmitType` / `PickType` class-validator rule-গুলো ঠিকভাবে বহন করে না
+- [ ] Scalar `spec.content` spec-এর বদলে plugin module return করে
+- [ ] `Environment` প্রতিটি `get()`-এ `.env` আবার পড়ে, এবং `dotenv` import-এর সময় load হয়
+- [ ] Socket handler-এর error unhandled rejection হয়ে যায়
+- [ ] `@MeghWorker`-এর `autoStart` app boot-এর সাথে যুক্ত নয়
+- [ ] optional peer হওয়া সত্ত্বেও `class-validator` / `class-transformer` import-এর সময় load হয়
 
-**অনুপস্থিত ফিচার**
+**Missing features**
 
-- [ ] `use*` অপশন হিসেবে সিকিউরিটি হেডার (helmet) এবং রেট লিমিটিং
-- [ ] হেলথ এবং রেডিনেস এন্ডপয়েন্ট
-- [ ] লগে রিকোয়েস্ট ID, এবং লগারকে Fastify-এর সাথে যুক্ত করা
-- [ ] হ্যান্ডলার থেকে রিডাইরেক্ট এবং রেসপন্স হেডার
-- [ ] প্লাগযোগ্য এরর হ্যান্ডলার / এক্সেপশন ফিল্টার
-- [x] লাইফসাইকেল হুক (`onInit`, `onReady`, `onClose`, `app.close()`)
-- [ ] বুটের সময় কনফিগ স্কিমা ভ্যালিডেশন
-- [ ] গ্লোবাল রাউট প্রিফিক্স এবং API ভার্সনিং
-- [ ] কম্প্রেশন
-- [ ] Socket.IO হ্যান্ডশেক অথেনটিকেশন এবং প্রতি-চ্যানেল অথরাইজেশন
+- [ ] `use*` option হিসেবে security header (helmet) এবং rate limiting
+- [ ] Health এবং readiness endpoint
+- [ ] Log-এ request ID, এবং logger-কে Fastify-এর সাথে যুক্ত করা
+- [ ] Handler থেকে redirect এবং response header
+- [ ] Pluggable error handler / exception filter
+- [x] Lifecycle hook (`onInit`, `onReady`, `onClose`, `app.close()`)
+- [ ] Boot-এর সময় config schema validation
+- [ ] Global route prefix এবং API versioning
+- [ ] Compression
+- [ ] Socket.IO handshake authentication এবং per-channel authorization
 
-**API পরিচ্ছন্নকরণ** (1.0-এর API একটি প্রতিশ্রুতি)
+**API cleanup** (1.0-এর API একটি প্রতিশ্রুতি)
 
-- [ ] নো-অপ `useHttps()`, `useSerialization()` এবং `mapFeatures()` সম্পূর্ণ করা বা সরিয়ে ফেলা
-- [x] TypeORM এবং Knex-কে `@meghjs/data` প্লাগইনে সরানো, এবং অপ্রচলিত `useDatasource()` সরিয়ে ফেলা
-- [ ] `MeghSocketIo` স্টাব এবং অব্যবহৃত অ্যাডাপ্টার টাইপ সরিয়ে ফেলা
+- [ ] No-op `useHttps()`, `useSerialization()` এবং `mapFeatures()` সম্পূর্ণ করা বা সরিয়ে ফেলা
+- [x] TypeORM এবং Knex-কে `@meghjs/data` plugin-এ সরানো, এবং deprecated `useDatasource()` সরিয়ে ফেলা
+- [ ] `MeghSocketIo` stub এবং অব্যবহৃত adapter type সরিয়ে ফেলা
 - [ ] `KnexHooks` / `KnexHooksFactory`, `DuplicateRouteException`, `mapRoute()` এবং `registerMiddleware()` সরিয়ে ফেলা
-- [x] পাবলিক index থেকে `mock-db` এক্সপোর্ট বন্ধ করা, এবং Jest টাইপ ছাড়া বিল্ড করা
-- [ ] বাকি `console.log` কলগুলো লগার দিয়ে প্রতিস্থাপন করা
+- [x] Public index থেকে `mock-db` export বন্ধ করা, এবং Jest type ছাড়া build করা
+- [ ] বাকি `console.log` call-গুলো logger দিয়ে বদলানো
 
-**টেস্ট**
+**Tests**
 
-- [ ] `application.ts`: `run()`, শাটডাউন, কন্ট্রোলার স্বয়ংক্রিয়ভাবে খুঁজে বের করা, `useScheduler({ path })`
-- [ ] ইভেন্ট, শিডিউলার, ওয়ার্কার, Redis ক্যাশ, `testing.ts`, `map-types.ts`, কনফিগ
-- [ ] ফাঁপা টেস্ট এবং `MeghTest` ঠিক করা (`from()` race, গ্লোবাল কন্টেইনার মিউটেশন)
-- [ ] কভারেজ থ্রেশহোল্ড
+- [ ] `application.ts`: `run()`, shutdown, controller auto-discovery, `useScheduler({ path })`
+- [ ] Events, scheduler, worker, Redis cache, `testing.ts`, `map-types.ts`, config
+- [ ] ফাঁপা test এবং `MeghTest` ঠিক করা (`from()` race, global container mutation)
+- [ ] Coverage threshold
 
-**CLI** (`@meghjs/cli`, পুনর্লিখন চলছে)
+**CLI** (`@meghjs/cli`, নতুন করে লেখা চলছে)
 
-- [ ] commander-ভিত্তিক পুনর্লিখন সম্পূর্ণ করা: `--help` / `--version`, সামঞ্জস্যপূর্ণ ফ্ল্যাগ ও নামকরণ, বিদ্যমান প্রজেক্ট ওভাররাইট করতে অস্বীকার করা
-- [ ] জেনারেট করা কোড `@meghjs/core`-এর বিপরীতে কম্পাইল হয়
-- [ ] CLI টেস্ট (প্রতিটি `make:*` কমান্ডের জন্য স্ন্যাপশট)
-- [ ] core-এর সাথে মিলিয়ে ভার্সনসহ রিলিজ
+- [ ] commander-based rewrite সম্পূর্ণ করা: `--help` / `--version`, সামঞ্জস্যপূর্ণ flag ও naming, existing project overwrite করতে অস্বীকার করা
+- [ ] Generate করা code `@meghjs/core`-এর সাথে compile হয়
+- [ ] CLI test (প্রতিটি `make:*` command-এর জন্য snapshot)
+- [ ] core-এর সাথে মিলিয়ে version-সহ release
 
-**ডকুমেন্টেশন এবং রিলিজ**
+**Documentation ও release**
 
-- [ ] কনফিগারেশন, শিডিউলার, টেস্টিং, ডিপেন্ডেন্সি ইনজেকশন, রেসপন্স, ডিপ্লয়মেন্ট এবং সিকিউরিটি হার্ডেনিং-এর জন্য পেজ
-- [ ] API রেফারেন্স এবং FAQ
-- [ ] কন্ট্রিবিউটর গাইড: প্রজেক্ট কাঠামো, এবং CLI-জেনারেটেড কোড যে এক্সপোর্টগুলোর ওপর নির্ভর করে
-- [ ] core, CLI এবং ডকুমেন্টেশন জুড়ে চেঞ্জলগ এবং একটি ভার্সনিং নীতি
+- [ ] Configuration, scheduler, testing, dependency injection, response, deployment এবং security hardening-এর জন্য page
+- [ ] API reference এবং FAQ
+- [ ] Contributor guide: project-এর কাঠামো, এবং CLI-generated code যে export-গুলোর ওপর নির্ভর করে
+- [ ] core, CLI এবং documentation জুড়ে changelog এবং একটি versioning policy
 
 ---
 
-## রিপোজিটরির গঠন
+## Repository-র গঠন
 
-এই মনোরিপোতে প্রতিটি Megh প্যাকেজ এবং ডকস সাইটের সোর্স রাখা আছে, যাতে ফ্রেমওয়ার্ক, এর CLI টেমপ্লেট এবং এর ডকুমেন্টেশনের পরিবর্তন একটি কমিটেই যুক্ত করা যায়।
+এই monorepo-তে প্রতিটি Megh package এবং docs site-এর source রাখা আছে, যাতে framework, এর CLI template এবং এর documentation-এর পরিবর্তন একটি commit-এই যুক্ত করা যায়।
 
-| ফোল্ডার           | প্যাকেজ / সাইট                                                | যেখান থেকে প্রকাশিত হয়                                                                 |
+| Folder           | Package / site                                                | যেখান থেকে publish হয়                                                         |
 |------------------|---------------------------------------------------------------|--------------------------------------------------------------------------------|
-| `packages/core/` | [`@meghjs/core`](https://www.npmjs.com/package/@meghjs/core)  | এই রিপোজিটরি (Lerna)                                                        |
-| `packages/cli/`  | [`@meghjs/cli`](https://www.npmjs.com/package/@meghjs/cli)    | এই রিপোজিটরি (Lerna)                                                        |
-| `packages/data/` | [`@meghjs/data`](https://www.npmjs.com/package/@meghjs/data)  | এই রিপোজিটরি (Lerna)                                                        |
+| `packages/core/` | [`@meghjs/core`](https://www.npmjs.com/package/@meghjs/core)  | এই repository (Lerna)                                                        |
+| `packages/cli/`  | [`@meghjs/cli`](https://www.npmjs.com/package/@meghjs/cli)    | এই repository (Lerna)                                                        |
+| `packages/data/` | [`@meghjs/data`](https://www.npmjs.com/package/@meghjs/data)  | এই repository (Lerna)                                                        |
 | `docs/`          | https://meghjs.github.io (VitePress)                        | [meghjs/meghjs.github.io](https://github.com/meghjs/meghjs.github.io)  |
-| `resources/`     | লোগো এবং ফেভিকন                                            | প্রযোজ্য নয়                                                                            |
-| `scripts/`       | `mirror.sh`, যা `docs/`-কে এর আলাদা রিপোজিটরির সাথে সিঙ্ক করে       | প্রযোজ্য নয়                                                                            |
+| `resources/`     | Logo এবং favicon                                              | প্রযোজ্য নয়                                                                   |
+| `scripts/`       | `mirror.sh`, যা `docs/`-কে এর আলাদা repository-র সাথে sync করে | প্রযোজ্য নয়                                                                   |
 
-`1.0-CHECKLIST.md` 1.0 রিলিজের কাজের হিসাব রাখে; বর্তমান রোডম্যাপ নিচে [1.0.0 পর্যন্ত রোডম্যাপ](#100-এর-রোডম্যাপ)-এ দেওয়া আছে।
+`1.0-CHECKLIST.md` 1.0 release-এর কাজের হিসাব রাখে; বর্তমান roadmap নিচে [Roadmap to 1.0.0](#roadmap-to-100)-এ দেওয়া আছে।
 
-`packages/*` হলো [Lerna](https://lerna.js.org) দিয়ে পরিচালিত npm ওয়ার্কস্পেস: রুটে একটিমাত্র লকফাইল থাকে, এবং `packages/cli` `@meghjs/core`-কে লোকাল সোর্স থেকে রিজলভ করে। `packages/`-এর প্রতিটি প্যাকেজ npm-এ প্রকাশিত হয়, যদি না তার `package.json`-এ `"private": true` থাকে। নতুন কোনো অভ্যন্তরীণ লাইব্রেরির জন্য শুধু `packages/`-এর অধীনে একটি স্কোপড নামসহ (`@meghjs/...`) ফোল্ডার এবং `"publishConfig": { "access": "public" }` প্রয়োজন। `docs/` কোনো ওয়ার্কস্পেস নয় এবং এর নিজস্ব লকফাইল আছে।
+`packages/*` হলো [Lerna](https://lerna.js.org) দিয়ে চালানো npm workspace: root-এ একটিমাত্র lockfile থাকে, এবং `packages/cli` `@meghjs/core`-কে local source থেকে resolve করে। `packages/`-এর প্রতিটি package npm-এ publish হয়, যদি না তার `package.json`-এ `"private": true` থাকে। নতুন কোনো internal library-র জন্য শুধু `packages/`-এর অধীনে একটি scoped নামসহ (`@meghjs/...`) folder এবং `"publishConfig": { "access": "public" }` লাগে। `docs/` কোনো workspace নয় এবং এর নিজস্ব lockfile আছে।
 
 ---
 
 ## Megh-এ কাজ করা
 
-প্রয়োজনীয়তা: Node.js 22.22+ অথবা 24.15+ (Lerna 10-এর জন্য দরকার), npm এবং git। প্রকাশিত প্যাকেজগুলো Node.js 22 এবং এর নতুন ভার্সন সাপোর্ট করে, এবং CI এগুলোকে Node.js 22 ও 24-এ টেস্ট করে।
+যা লাগবে: Node.js 22.22+ অথবা 24.15+ (Lerna 10-এর জন্য), npm এবং git। Publish করা package-গুলো Node.js 22 এবং এর নতুন version support করে, এবং CI এগুলোকে Node.js 22 ও 24-এ test করে।
 
 ```bash
 npm run setup       # npm ci at the root (all packages) and in docs
@@ -1396,41 +1396,41 @@ npm run docs:dev    # docs site at http://localhost:5173
 npm run docs:build  # fails on dead links
 ```
 
-প্রতিটি প্যাকেজে সরাসরিও কাজ করা যায়, যেমন `cd packages/core && npm test`, অথবা `npx lerna run test --scope @meghjs/core` দিয়ে। ডিপেন্ডেন্সি প্যাকেজের ভেতর থেকে নয়, রুট থেকে `npm install <dep> -w @meghjs/core` দিয়ে ইনস্টল করুন।
+প্রতিটি package-এ সরাসরিও কাজ করা যায়, যেমন `cd packages/core && npm test`, অথবা `npx lerna run test --scope @meghjs/core` দিয়ে। Dependency package-এর ভেতর থেকে নয়, root থেকে `npm install <dep> -w @meghjs/core` দিয়ে install করুন।
 
-জেনারেট করা কোনো অ্যাপে `core`-এর লোকাল পরিবর্তন পরীক্ষা করতে, `packages/core/`-এ `npm run build` চালান, তারপর অ্যাপে `npm install <path-to>/packages/core` চালান।
+Generate করা কোনো app-এ `core`-এর local পরিবর্তন পরীক্ষা করতে `packages/core/`-এ `npm run build` চালান, তারপর app-এ `npm install <path-to>/packages/core` চালান।
 
 ---
 
-## প্রকাশ ও ডিপ্লয়মেন্ট
+## Publishing ও deployment
 
-সব প্যাকেজ একই ভার্সন শেয়ার করে (Lerna fixed mode, `lerna.json`-এ) এবং `main` থেকে একসাথে রিলিজ করা হয়:
+সব package একই version share করে (Lerna fixed mode, `lerna.json`-এ) এবং `main` থেকে একসাথে release করা হয়:
 
 ```bash
 npm run release     # lerna version
 ```
 
-`lerna version` শেষ `v*` ট্যাগের পর থেকে conventional commit-গুলো দেখে পরবর্তী ভার্সন নির্ধারণ করে (`fix:` হলো patch, `feat:` হলো minor, `BREAKING CHANGE` হলো major), প্রতিটি প্যাকেজের ভার্সন বাড়ায়, প্রতিটি `CHANGELOG.md` লেখে, `chore(release): vX.Y.Z` কমিট করে, এবং কমিট ও ট্যাগ পুশ করে। ভার্সন ওভাররাইড করতে একটি ভার্সন দিন, যেমন `npm run release -- 0.4.0`।
+`lerna version` শেষ `v*` tag-এর পর থেকে conventional commit-গুলো দেখে পরের version ঠিক করে (`fix:` হলো patch, `feat:` হলো minor, `BREAKING CHANGE` হলো major), প্রতিটি package-এর version বাড়ায়, প্রতিটি `CHANGELOG.md` লেখে, `chore(release): vX.Y.Z` commit করে, এবং commit ও tag push করে। Version নিজে ঠিক করতে একটি version দিন, যেমন `npm run release -- 0.4.0`।
 
-`v*` ট্যাগটি `.github/workflows/release.yml` চালু করে। এটি সবকিছু টাইপ-চেক, লিন্ট, টেস্ট ও বিল্ড করে, তারপর `lerna publish from-package` চালায়, যা provenance সহ এমন প্রতিটি পাবলিক প্যাকেজ প্রকাশ করে যার ভার্সন এখনো npm-এ নেই। এর জন্য এই রিপোজিটরিতে একটি `NPM_TOKEN` সিক্রেট প্রয়োজন।
+`v*` tag-টি `.github/workflows/release.yml` চালু করে। এটি সবকিছু type-check, lint, test ও build করে, তারপর `lerna publish from-package` চালায়, যা provenance-সহ এমন প্রতিটি public package publish করে যার version এখনো npm-এ নেই। এর জন্য এই repository-তে একটি `NPM_TOKEN` secret লাগে।
 
-ডকস সাইট এখনো তার আলাদা রিপোজিটরি থেকে ডিপ্লয় হয়। `npm run mirror` `git subtree split` ব্যবহার করে `docs/`-এর হিস্ট্রি [meghjs/meghjs.github.io](https://github.com/meghjs/meghjs.github.io)-এ পুশ করে, যা https://meghjs.github.io ডিপ্লয় করে। ওই রিপোজিটরিতে শুধুমাত্র `mirror.sh`-এর মাধ্যমে কমিট করুন: সেখানে সরাসরি কোনো কমিট করলে সেটি মনোরিপোতে আনা না হওয়া পর্যন্ত পরবর্তী পুশ ব্যর্থ হবে।
+Docs site এখনো তার আলাদা repository থেকে deploy হয়। `npm run mirror` `git subtree split` ব্যবহার করে `docs/`-এর history [meghjs/meghjs.github.io](https://github.com/meghjs/meghjs.github.io)-এ push করে, যা https://meghjs.github.io deploy করে। ওই repository-তে শুধু `mirror.sh`-এর মাধ্যমে commit করুন: সেখানে সরাসরি কোনো commit করলে সেটি monorepo-তে আনা না হওয়া পর্যন্ত পরের push ব্যর্থ হবে।
 
 ---
 
-## রিলিজ ও ভার্সনিং
+## Release ও versioning
 
-- **Semver।** প্যাচ রিলিজ বাগ ঠিক করে। মাইনর রিলিজ ব্যাকওয়ার্ড-কম্প্যাটিবল ফিচার যোগ করে। ব্রেকিং পরিবর্তনগুলো পরবর্তী মেজর রিলিজের জন্য অপেক্ষা করে এবং তার আগে অন্তত একটি মাইনর রিলিজে (সতর্কবার্তাসহ) ডেপ্রিকেটেড থাকে, যদি না পরিবর্তনটি কোনো নিরাপত্তা সমস্যা ঠিক করে।
-- **রিলিজের ক্রম।** `core` এবং `cli` একই ভার্সনে একসাথে রিলিজ করা হয়। এরপর `docs`-এ ভার্সন আপডেট করুন।
+- **Semver।** Patch release bug ঠিক করে। Minor release backward-compatible feature যোগ করে। Breaking change-গুলো পরের major release-এর জন্য অপেক্ষা করে এবং তার আগে অন্তত একটি minor release-এ (warning-সহ) deprecated থাকে, যদি না পরিবর্তনটি কোনো security সমস্যা ঠিক করে।
+- **Release-এর ক্রম।** `core` এবং `cli` একই version-এ একসাথে release করা হয়। এরপর `docs`-এ version update করুন।
 
 ---
 
 ## নিরাপত্তা
 
-অনুগ্রহ করে দুর্বলতাগুলো পাবলিক ইস্যুতে না জানিয়ে ব্যক্তিগতভাবে মেইনটেইনারকে ([GitHub @xtareq](https://github.com/xtareq)) জানান।
+অনুগ্রহ করে vulnerability-গুলো public issue-তে না জানিয়ে গোপনে maintainer-কে ([GitHub @xtareq](https://github.com/xtareq)) জানান।
 
 ---
 
-## লাইসেন্স
+## License
 
 MIT © [Tareq Hossain](https://github.com/xtareq)

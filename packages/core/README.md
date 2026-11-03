@@ -33,7 +33,7 @@ Megh is a TypeScript-first web framework built on top of [Fastify](https://fasti
   - [Logging](#logging)
   - [OpenAPI Documentation](#openapi-documentation)
 - [Advanced Features](#advanced-features)
-  - [Models (ORM)](#models-orm)
+  - [MeghORM](#models-orm)
   - [Database](#database)
   - [Pagination](#pagination)
   - [Events](#events)
@@ -642,7 +642,7 @@ Schemas are generated from decorated properties only, and nested DTOs become
 
 ## Advanced Features
 
-### Models (ORM)
+### MeghORM
 
 Type-safe models built on [Kysely](https://kysely.dev): column names, value
 types and loaded relations are checked by TypeScript.
@@ -682,7 +682,7 @@ npx megh migrate
 ```
 
 Relations, timestamps, soft deletes, casts, transactions and the migration
-commands are covered in the [Models (ORM) guide](https://meghjs.github.io/advanced/orm).
+commands are covered in the [MeghORM guide](https://meghjs.github.io/advanced/orm).
 
 ---
 

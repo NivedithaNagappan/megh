@@ -7,7 +7,7 @@ description: Connecting Megh to a database with TypeORM or Knex.
 
 ::: tip Built-in models
 `@meghjs/core` also has its own type-safe models and migrations, built on
-Kysely, with no extra Megh package. See [Models (ORM)](/advanced/orm).
+Kysely, with no extra Megh package. See [MeghORM](/advanced/orm).
 :::
 
 The `@meghjs/data` package adds two database integrations: **TypeORM** for an
