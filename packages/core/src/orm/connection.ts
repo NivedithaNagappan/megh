@@ -73,10 +73,18 @@ async function inSavepoint<T>(
     if (!mssql) await run(`release savepoint ${name}`);
     return result;
   } catch (err) {
-    await run(
-      mssql ? `rollback transaction ${name}` : `rollback to savepoint ${name}`,
-    );
-    if (!mssql) await run(`release savepoint ${name}`);
+    try {
+      await run(
+        mssql
+          ? `rollback transaction ${name}`
+          : `rollback to savepoint ${name}`,
+      );
+      if (!mssql) await run(`release savepoint ${name}`);
+    } catch {
+      // The error aborted the whole transaction (SQL Server does this for
+      // some errors), so there is no savepoint left. The outer transaction
+      // rolls back; report the error that caused it, not this one.
+    }
     throw err;
   }
 }
