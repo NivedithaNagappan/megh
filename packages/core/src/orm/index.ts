@@ -83,6 +83,14 @@ export {
   type SeedContext,
   type SeedersOptions,
 } from "./seeders";
+export {
+  Factory,
+  defineFactory,
+  getFaker,
+  useFaker,
+  type FactoryAttributes,
+  type FactoryContext,
+} from "./factories";
 export { ormPlugin } from "./plugin";
 export {
   DatabaseConfigError,
