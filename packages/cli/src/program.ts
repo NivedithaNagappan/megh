@@ -1,7 +1,7 @@
 import { Command, CommanderError, InvalidArgumentError } from "commander";
 import { build } from "./commands/build";
 import { doctor } from "./commands/doctor";
-import { createApplication, FEATURES, PACKAGE_MANAGERS } from "./commands/new";
+import { createApplication, DATABASES, FEATURES, PACKAGE_MANAGERS } from "./commands/new";
 import { routeList } from "./commands/route-list";
 import { serve } from "./commands/serve";
 import { start } from "./commands/start";
@@ -86,6 +86,10 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
     .option("-y, --yes", "Skip prompts and use defaults (npm, openapi)")
     .option("--pm <manager>", `Package manager: ${PACKAGE_MANAGERS.join(", ")}`)
     .option("--features <list>", `Comma-separated features: ${FEATURES.join(", ")}`, parseList)
+    .option(
+      "--database <name>",
+      `Set up MeghORM (the orm feature) for ${DATABASES.join(", ")}. Defaults to sqlite with orm`,
+    )
     .option("--skip-install", "Do not install dependencies (or set MEGH_SKIP_INSTALL=1)")
     .action(async (name: string, o) => {
       await createApplication(name, { cwd: cwd(), ...o });

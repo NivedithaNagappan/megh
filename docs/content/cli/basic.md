@@ -39,8 +39,17 @@ Every `make:*` command takes `-f` / `--force` to overwrite an existing file.
 npx @meghjs/cli new myapi
 ```
 
-You are prompted for a package manager and optional features — OpenAPI docs,
-CORS, TypeORM, Knex and Scalar UI. Then:
+You are prompted for a package manager and optional features: OpenAPI docs,
+CORS, MeghORM, TypeORM, Knex and Scalar UI. With MeghORM you also pick the
+database. Non-interactively:
+
+```sh
+npx @meghjs/cli new myapi --yes --database postgres   # also: mysql, sqlite, mssql
+```
+
+`--database` (or the `orm` feature, which defaults to SQLite) installs the
+driver, adds `app.useMeghORM()` to `src/app.ts`, writes `DATABASE_URL` to
+`.env` and creates `src/database/migrations/`. Then:
 
 ```sh
 cd myapi
@@ -148,30 +157,27 @@ npx megh m:m user --orm
 `make:model` writes a [Megh ORM](/advanced/orm) model. It looks for the
 model's table (by default the plural snake_case name: `User` → `users`,
 `BlogPost` → `blog_posts`) in your migrations. If one creates it, the model
-gets a field for every column, with its type, nullability and casts, plus
-`primaryKey`, `generated`, `timestamps` and `softDeletes` as needed. Later
-migrations that add, drop or rename columns are taken into account:
+gets a decorated field for every column, with its type, nullability and
+value conversion. The primary key, auto-increment, timestamp and soft-delete
+columns get their own decorators. Later migrations that add, drop or rename
+columns are taken into account:
 
 ```ts
 // Columns read from the migrations (the table is created in 20260101000000_create_users_table.ts).
+@Table("users")
 export class User extends Model {
-  static readonly table = "users";
-  static readonly timestamps = true;
-  static readonly casts = {
-    is_admin: "boolean",
-  } as const;
-
-  id!: number;
-  email!: string;
-  name!: string | null;
-  is_admin!: boolean;
-  created_at!: Date;
-  updated_at!: Date;
+  @PrimaryKey() @AutoIncrement() id?: number;
+  @Column() email!: string;
+  @Column({ nullable: true }) name!: string | null;
+  @Column({ type: "boolean" }) is_admin?: boolean;
+  @CreatedAt() created_at?: Date;
+  @UpdatedAt() updated_at?: Date;
 }
 ```
 
-If no migration creates the table, you get a model with placeholder columns
-to fill in. The migrations are read, not run, so no database is needed.
+Columns the database fills in (auto-increment, defaults, timestamps) are
+declared with `?`, so `create()` can leave them out. If no migration creates
+the table, you get a model with an `id` and commented examples to fill in. The migrations are read, not run, so no database is needed.
 Relations aren't generated; add them yourself.
 
 ## Middleware

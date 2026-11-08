@@ -228,6 +228,42 @@ describe("new", () => {
     expect(read("db_api", "tsconfig.json")).toContain('"megh-env.d.ts"');
   });
 
+  it("sets up MeghORM with the orm feature, on SQLite by default", async () => {
+    await createApplication("shop", { cwd: tmp, yes: true, skipInstall: true, features: ["orm"] });
+    const pkg = JSON.parse(read("shop", "package.json"));
+    expect(pkg.dependencies["better-sqlite3"]).toBeDefined();
+    expect(pkg.dependencies.kysely).toBeUndefined(); // ships with @meghjs/core
+    expect(pkg.dependencies["@meghjs/data"]).toBeUndefined();
+    expect(read("shop", "src", "app.ts")).toContain("app.useMeghORM();");
+    expect(read("shop", ".env")).toContain("DATABASE_URL=sqlite:./database.sqlite");
+    expect(read("shop", ".gitignore")).toContain("database.sqlite");
+    expect(exists("shop", "src", "database", "migrations", ".gitkeep")).toBe(true);
+    expect(exists("shop", "src", "database", "connection.ts")).toBe(false);
+  });
+
+  it("--database picks the driver and URL, and implies the orm feature", async () => {
+    await createApplication("my-api", { cwd: tmp, yes: true, skipInstall: true, features: ["openapi"], database: "postgres" });
+    const pkg = JSON.parse(read("my-api", "package.json"));
+    expect(pkg.dependencies.pg).toBeDefined();
+    expect(read("my-api", "src", "app.ts")).toContain("app.useMeghORM();");
+    expect(read("my-api", ".env")).toContain("DATABASE_URL=postgres://postgres:postgres@localhost:5432/my_api");
+    expect(read("my-api", ".gitignore")).not.toContain("database.sqlite");
+
+    await createApplication("legacy", { cwd: tmp, yes: true, skipInstall: true, database: "mssql" });
+    const mssql = JSON.parse(read("legacy", "package.json"));
+    expect([mssql.dependencies.tedious, mssql.dependencies.tarn].every(Boolean)).toBe(true);
+    expect(read("legacy", "src", "app.ts")).toContain("useOpenApi"); // default features kept
+  });
+
+  it("rejects an unknown database, and --database with --minimal", async () => {
+    await expect(
+      createApplication("bad", { cwd: tmp, yes: true, skipInstall: true, database: "oracle" }),
+    ).rejects.toThrow(/Unknown database "oracle"/);
+    await expect(
+      createApplication("bad2", { cwd: tmp, yes: true, skipInstall: true, minimal: true, database: "mysql" }),
+    ).rejects.toThrow(/needs a full project/);
+  });
+
   it("scaffolds a minimal project", async () => {
     await createApplication("mini", { cwd: tmp, minimal: true, yes: true, skipInstall: true });
     expect(exists("mini", "src", "app.ts")).toBe(true);

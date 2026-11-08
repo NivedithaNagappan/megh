@@ -53,8 +53,47 @@ function staticList(source: string, name: string): string[] | undefined {
 interface Declared {
   name: string;
   ts: string;
+  /** `| null`, `| undefined` or `?`. */
   nullable: boolean;
+  /** Declared with `?`. */
+  optional: boolean;
+  /** `| null` or `| undefined` in the type. */
+  nullInType: boolean;
   decorators: string[];
+}
+
+/** Split leading decorators off a line: `@PrimaryKey() @AutoIncrement() id?: number;`. */
+function leadingDecorators(line: string): { decorators: string[]; rest: string } {
+  const decorators: string[] = [];
+  let rest = line;
+  for (;;) {
+    const head = rest.match(/^@(\w+)\s*/);
+    if (!head) break;
+    let end = head[0].length;
+    if (rest[end] === "(") {
+      // Up to the matching ")", or the end of the line for a decorator that
+      // continues on the next lines.
+      end = rest.length;
+      let depth = 0;
+      for (let i = head[0].length; i < rest.length; i++) {
+        const ch = rest[i];
+        if (ch === '"' || ch === "'" || ch === "`") {
+          const close = rest.indexOf(ch, i + 1);
+          i = close === -1 ? rest.length : close;
+        } else if (ch === "(" || ch === "{" || ch === "[") depth++;
+        else if (ch === ")" || ch === "}" || ch === "]") {
+          depth--;
+          if (depth === 0) {
+            end = i + 1;
+            break;
+          }
+        }
+      }
+    }
+    decorators.push(head[1] + rest.slice(head[0].length, end));
+    rest = rest.slice(end).trim();
+  }
+  return { decorators, rest };
 }
 
 /**
@@ -77,18 +116,18 @@ function declaredProperties(source: string): Declared[] {
       if (decorators.length > 0) decorators[decorators.length - 1] += " " + line;
       continue;
     }
-    const decorator = line.match(/^@(\w+)/);
-    if (decorator) {
-      decorators.push(decorator[1] + line.slice(decorator[0].length));
-      continue;
-    }
-    const prop = line.match(/^(?:(?:public|declare|readonly)\s+)*(\w+|"[^"]+"|'[^']+')\s*([!?])?\s*:\s*([^=;]+?)\s*;?$/);
-    if (prop && !/^(static|private|protected|get|set|async)\b/.test(line)) {
+    const split = leadingDecorators(line);
+    decorators.push(...split.decorators);
+    // A decorator on its own line, possibly continued on the next lines.
+    if (split.decorators.length > 0 && !split.rest) continue;
+    const prop = split.rest.match(/^(?:(?:public|declare|readonly)\s+)*(\w+|"[^"]+"|'[^']+')\s*([!?])?\s*:\s*([^=;]+?)\s*;?$/);
+    if (prop && !/^(static|private|protected|get|set|async)\b/.test(split.rest)) {
       const name = prop[1].replace(/^["']|["']$/g, "");
       const parts = prop[3].split("|").map((p) => p.trim());
-      const nullable = prop[2] === "?" || parts.includes("null") || parts.includes("undefined");
+      const nullInType = parts.includes("null") || parts.includes("undefined");
+      const optional = prop[2] === "?";
       const ts = parts.filter((p) => p !== "null" && p !== "undefined").join(" | ") || "unknown";
-      out.push({ name, ts, nullable, decorators });
+      out.push({ name, ts, nullable: optional || nullInType, optional, nullInType, decorators });
     }
     if (line && !line.startsWith("//") && !line.startsWith("*") && !line.startsWith("/*")) decorators = [];
   }
@@ -154,6 +193,8 @@ export function readModelSchema(source: string, table?: MigrationTable): Resourc
     };
   }
 
+  if (/@Table\s*\(/.test(source)) return readDecoratedModel(source, withSql);
+
   const primaryKey = staticString(source, "primaryKey") ?? "id";
   const generated = new Set(staticList(source, "generated") ?? ["id"]);
   const implicit = new Set<string>();
@@ -174,6 +215,31 @@ export function readModelSchema(source: string, table?: MigrationTable): Resourc
       // An auto-generated key and the timestamps are never sent by clients.
       .filter((p) => !implicit.has(p.name) && !(p.name === primaryKey && generated.has(p.name)))
       .map((p) => withSql({ name: p.name, ts: p.ts, nullable: p.nullable, generated: generated.has(p.name) })),
+  };
+}
+
+/**
+ * A model described with decorators. Only decorated columns count; fields
+ * declared with `?` (auto-increment, defaults) are filled in by the database.
+ */
+function readDecoratedModel(source: string, withSql: (f: ResourceField) => ResourceField): ResourceSchema {
+  const has = (p: Declared, name: RegExp) => p.decorators.some((d) => name.test(d));
+  const columns = declaredProperties(source).filter((p) =>
+    has(p, /^(Column|PrimaryKey|AutoIncrement|Identity|CreatedAt|UpdatedAt|DeletedAt)\b/),
+  );
+  const pk = columns.find((p) => has(p, /^PrimaryKey\b/));
+  const primaryKey = pk?.name ?? "id";
+  const generated = (p: Declared) => p.optional || has(p, /^(AutoIncrement|Identity)\b/);
+  return {
+    kind: "megh",
+    table: source.match(/@Table\s*\(\s*["'`]([^"'`]+)["'`]/)?.[1],
+    primaryKey,
+    primaryKeyType: pk?.ts ?? "number",
+    inputFields: columns
+      // The timestamps and an auto-generated key are never sent by clients.
+      .filter((p) => !has(p, /^(CreatedAt|UpdatedAt|DeletedAt)\b/))
+      .filter((p) => !(p.name === primaryKey && generated(p)))
+      .map((p) => withSql({ name: p.name, ts: p.ts, nullable: p.nullInType, generated: generated(p) })),
   };
 }
 

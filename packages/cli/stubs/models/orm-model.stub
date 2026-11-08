@@ -1,8 +1,7 @@
-import { Model } from "@meghjs/core";
+import { {imports} } from "@meghjs/core";
 
 // Columns read from the migrations (the table is created in {source}).
+@Table({table})
 export class {Model} extends Model {
-  {statics}
-
   {fields}
 }
