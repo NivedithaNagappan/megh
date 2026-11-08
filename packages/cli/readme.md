@@ -44,6 +44,7 @@ npm run start:dev
 | `doctor` | | | Check Node.js, `@meghjs/core`, `reflect-metadata` and decorator settings |
 | `route:list` | `routes` | `--json`, `--static` | List the app's routes |
 | `make:model` | `m:m` | `-f`, `--orm`, `--root <dir>` | Create a model / TypeORM entity |
+| `update:model` | `u:m` | `-t <table>`, `--dto`, `--dry-run`, `--root <dir>` | Sync a model's columns with its migrations, keeping relations and methods |
 | `make:controller` | `m:c` | `-f`, `-r`, `-m <model>`, `--orm`, `--root <dir>`, `--base-path` | Create a controller |
 | `make:service` | `m:s` | `-f`, `-r`, `-m <model>`, `--orm`, `--root <dir>` | Create a service |
 | `make:config` | `m:cnf` | `-f`, `--root <dir>` | Create an `@AppConfig` class |
