@@ -22,10 +22,15 @@ import {
 import { transformAndValidate } from "../common/utils/validation-utils";
 import { Type } from "class-transformer";
 import { MeghApplication } from "./application";
-import { ApiController } from "../http/controller";
+import { ApiController, MeghRequest } from "../http/controller";
 import { Get, Post } from "../http/route-methods";
 import { Body, Query } from "../http/params";
-import { Authorized } from "../http/middleware";
+import {
+  AppMiddleware,
+  Authorized,
+  MeghMiddleware,
+  UseMiddleware,
+} from "../http/middleware";
 import { AppService } from "../common/decorators";
 import {
   InternalErrorException,
@@ -138,6 +143,57 @@ class DenyByReturningFalse {
   }
 }
 
+@AppService
+class Greeting {
+  text = "hi";
+}
+
+@AppMiddleware
+class TagClassMiddleware extends MeghMiddleware {
+  constructor(private greeting: Greeting) {
+    super();
+  }
+  async invoke(req: IRequest) {
+    (req as any).trail = [...((req as any).trail ?? []), this.greeting.text];
+    return req;
+  }
+}
+
+@AppMiddleware
+class BlockMiddleware extends MeghMiddleware {
+  async invoke(req: IRequest, res?: any) {
+    if (req.headers["x-block"] === "yes") {
+      res.status(401).send({ blocked: true });
+    }
+    return req;
+  }
+}
+
+class TagInstanceMiddleware extends MeghMiddleware {
+  constructor(private tag: string) {
+    super();
+  }
+  async invoke(req: IRequest) {
+    (req as any).trail = [...((req as any).trail ?? []), this.tag];
+    return req;
+  }
+}
+
+@UseMiddleware(TagClassMiddleware)
+@ApiController("/scoped")
+class ScopedController {
+  @Get("/class")
+  classOnly(@MeghRequest() req: IRequest) {
+    return { trail: (req as any).trail };
+  }
+
+  @UseMiddleware([new TagInstanceMiddleware("route"), BlockMiddleware])
+  @Get("/route")
+  withRoute(@MeghRequest() req: IRequest) {
+    return { trail: (req as any).trail };
+  }
+}
+
 // ─── Harness ────────────────────────────────────────────────────────────────
 
 async function boot(setup: (app: MeghApplication) => void) {
@@ -217,6 +273,42 @@ describe("request pipeline", () => {
         /No authorization handler registered/,
       );
       await app.app.close();
+    });
+  });
+
+  describe("@UseMiddleware", () => {
+    let app: MeghApplication;
+
+    beforeAll(async () => {
+      vi.spyOn(console, "log").mockImplementation(() => {});
+      app = await boot((a) => a.useControllers([ScopedController]));
+    });
+
+    afterAll(async () => {
+      await app.app.close();
+      (console.log as any).mockRestore?.();
+    });
+
+    it("resolves class middleware through DI on a controller", async () => {
+      const res = await app.app.inject({ method: "GET", url: "/scoped/class" });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({ trail: ["hi"] });
+    });
+
+    it("runs class-level before route-level, mixing classes and instances", async () => {
+      const res = await app.app.inject({ method: "GET", url: "/scoped/route" });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({ trail: ["hi", "route"] });
+    });
+
+    it("stops the request when a route middleware sends a response", async () => {
+      const res = await app.app.inject({
+        method: "GET",
+        url: "/scoped/route",
+        headers: { "x-block": "yes" },
+      });
+      expect(res.statusCode).toBe(401);
+      expect(res.json()).toEqual({ blocked: true });
     });
   });
 

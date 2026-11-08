@@ -419,8 +419,9 @@ export class MeghRouter {
       const _authnInst = this.authenticationHandler
         ? (Container.get(this.authenticationHandler) as any)
         : null;
+      // @UseMiddleware accepts classes (resolved through DI) or instances.
       const _resolvedMw: MeghMiddleware[] = classMiddlewares.map((m: any) =>
-        Container.get<MeghMiddleware>(m.constructor),
+        typeof m === "function" ? Container.get<MeghMiddleware>(m) : m,
       );
 
       this.app.route({
