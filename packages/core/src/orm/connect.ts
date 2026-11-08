@@ -116,7 +116,7 @@ function mssql(options: ResolvedDatabaseOptions): KyselyDialect {
       }
     : options;
   const Tedious = defaultExport(tedious);
-  return new (kysely().MssqlDialect)({
+  const dialect = new (kysely().MssqlDialect)({
     tarn: {
       ...defaultExport(tarn),
       options: { min: options.pool.min ?? 0, max: options.pool.max ?? 10 },
@@ -139,6 +139,82 @@ function mssql(options: ResolvedDatabaseOptions): KyselyDialect {
         }),
     },
   });
+  return withSqlServerErrors(dialect);
+}
+
+/** SQL Server: "The ROLLBACK TRANSACTION request has no corresponding BEGIN TRANSACTION." */
+const NO_OPEN_TRANSACTION = 3903;
+
+/**
+ * Kysely rejects with a bare array when SQL Server sends several messages
+ * for one statement (a bad foreign key gives 1767 "references invalid
+ * table" and 1750 "Could not create constraint"). Merge them into one Error
+ * whose message reads them in order, keeping `number` and `errors`.
+ */
+function toError(error: unknown): unknown {
+  if (!Array.isArray(error) || error.length === 0) return error;
+  const first = error[0] as { name?: string; number?: number } | undefined;
+  return Object.assign(
+    new Error(
+      error.map((e) => (e instanceof Error ? e.message : String(e))).join(" "),
+      { cause: first },
+    ),
+    {
+      name: first?.name ?? "RequestError",
+      number: first?.number,
+      errors: error,
+    },
+  );
+}
+
+/**
+ * Makes SQL Server's errors readable:
+ *
+ * - Some errors (a foreign key to a missing table, a conversion error, …)
+ *   abort the whole transaction. The rollback that follows then fails with
+ *   error 3903, and Kysely would report that instead of the error that
+ *   caused it. The transaction is already gone, so 3903 is ignored and the
+ *   original error comes through.
+ * - Several messages for one statement arrive as one Error (see toError).
+ */
+export function withSqlServerErrors(dialect: KyselyDialect): KyselyDialect {
+  const wrapped = new WeakSet<object>();
+  return {
+    createAdapter: () => dialect.createAdapter(),
+    createIntrospector: (db) => dialect.createIntrospector(db),
+    createQueryCompiler: () => dialect.createQueryCompiler(),
+    createDriver: () => {
+      const driver = dialect.createDriver();
+      const acquire = driver.acquireConnection.bind(driver);
+      driver.acquireConnection = async () => {
+        const connection = await acquire();
+        // Pooled connections come back again: wrap each one once.
+        if (!wrapped.has(connection)) {
+          wrapped.add(connection);
+          const execute = connection.executeQuery.bind(connection);
+          connection.executeQuery = async (query) => {
+            try {
+              return await execute(query);
+            } catch (error) {
+              throw toError(error);
+            }
+          };
+        }
+        return connection;
+      };
+      const rollback = driver.rollbackTransaction.bind(driver);
+      driver.rollbackTransaction = async (...args) => {
+        try {
+          await rollback(...args);
+        } catch (error) {
+          if ((error as { number?: unknown })?.number !== NO_OPEN_TRANSACTION) {
+            throw toError(error);
+          }
+        }
+      };
+      return driver;
+    },
+  };
 }
 
 function stripUndefined<T extends object>(value: T): Partial<T> {

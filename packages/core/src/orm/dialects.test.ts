@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { Kysely } from "kysely";
+import { sql, type Kysely } from "kysely";
 import {
   AutoIncrement,
   Column,
@@ -14,9 +14,9 @@ import {
   createDatabase,
   resolveDatabaseOptions,
   type CreateInput,
-  type PageRequest,
   type UpdateInput,
 } from "./index";
+import type { PageRequest } from "../collection/pagination";
 
 /**
  * The REST operations `make:resource` generates (list, paginate, show,
@@ -278,6 +278,26 @@ for (const database of DATABASES) {
       ).rejects.toThrow("undo");
       expect(await Role.findBy("name", "Temp")).toBeUndefined();
     });
+
+    // SQL Server aborts the whole transaction on some errors, so the
+    // rollback that follows has nothing to undo; the cause must still show.
+    it.runIf(database.name === "mssql")(
+      "reports the error that aborted a transaction or savepoint",
+      async () => {
+        const addKey = () =>
+          sql`alter table ${sql.table(TABLE)} add constraint megh_ghost_fk foreign key (level) references megh_no_such_table (id)`.execute(
+            Model.db(),
+          );
+        await expect(Model.transaction(addKey)).rejects.toThrow(
+          /references invalid table 'megh_no_such_table'/,
+        );
+        await expect(
+          Model.transaction(() => Model.transaction(addKey)),
+        ).rejects.toThrow(/references invalid table 'megh_no_such_table'/);
+        // The connection is usable afterwards.
+        expect(await Role.count()).toBeGreaterThan(0);
+      },
+    );
 
     it("schema.table() adds, renames and drops columns", async () => {
       await schema.table(TABLE, (table) => {
