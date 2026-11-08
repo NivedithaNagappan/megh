@@ -1,14 +1,14 @@
 ---
-title: Usage
-description: How to create a basic megh application.
+title: Quick Start
+description: Writing your first routes, with a controller or inline, returning responses and running the app.
 ---
 
-# Usage
+# Quick Start
 
 There are two ways to design your application: `Controller based` and
 `Route method based`. They can be mixed in the same app.
 
-## Using Controller
+## Using a controller
 
 Controllers group related routes and can take dependencies through the
 constructor. This is the approach the CLI scaffolds.
@@ -41,7 +41,7 @@ export class WelcomeController {
 See [Controller](/core-concept/controller) for parameters, REST resources and
 error handling.
 
-## Using Inline Route
+## Using inline routes
 
 For small apps, register handlers directly on the app with `mapGet`, `mapPost`,
 `mapPut` and `mapDelete`:

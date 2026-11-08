@@ -26,7 +26,7 @@ npm i -D @meghjs/cli@^0.5.2
   `exists()`, `paginate()`, `simplePaginate()` and `forPage()` failed with
   `Incorrect syntax near 'limit'`. Queries now use `top(n)` and
   `offset … fetch next … rows only` on SQL Server. See
-  [Paging on SQL Server](/advanced/orm#paging-on-sql-server).
+  [Paging on SQL Server](/advanced/orm/queries#paging-on-sql-server).
 
 ## Changes in 0.5.1
 
@@ -76,7 +76,7 @@ export class User extends Model {
 - Fields marked `?` are optional in `create()`.
 - `@Column({ name })`, or `useMeghORM({ naming: 'snake_case' })`, maps
   camelCase properties to other column names. See
-  [Column names](/advanced/orm#column-names).
+  [Column names](/advanced/orm/models#column-names).
 - `npx megh make:model` now writes decorator models.
 
 ### Migrations with the schema builder
@@ -115,7 +115,7 @@ await DB.transaction(async () => {
 });
 ```
 
-See [Query builder](/advanced/orm#query-builder).
+See [Query builder](/advanced/orm/query-builder).
 
 ### Megh's own DI container
 

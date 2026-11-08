@@ -115,9 +115,9 @@ metadata. Existing projects are not changed.
 - [MeghORM](/advanced/orm): type-safe models built on Kysely, with
   relations and eager loading, timestamps, soft deletes, casts and
   transactions. Connect them with `app.useDatabase(db)`.
-- [Migrations](/advanced/orm#migrations): `avleon make:migration` and the
+- [Migrations](/advanced/orm/migrations): `avleon make:migration` and the
   `migrate`, `migrate:status`, `migrate:rollback`, `migrate:reset` and
-  `migrate:refresh` [commands](/cli/basic#migrations).
+  `migrate:refresh` [commands](/cli/database#migrations).
 - The generated [OpenAPI](/microservices/openapi) spec now documents request
   bodies.
 

@@ -1,11 +1,9 @@
 ---
 title: Introduction
-description: What Megh is.
+description: What Megh is and what it includes.
 ---
 
 # Introduction
-
-## Overview
 
 Megh is a TypeScript-first web framework built on [Fastify](https://fastify.dev),
 for building REST APIs with minimal boilerplate. It gives you:
@@ -15,8 +13,8 @@ for building REST APIs with minimal boilerplate. It gives you:
 - Request validation with class-validator DTOs
 - Authentication and deny-by-default authorization
 - Automatic OpenAPI documentation with Swagger UI or Scalar
-- [MeghORM](/advanced/orm): type-safe decorator models, a query builder and
-  migrations with a schema builder
+- [MeghORM](/advanced/orm): type-safe decorator models, a query builder,
+  migrations with a schema builder, seeders and factories
 - TypeORM and Knex integrations with one pagination shape
 - Events, BullMQ queues, task scheduling and caching
 - Socket.IO integration
