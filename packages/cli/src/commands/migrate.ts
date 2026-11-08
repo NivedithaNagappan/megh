@@ -11,6 +11,7 @@ import { readPackageJson, requireProjectRoot } from "../utils/project";
 export const LEGACY_CONNECTION = "src/database/connection.ts";
 export const DEFAULT_MIGRATIONS = "src/database/migrations";
 export const DEFAULT_SEEDERS = "src/database/seeders";
+export const DEFAULT_FACTORIES = "src/database/factories";
 
 export type DatabasePaths = {
   /**
@@ -27,6 +28,8 @@ export type DatabasePaths = {
   migrations: string;
   /** Folder of seeder files. */
   seeders: string;
+  /** Folder of model factory files. */
+  factories: string;
 };
 
 /** `megh.database` / `megh.migrations` / `megh.seeders` from package.json, else the defaults. */
@@ -41,6 +44,7 @@ export function databasePaths(root: string, pkg: Record<string, any> = readPacka
     settings: conf.database && typeof conf.database === "object" ? conf.database : {},
     migrations: path.resolve(root, typeof conf.migrations === "string" ? conf.migrations : DEFAULT_MIGRATIONS),
     seeders: path.resolve(root, typeof conf.seeders === "string" ? conf.seeders : DEFAULT_SEEDERS),
+    factories: path.resolve(root, typeof conf.factories === "string" ? conf.factories : DEFAULT_FACTORIES),
   };
 }
 

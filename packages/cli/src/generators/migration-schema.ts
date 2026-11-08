@@ -129,6 +129,11 @@ function literal(arg: string | undefined): string | undefined {
   return m[2];
 }
 
+/** The value of a plain number literal, else `undefined`. */
+function literalNumber(arg: string | undefined): number | undefined {
+  return arg !== undefined && /^\d+$/.test(arg.trim()) ? Number(arg.trim()) : undefined;
+}
+
 /** A column data type argument: `"text"`, `sql\`varchar(255)\``, … */
 function dataType(arg: string | undefined): string {
   if (!arg) return "";
@@ -388,8 +393,10 @@ function applyBlueprintCall(table: MigrationTable, method: string, args: string[
     }
   }
 
-  const type = BUILDER_TYPES[method];
-  if (!type) return;
+  const builderType = BUILDER_TYPES[method];
+  if (!builderType) return;
+  // string(name, length = 255) is a varchar(length) column.
+  const type = method === "string" ? `varchar(${Number(literalNumber(args[1]) ?? 255)})` : builderType;
   const columnName = name ?? (method === "id" ? "id" : undefined);
   if (!columnName) return;
   const autoIncrement = /^(id|increments|bigIncrements)$/.test(method) || /\.autoIncrement\s*\(/.test(chain);

@@ -52,6 +52,7 @@ npm run start:dev
 | `make:dto` | `m:dto` | `-f`, `--root <dir>` | Create a class-validator DTO |
 | `make:seeder` | `m:sd` | `-f` | Create a seeder in `src/database/seeders` (`database` for the entry seeder) |
 | `db:seed` | | `-s <name>`, `--force` | Run the seeders in one transaction (also `migrate --seed`) |
+| `make:factory` | `m:f` | `-f` | Create a model factory in `src/database/factories`, with Faker values per column |
 
 `-f` / `--force` overwrites an existing file. `-r` / `--resource` generates a
 full REST skeleton. `--root <dir>` (also `-rt`) writes under `src/<dir>`

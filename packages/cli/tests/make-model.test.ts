@@ -113,7 +113,7 @@ export default defineMigration({
     ]);
     const col = (name: string) => members.columns.find((c) => c.name === name)!;
     expect(col("id")).toMatchObject({ primaryKey: true, autoIncrement: true, notNull: true });
-    expect(col("email")).toMatchObject({ type: "varchar", notNull: true });
+    expect(col("email")).toMatchObject({ type: "varchar(100)", notNull: true });
     expect(col("full_name").notNull).toBe(false);
     expect(col("is_admin")).toMatchObject({ type: "boolean", generated: true });
     expect(col("team_id").notNull).toBe(false);

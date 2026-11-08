@@ -16,6 +16,7 @@ import {
   makeModel,
   makeResource,
   makeSeeder,
+  makeFactory,
   updateModel,
   makeService,
 } from "./generators/make";
@@ -210,6 +211,20 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
     .option("-f, --force", "Overwrite the file if it exists")
     .action((name: string, o) => {
       makeSeeder(name, { cwd: cwd(), force: o.force });
+    });
+
+  sub("make:factory", "Create a model factory in src/database/factories/<name>.factory.ts")
+    .alias("m:f")
+    .argument("<model>", "Model name, e.g. user for src/models/user.model.ts")
+    .option("-f, --force", "Overwrite the file if it exists")
+    .addHelpText(
+      "after",
+      "\nWrites UserFactory = defineFactory(User, ({ faker }) => ({ ... })) with a Faker value\n" +
+        "for each column, picked from its name and type. A foreign key such as role_id uses\n" +
+        "RoleFactory when src/database/factories/role.factory.ts exists. Needs @faker-js/faker.",
+    )
+    .action((name: string, o) => {
+      makeFactory(name, { cwd: cwd(), force: o.force });
     });
 
   // ── Generators ──────────────────────────────────────────────────────────

@@ -66,6 +66,7 @@ const DEP_VERSIONS: Record<string, string> = {
   "@vitest/coverage-v8": "^4.1.12",
   "unplugin-swc": "^2.0.0",
   "@swc/core": "^1.16.20",
+  "@faker-js/faker": "^10.6.0",
 };
 
 function isDirEmpty(dir: string) {
@@ -179,6 +180,8 @@ export function packageJson(
   const pickDev = (...names: string[]) => names.forEach((n) => (devDeps[n] = DEP_VERSIONS[n]));
   pickDev("@types/node", "typescript");
   if (!minimal) pickDev("@swc/core", "@vitest/coverage-v8", "unplugin-swc", "vitest");
+  // Model factories (megh make:factory) fill rows with Faker values.
+  if (features.includes("orm")) pickDev("@faker-js/faker");
 
   const scripts: Record<string, string> = {
     "start:dev": "megh serve",

@@ -1034,6 +1034,74 @@ Pass `seeders: { roles: defineSeeder({ run }) }` instead of `folder` to define
 them inline, and `transaction: false` to commit each statement as it runs. A
 failure throws a `SeedError` whose `seeder` names the seeder that failed.
 
+## Factories
+
+A factory builds rows of a model with fake values from
+[Faker](https://fakerjs.dev), for seeders and tests. Install Faker in the app
+(`npm install -D @faker-js/faker`), then define the factory, or generate one
+with [`megh make:factory user`](/cli/basic#factories):
+
+```ts [src/database/factories/user.factory.ts]
+import { defineFactory } from '@meghjs/core';
+import { User } from '../../models/user.model';
+import { RoleFactory } from './role.factory';
+
+export const UserFactory = defineFactory(User, ({ faker, sequence }) => ({
+  name: faker.person.fullName(),
+  email: `user${sequence}@${faker.internet.domainName()}`,
+  is_active: true,
+  role_id: RoleFactory,
+}));
+```
+
+The definition gets `faker` and `sequence` (1 for the first row this factory
+builds, then 2, 3, …). Its values are typed from the model, like `create()`'s.
+
+```ts
+await UserFactory.create();                        // one saved row
+await UserFactory.createMany(10);                  // ten, each with its own values
+await UserFactory.create({ name: 'Ann' });         // override some values
+const user = await UserFactory.make();             // an unsaved instance; user.save() inserts it
+const body = await UserFactory.raw();              // just the values, e.g. for a POST in a test
+```
+
+`state()` returns a new factory with more values applied. Keep the ones you
+reuse as constants:
+
+```ts
+export const InactiveUser = UserFactory.state({ is_active: false });
+export const Admin = UserFactory.state(({ sequence }) => ({ name: `Admin ${sequence}` }));
+
+await InactiveUser.createMany(3);
+```
+
+A value that is another factory creates a related row and uses its primary
+key: `role_id: RoleFactory` gives each user its own role. To share one, pass
+the key: `UserFactory.createMany(5, { role_id: admin.id })`.
+
+Inside a seeder, factories run in its transaction like every other query, so
+a failing seed saves nothing:
+
+```ts [src/database/seeders/users.seeder.ts]
+export default defineSeeder({
+  async run() {
+    const admin = await RoleFactory.create({ name: 'Admin' });
+    await UserFactory.createMany(20, { role_id: admin.id });
+  },
+});
+```
+
+`useFaker()` changes the Faker instance factories use, for a locale or for
+repeatable values:
+
+```ts
+import { fakerDE } from '@faker-js/faker';
+import { useFaker } from '@meghjs/core';
+
+useFaker(fakerDE);
+fakerDE.seed(42); // the same values on every run
+```
+
 ## Generating models
 
 `npx megh make:model user` writes `src/models/user.model.ts`, with its

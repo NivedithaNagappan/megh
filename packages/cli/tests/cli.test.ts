@@ -232,6 +232,7 @@ describe("new", () => {
     await createApplication("shop", { cwd: tmp, yes: true, skipInstall: true, features: ["orm"] });
     const pkg = JSON.parse(read("shop", "package.json"));
     expect(pkg.dependencies["better-sqlite3"]).toBeDefined();
+    expect(pkg.devDependencies["@faker-js/faker"]).toBeDefined(); // for make:factory
     expect(pkg.dependencies.kysely).toBeUndefined(); // ships with @meghjs/core
     expect(pkg.dependencies["@meghjs/data"]).toBeUndefined();
     expect(read("shop", "src", "app.ts")).toContain("app.useMeghORM();");

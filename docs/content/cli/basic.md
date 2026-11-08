@@ -27,6 +27,7 @@ npm i -g @meghjs/cli
 | `make:middleware` | `m:mlwr` | Create a middleware |
 | `make:migration` | `m:mig` | Create a database migration |
 | `make:seeder` | `m:sd` | Create a database seeder |
+| `make:factory` | `m:f` | Create a model factory with Faker values |
 | `migrate` | | Run pending migrations (`--seed` to seed afterwards) |
 | `migrate:status` | | Show which migrations have run |
 | `migrate:rollback` | | Undo the last migration (`--step <n>` for more) |
@@ -310,6 +311,41 @@ A whole run is one transaction: if a seeder throws, nothing is saved and the
 error names the seeder. Seeding refuses to run when `NODE_ENV` is
 `production` unless you pass `--force`. Set `megh.seeders` in `package.json`
 to use another folder. See [MeghORM: Seeding](/advanced/orm#seeding).
+
+## Factories
+
+```sh
+npx megh make:factory role
+npx megh make:factory user
+```
+
+`make:factory` reads the model's columns and writes
+`src/database/factories/<name>.factory.ts` with a [Faker](https://fakerjs.dev)
+value for each, picked from the column's name and type:
+
+```ts [src/database/factories/user.factory.ts]
+import { defineFactory } from "@meghjs/core";
+import { User } from "../../models/user.model";
+import { RoleFactory } from "./role.factory";
+
+export const UserFactory = defineFactory(User, ({ faker }) => ({
+  name: faker.person.fullName(),
+  email: faker.internet.email(),
+  phone: faker.phone.number({ style: "international" }).slice(0, 20),
+  is_active: faker.datatype.boolean(),
+  role_id: RoleFactory,
+}));
+```
+
+A foreign key such as `role_id` uses `RoleFactory` when that factory exists,
+so create the related model's factory first; otherwise it is left as a
+comment (or `null` for a nullable key). Values are kept within short
+`varchar(n)` columns. The generated key and timestamps are left out. Edit the
+result freely: it's your code.
+
+Factories need `@faker-js/faker` (`npm install -D @faker-js/faker`); `megh new`
+adds it to projects with MeghORM. Set `megh.factories` in `package.json` to use
+another folder. See [MeghORM: Factories](/advanced/orm#factories).
 
 ## Build
 

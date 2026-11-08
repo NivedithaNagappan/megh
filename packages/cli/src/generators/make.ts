@@ -10,6 +10,7 @@ import { readMigrationSchema } from "./migration-schema";
 import { pluralRoute, pluralize, renderBlankOrmModel, renderOrmModel } from "./orm-model";
 import { readModelSchema, renderResourceDto, type ResourceSchema } from "./resource";
 import { syncModelSource, type ModelChanges } from "./update-model";
+import { renderFactory, type ForeignKey } from "./factory";
 
 export type MakeBaseOptions = {
   /** Directory to start the project-root search from. Defaults to `process.cwd()`. */
@@ -531,4 +532,54 @@ function existingSeeders(folder: string): string[] {
     .filter((f) => /\.(c?js|mjs|c?ts|mts)$/.test(f) && !/\.d\.[cm]?ts$/.test(f))
     .sort()
     .map((f) => f.replace(/\.(c?js|mjs|c?ts|mts)$/, "").replace(/\.seeder$/, ""));
+}
+
+export type MakeFactoryOptions = Pick<MakeBaseOptions, "cwd" | "force">;
+
+/**
+ * `make:factory user`: `<factories>/user.factory.ts` exporting `UserFactory`,
+ * with a Faker value for each of the model's columns. Foreign keys use the
+ * related model's factory when it exists.
+ */
+export function makeFactory(name: string, opts: MakeFactoryOptions = {}): string {
+  const projectRoot = requireProjectRoot(opts.cwd ?? process.cwd());
+  const n = resolveName(name.replace(/[-_.]?factory$/i, ""), "Model");
+  const modelFile = path.join(targetDir(projectRoot, "model", n.dirs), `${n.fileBase}.model.ts`);
+  if (!fs.existsSync(modelFile)) {
+    throw new CliError(
+      `There is no ${n.base} model (${relPath(projectRoot, modelFile)}) to build a factory for. ` +
+        `Create it first: megh make:model ${n.base}`,
+    );
+  }
+  const model = resolveResourceModel(projectRoot, [...n.dirs, n.base].join("/"));
+  if (model.typeorm) throw new CliError(`${relPath(projectRoot, modelFile)} is a TypeORM entity; factories build Megh ORM models.`);
+
+  const { factories } = databasePaths(projectRoot);
+  const file = path.join(factories, ...n.dirs, `${n.fileBase}.factory.ts`);
+  const fields = model.schema!.inputFields;
+  const foreignKeys: ForeignKey[] = fields
+    .filter((f) => /_id$/.test(f.name) && (f.ts === "number" || f.ts === "string"))
+    .map((f) => {
+      const related = resolveName(f.name.replace(/_id$/, ""), "Model");
+      const factoryFile = path.join(factories, `${related.fileBase}.factory.ts`);
+      const exists = fs.existsSync(factoryFile);
+      return {
+        column: f.name,
+        model: snakeCase(related.base),
+        ...(exists ? { factory: `${related.base}Factory`, factoryImport: importPath(file, factoryFile) } : {}),
+      };
+    });
+
+  write(
+    file,
+    renderFactory({ model: n.base, modelImport: importPath(file, modelFile), fields, foreignKeys }),
+    opts.force,
+    "Factory",
+    projectRoot,
+  );
+  log.info(`  Use it in a seeder or test: await ${n.base}Factory.createMany(10);`);
+  if (!installedVersion("@faker-js/faker", projectRoot)) {
+    log.warn("Factories use Faker for fake values. Install it: npm install -D @faker-js/faker");
+  }
+  return file;
 }
