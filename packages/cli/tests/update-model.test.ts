@@ -98,7 +98,7 @@ describe("update:model", () => {
     const model = readModel();
 
     expect(model).toContain("@Column() full_name!: string;");
-    expect(model).toContain("@Column({ nullable: true }) phone!: string | null;");
+    expect(model).toContain('@Column({ nullable: true, type: "string" }) phone!: string | null;');
     expect(model).toContain('@Column({ type: "boolean" }) is_active?: boolean;');
     expect(model).not.toMatch(/\bage\b/);
     expect(model).not.toMatch(/\bname!:/);

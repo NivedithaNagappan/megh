@@ -108,7 +108,12 @@ describe("make:resource from a migration", () => {
     expect(ctrl).toContain("@ApiController('/users')");
     expect(ctrl).toContain("index(@Query() query: ListUsersQuery)");
     expect(ctrl).toContain("create(@Body() body: CreateUserDto)");
-    expect(ctrl).toContain("@Put('/:id')\n  update(@Param('id') id: number, @Body() body: UpdateUserDto)");
+    expect(ctrl).toContain(
+      "@Put('/:id')\n  @ApiResponse(200, User)\n  @ApiResponse(404)\n  update(@Param('id') id: number, @Body() body: UpdateUserDto)",
+    );
+    // Responses are documented with the model, a page of it, and findOrFail()'s 404.
+    expect(ctrl).toContain("import { User } from '../models/user.model';");
+    expect(ctrl).toContain("@Get()\n  @ApiResponse(200, Paginated(User))\n  index(");
     expect(ctrl).toContain("this.userService.findOrFail(Number(id))");
     expect(ctrl).not.toContain("@Patch");
   });

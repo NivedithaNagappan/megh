@@ -44,6 +44,19 @@ export interface Paginated<T> {
   meta: PaginationMeta;
 }
 
+/** Marks a page of a class for OpenAPI. See {@link Paginated}. */
+export const PAGINATED_ITEM = Symbol.for("megh.openapi.paginated");
+
+/**
+ * For OpenAPI: a page of `item`s, `{ data: Item[], meta }`, as `paginate()`
+ * returns. `@ApiResponse(200, Paginated(User))`.
+ */
+export function Paginated(item: abstract new (...args: any[]) => any): {
+  readonly [PAGINATED_ITEM]: abstract new (...args: any[]) => any;
+} {
+  return { [PAGINATED_ITEM]: item };
+}
+
 export const DEFAULT_PER_PAGE = 10;
 
 /** Resolve a page request (new or legacy shape) into page, perPage and offset. */

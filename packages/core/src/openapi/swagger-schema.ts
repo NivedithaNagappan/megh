@@ -436,6 +436,11 @@ export function generateSwaggerSchema(
   };
 }
 
+/**
+ * @deprecated Documents the body wrapped in `{ code, status, data }`, which
+ * Megh doesn't send: handlers' return values are sent as they are. Use
+ * `@ApiResponse(200, UserDto)` on the route instead.
+ */
 export function OpenApiResponse(
   code: number = 200,
   model: any,

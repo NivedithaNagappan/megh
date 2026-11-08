@@ -18,7 +18,7 @@ export const MEGH_FAVICON_ICO_BASE64 =
  * built-in logo instead; `theme` is merged over the Megh favicon.
  */
 export function swaggerUiBranding(
-  options: { logo?: unknown; theme?: Record<string, unknown> } = {},
+  options: { logo?: unknown; theme?: object } = {},
 ) {
   return {
     logo:

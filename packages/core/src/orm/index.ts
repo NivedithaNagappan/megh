@@ -1,4 +1,5 @@
 export { Model } from "./model";
+export { modelSchema } from "./openapi";
 export {
   ModelQuery,
   type ComparisonOperator,

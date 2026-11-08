@@ -5,6 +5,7 @@
  * @url https://github.com/xtareq
  */
 import { registerSchemaProperty } from "./schema-properties";
+import type { PaginatedType } from "./responses";
 
 export interface InfoObject {
   title: string;
@@ -36,30 +37,132 @@ export interface ServerVariableObject {
   description?: string;
 }
 
+/** Swagger UI's top-bar logo. */
+export interface SwaggerUiLogo {
+  /** Media type, e.g. `"image/svg+xml"` or `"image/png"`. */
+  type: string;
+  content: string | Buffer;
+  /** Link the logo opens. */
+  href?: string;
+  target?: "_blank" | "_parent" | "_self" | "_top";
+}
+
+/** A file Swagger UI's page loads: a stylesheet, script or favicon. */
+export interface SwaggerUiThemeFile {
+  filename: string;
+  content: string | Buffer;
+}
+
+export interface SwaggerUiFavicon extends SwaggerUiThemeFile {
+  /** e.g. `"icon"`. */
+  rel: string;
+  /** e.g. `"32x32"`. */
+  sizes: string;
+  /** e.g. `"image/png"`. */
+  type: string;
+}
+
+/** Swagger UI's page: its title, extra stylesheets and scripts, and favicons. */
+export interface SwaggerUiTheme {
+  /** The browser tab's title. */
+  title?: string;
+  css?: SwaggerUiThemeFile[];
+  js?: SwaggerUiThemeFile[];
+  favicon?: SwaggerUiFavicon[];
+}
+
+/** Swagger UI settings (https://swagger.io/docs/open-source-tools/swagger-ui/usage/configuration/). */
+export interface SwaggerUiConfig {
+  /** Which operations start expanded. Megh defaults to `"full"`. */
+  docExpansion?: "list" | "full" | "none";
+  /** Link to each operation from the URL. Megh defaults to `false`. */
+  deepLinking?: boolean;
+  /** Keep the "Authorize" credentials across page reloads. */
+  persistAuthorization?: boolean;
+  /** Show how long each "Try it out" request took. */
+  displayRequestDuration?: boolean;
+  /** Show a box that filters operations by tag. */
+  filter?: boolean | string;
+  /** Open every operation in "Try it out" mode. */
+  tryItOutEnabled?: boolean;
+  /** How deep schemas start expanded in the models list; `-1` hides it. */
+  defaultModelsExpandDepth?: number;
+  defaultModelExpandDepth?: number;
+  /** Order of operations within a tag. */
+  operationsSorter?: "alpha" | "method";
+  tagsSorter?: "alpha";
+  /** Any other Swagger UI setting. */
+  [setting: string]: unknown;
+}
+
+/** Scalar settings (https://github.com/scalar/scalar/blob/main/documentation/configuration.md). */
+export interface ScalarConfig {
+  /** Color theme, e.g. `"default"`, `"purple"`, `"moon"`, `"kepler"`. */
+  theme?: string;
+  layout?: "modern" | "classic";
+  darkMode?: boolean;
+  hideModels?: boolean;
+  /** Hide the "Download OpenAPI document" button. */
+  hideDownloadButton?: boolean;
+  /** Extra CSS for the page. */
+  customCss?: string;
+  /** Any other Scalar setting. */
+  [setting: string]: unknown;
+}
+
+/**
+ * How `@Authorized` routes are secured, for the "Authorize" button:
+ * `"bearer"` (a JWT in `Authorization: Bearer …`), `"apiKey"` (an
+ * `X-API-Key` header), or any OpenAPI security scheme. Each `@Authorized`
+ * route is marked with it.
+ */
+export type OpenApiAuth = "bearer" | "apiKey" | SecuritySchemeObject;
+
+/**
+ * Options for `app.useOpenApi()`: the document's details and the docs page.
+ *
+ * ```ts
+ * app.useOpenApi({
+ *   info: { title: 'Shop API', version: '1.0.0' },
+ *   routePrefix: '/docs',
+ *   auth: 'bearer',
+ * });
+ * ```
+ */
 export type OpenApiUiOptions = {
-  /**
-   * Swagger UI top-bar logo, e.g. `{ type: "image/svg+xml", content, href? }`.
-   * Defaults to the Megh logo; `null` shows Swagger UI's own logo.
-   */
-  logo?: any;
-  /**
-   * Swagger UI theme (`title`, `css`, `js`, `favicon`). Defaults to the Megh
-   * favicon; any key given here replaces the default.
-   */
-  theme?: any;
-  provider?: "default" | "scalar";
-  ui?: "default" | "scalar";
-  openapi?: string;
-  uiConfig?: any;
-  configuration?: any;
-  routePrefix?: string;
+  /** The API's title, version and description. Defaults to `{ title: "API", version: "1.0.0" }`. */
   info?: InfoObject;
+  /** Where the docs page is served. Defaults to `/swagger`; the document is at `<routePrefix>/json`. */
+  routePrefix?: string;
+  /** The docs page: Swagger UI (`"default"`) or Scalar (`"scalar"`, needs `@scalar/fastify-api-reference`). */
+  provider?: "default" | "scalar";
+  /** Marks every `@Authorized` route with this security scheme. See {@link OpenApiAuth}. */
+  auth?: OpenApiAuth;
+  /** Base URLs the API is served from, e.g. `[{ url: "https://api.example.com" }]`. */
   servers?: ServerObject[];
-  paths?: PathsObject<any>;
-  components?: ComponentsObject;
-  security?: SecurityRequirementObject[];
+  /** Descriptions of the tags (one per controller, named after it without `Controller`). */
   tags?: TagObject[];
-  externalDocs?: any;
+  /** Security requirement for every operation. Prefer `auth`, which applies to `@Authorized` routes only. */
+  security?: SecurityRequirementObject[];
+  /** Extra component schemas, responses, security schemes, … merged into the generated ones. */
+  components?: ComponentsObject;
+  externalDocs?: ExternalDocumentationObject;
+  /** Swagger UI settings. With `provider: "scalar"`, Scalar settings (or use `scalar`). */
+  uiConfig?: SwaggerUiConfig;
+  /** Scalar settings, with `provider: "scalar"`. */
+  scalar?: ScalarConfig;
+  /** Swagger UI's top-bar logo. Defaults to the Megh logo; `null` shows Swagger UI's own. */
+  logo?: SwaggerUiLogo | null;
+  /** Swagger UI's page title, CSS, scripts and favicon. Defaults to the Megh favicon. */
+  theme?: SwaggerUiTheme;
+  /** OpenAPI version of the document. Defaults to `"3.0.3"`. */
+  openapi?: string;
+  /** Extra paths documented as given, e.g. for routes outside Megh. */
+  paths?: PathsObject<any>;
+  /** @deprecated Use `provider`. */
+  ui?: "default" | "scalar";
+  /** @deprecated Use `scalar`. */
+  configuration?: ScalarConfig;
 };
 export interface PathsObject<T extends {} = {}, P extends {} = {}> {
   [pattern: string]: (PathItemObject<T> & P) | undefined;
@@ -415,8 +518,18 @@ export type ResponseBodyOptions = {
   };
 } & Partial<BaseSchemaObject>; // ✅ inherits all schema fields (format, enum, minimum, etc.)
 
+/**
+ * Responses keyed by status code. A DTO or model class, `[Class]` or
+ * `Paginated(Class)` is documented only; a JSON schema (`ResponseBodyOptions`)
+ * also becomes Fastify's response schema, which serializes the reply.
+ */
 export type ResponsesOptions = {
-  [statusCode: number]: ResponseBodyOptions | ResponseObject;
+  [statusCode: number]:
+    | ResponseBodyOptions
+    | ResponseObject
+    | SchemaClass
+    | readonly [SchemaClass]
+    | PaginatedType;
 };
 
 export type OpenApiOptions = {

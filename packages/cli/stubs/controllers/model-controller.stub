@@ -1,4 +1,5 @@
-import { ApiController, Body, Delete, Get, Param, Post, Put, Query } from '@meghjs/core';
+import { ApiController, ApiResponse, Body, Delete, Get, Paginated, Param, Post, Put, Query } from '@meghjs/core';
+import { {Model} } from '{modelImport}';
 import { Create{Model}Dto, List{Plural}Query, Update{Model}Dto } from '{dtoImport}';
 import { {ServiceClass} } from '{serviceImport}';
 
@@ -7,26 +8,34 @@ export class {ClassName} {
   constructor(private readonly {serviceVar}: {ServiceClass}) {}
 
   @Get()
+  @ApiResponse(200, Paginated({Model}))
   index(@Query() query: List{Plural}Query) {
     return this.{serviceVar}.paginate(query);
   }
 
   @Get('/:id')
+  @ApiResponse(200, {Model})
+  @ApiResponse(404)
   show(@Param('id') id: {primaryKeyType}) {
     return this.{serviceVar}.findOrFail({idArg});
   }
 
   @Post()
+  @ApiResponse(200, {Model})
   create(@Body() body: Create{Model}Dto) {
     return this.{serviceVar}.create(body);
   }
 
   @Put('/:id')
+  @ApiResponse(200, {Model})
+  @ApiResponse(404)
   update(@Param('id') id: {primaryKeyType}, @Body() body: Update{Model}Dto) {
     return this.{serviceVar}.update({idArg}, body);
   }
 
   @Delete('/:id')
+  @ApiResponse(200, { type: 'object', properties: { message: { type: 'string' } } })
+  @ApiResponse(404)
   async delete(@Param('id') id: {primaryKeyType}) {
     await this.{serviceVar}.delete({idArg});
     return { message: '{Model} deleted.' };

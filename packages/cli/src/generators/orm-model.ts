@@ -141,7 +141,13 @@ export function renderField(column: MigrationColumn): { decorators: string[]; fi
   const options: string[] = [];
   if (!column.notNull) options.push("nullable: true");
   if (cast && CAST_TYPES[cast]) options.push(`type: ${q(CAST_TYPES[cast]!)}`);
-  else if (cast === "number") options.push(`cast: "number"`); // e.g. Postgres bigint, read as text
+  else {
+    // A `T | null` field's emitted type is `Object`, so name the column type
+    // (for OpenAPI schemas); it doesn't change how values convert.
+    const sqlType = !column.notNull ? plainColumnType(column.type) : undefined;
+    if (sqlType) options.push(`type: ${q(sqlType)}`);
+    if (cast === "number") options.push(`cast: "number"`); // e.g. Postgres bigint, read as text
+  }
   // Key columns are already declared by @PrimaryKey / @AutoIncrement.
   if (options.length > 0 || decorators.length === 0) {
     decorators.push(options.length ? `@Column({ ${options.join(", ")} })` : "@Column()");
@@ -150,6 +156,20 @@ export function renderField(column: MigrationColumn): { decorators: string[]; fi
   // `?`: the database fills it in (auto-increment or a default), so create() may leave it out.
   const mark = column.generated ? "?" : "!";
   return { decorators, field: `${name}${mark}: ${column.notNull ? ts : `${ts} | null`};` };
+}
+
+/** The model column type for a SQL type that needs no cast, or `undefined`. */
+function plainColumnType(sqlType: string): string | undefined {
+  const base = sqlType.replace(/\(.*$/, "").trim();
+  if (/^(varchar|char|character|character varying|nvarchar|nchar|citext|enum|inet|cidr|macaddr)$/.test(base)) return "string";
+  if (/^(text|tinytext|mediumtext|longtext|ntext)$/.test(base)) return "text";
+  if (base === "uuid" || base === "uniqueidentifier") return "uuid";
+  if (/^(int\d?|integer|smallint|mediumint|tinyint|serial\d?|smallserial)$/.test(base)) return "integer";
+  if (/^(bigint|bigserial)$/.test(base)) return "bigint";
+  if (/^(decimal|numeric|money)$/.test(base)) return "decimal";
+  if (/^(real|float\d?|double|double precision)$/.test(base)) return "double";
+  if (/^(time|timetz|time with(out)? time zone)$/.test(base)) return "time";
+  return undefined;
 }
 
 /** A model class for a table with no migration yet: placeholder columns. */

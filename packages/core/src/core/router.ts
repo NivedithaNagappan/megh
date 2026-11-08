@@ -38,6 +38,13 @@ import { MeghMiddleware } from "../http/middleware";
 import { REQUEST_METADATA_KEY } from "../http/controller";
 import { OpenApiOptions } from "../openapi/openapi";
 import {
+  AUTHORIZED_EXTENSION,
+  RESPONSES_EXTENSION,
+  buildResponses,
+  declaredResponses,
+  isResponseType,
+} from "../openapi/responses";
+import {
   buildRequestBody,
   REQUEST_BODY_EXTENSION,
 } from "../openapi/request-body";
@@ -73,9 +80,39 @@ function normalizeParamsToJsonSchema(
  * Take a raw @OpenApi schema object and return a Fastify-compatible
  * route schema — normalizing params, query → querystring, and headers.
  */
-function buildRouteSchema(raw: any, bodyClass?: Function): any {
+function buildRouteSchema(
+  raw: any,
+  bodyClass?: Function,
+  route: {
+    declared?: ReturnType<typeof declaredResponses>;
+    validates?: boolean;
+    authorized?: boolean;
+  } = {},
+): any {
   const { requestBody, responseBody, exclude, ...rest } = raw ?? {};
   const schema: any = rest;
+
+  // Responses given as a class, `[Class]` or `Paginated(Class)` are
+  // documented only: a Fastify `response` schema would also serialize the
+  // reply. Plain JSON schemas stay on `response`, as before.
+  const declared = [...(route.declared ?? [])];
+  if (raw?.response && typeof raw.response === "object") {
+    const fastifyResponse: Record<string, any> = {};
+    for (const [status, value] of Object.entries<any>(raw.response)) {
+      if (isResponseType(value))
+        declared.push({ status: Number(status), type: value });
+      else fastifyResponse[status] = value;
+    }
+    if (Object.keys(fastifyResponse).length) schema.response = fastifyResponse;
+    else delete schema.response;
+  }
+  const responses = buildResponses({
+    declared,
+    validates: !!route.validates,
+    authorized: !!route.authorized,
+  });
+  if (responses) schema[RESPONSES_EXTENSION] = responses;
+  if (route.authorized) schema[AUTHORIZED_EXTENSION] = true;
 
   // @OpenApi({ exclude: true }) → hidden from the generated document.
   if (exclude) schema.hide = true;
@@ -295,8 +332,11 @@ export class MeghRouter {
       }
 
       const classMiddlewares = this.executeMiddlewares(ctrl, method);
-      const swaggerMeta =
-        Reflect.getMetadata("route:openapi", prototype, method) || {};
+      // `@OpenApi()` on the method, over the route decorator's `openapi` option.
+      const swaggerMeta = {
+        ...(methodMeta.openapi ?? {}),
+        ...(Reflect.getMetadata("route:openapi", prototype, method) || {}),
+      };
       const authClsMethodMeata = Reflect.getMetadata(
         AUTHORIZATION_META_KEY,
         ctrl.constructor,
@@ -386,7 +426,13 @@ export class MeghRouter {
           )?.dataType;
 
       // ✅ Normalize params/query/headers into valid JSON Schema
-      const routeSchema = buildRouteSchema(schema, bodyClass);
+      const routeSchema = buildRouteSchema(schema, bodyClass, {
+        declared: declaredResponses(ctrl.constructor, method),
+        validates: [...allMeta.body, ...allMeta.query].some(
+          (p) => p.validatorClass,
+        ),
+        authorized: !!(authClsMeata.authorize || authClsMethodMeata.authorize),
+      });
 
       // Resolve DI singletons once at route-registration time, not per request.
       // _resolveAuthorizer picks the named handler when @Authorized("jwt") is used,
