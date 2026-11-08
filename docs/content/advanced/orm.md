@@ -147,7 +147,7 @@ export class User extends Model {
   @CreatedAt() created_at?: Date;
   @UpdatedAt() updated_at?: Date;
 
-  @HasMany(() => Post) posts!: HasMany<Post>;
+  @HasMany(() => Post) posts?: Post[];
 
   get displayName() {
     return this.name ?? this.email;
@@ -395,8 +395,8 @@ present, and generated, nullable and timestamp columns may be left out.
 class User extends Model {
   @PrimaryKey() @AutoIncrement() id?: number;
 
-  @HasMany(() => Post) posts!: HasMany<Post>;         // posts.user_id → users.id
-  @HasOne(() => Profile) profile!: HasOne<Profile>;   // profiles.user_id → users.id
+  @HasMany(() => Post) posts?: Post[];                // posts.user_id → users.id
+  @HasOne(() => Profile) profile?: Profile | null;    // profiles.user_id → users.id
 }
 
 @Table()
@@ -404,14 +404,24 @@ class Post extends Model {
   @PrimaryKey() @AutoIncrement() id?: number;
   @Column() user_id!: number;
 
-  @BelongsTo(() => User, { foreignKey: 'user_id' }) author!: BelongsTo<User>;
+  @BelongsTo(() => User, { foreignKey: 'user_id' }) author?: User | null;
 }
 ```
 
-Each relation decorator has a field type of the same name. The type is what
-lets `with('posts')` load `Post[]` and type-check. The related class is
-passed as a function, so models can refer to each other in any order. Key
-defaults:
+Type a relation field with the model it loads: `Post[]` for `@HasMany`,
+`Profile | null` for `@HasOne` and `@BelongsTo`. The field is `undefined`
+until the relation is loaded, so declare it with `?`. A field typed with a
+model, or an array of models, is a relation rather than a column:
+`create()` and `where()` leave it out, and `with('posts')` type-checks and
+returns `Post[]`. The related class is passed as a function, so models can
+refer to each other in any order.
+
+Each decorator also has a field type of the same name (`posts?: HasMany<Post>`,
+`author?: BelongsTo<User>`), which works the same way. Many-to-many keeps
+its `BelongsToMany<Role, Pivot>` type, because a plain `Role[]` can't carry the
+pivot columns or `attach()` / `detach()` ([below](#many-to-many)).
+
+Key defaults:
 
 | Relation | Foreign key default | Options |
 |---|---|---|
@@ -474,7 +484,7 @@ Counts appear in JSON but are never written back by `save()`.
 ### Creating related rows
 
 `related()` on a `hasMany` or `hasOne` relation creates rows with the foreign
-key already set:
+key already set (on a `belongsTo` it throws, since this row holds the key):
 
 ```ts
 const post = await user.related('posts').create({ title: 'Hello' }); // user_id set
@@ -492,9 +502,13 @@ class User extends Model {
   @PrimaryKey() @AutoIncrement() id?: number;
 
   @BelongsToMany(() => Role, { pivotColumns: ['granted_by'] })
-  roles!: BelongsToMany<Role, { granted_by: string | null }>;
+  roles?: BelongsToMany<Role, { granted_by: string | null }>;
 }
 ```
+
+Type many-to-many fields with `BelongsToMany<Role, Pivot>`, not `Role[]`: the
+second argument types each loaded role's `pivot`, and the type tells
+`related('roles')` to offer `attach()`, `detach()` and `sync()`.
 
 The pivot table defaults to both snake_case class names, sorted and joined:
 `role_user`, with the columns `user_id` and `role_id`. Override any of these

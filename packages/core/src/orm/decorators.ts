@@ -9,7 +9,7 @@
  *   @Column({ type: "json", nullable: true }) settings: Settings | null;
  *   @CreatedAt() created_at?: Date;
  *
- *   @HasMany(() => Post) posts: HasMany<Post>;
+ *   @HasMany(() => Post) posts?: Post[];
  * }
  * ```
  *
@@ -26,7 +26,9 @@ import {
 } from "./relations";
 import type * as relations from "./relations";
 
-// Each relation decorator shares its name with the field type it decorates.
+// Each relation decorator shares its name with a field type. Typing the field
+// with the related model (`Post[]`, `User | null`) works too; many-to-many
+// keeps BelongsToMany<M, Pivot> for its pivot columns and attach/detach.
 /** A one-to-many relation field. Loads as `M[]`. */
 export type HasMany<M> = relations.HasMany<M>;
 /** A one-to-one relation field. Loads as `M | null`. */
@@ -318,7 +320,7 @@ export interface BelongsToOptions {
   ownerKey?: string;
 }
 
-/** One-to-many. Type the field `HasMany<Post>`; it loads as `Post[]`. */
+/** One-to-many. Type the field `Post[]` (or `HasMany<Post>`); it loads as `Post[]`. */
 export function HasMany<C extends RelatedClass>(
   related: () => C,
   options: HasOptions = {},
@@ -326,7 +328,7 @@ export function HasMany<C extends RelatedClass>(
   return relation(declareRelation("hasMany", related, options));
 }
 
-/** One-to-one. Type the field `HasOne<Profile>`; it loads as `Profile | null`. */
+/** One-to-one. Type the field `Profile | null` (or `HasOne<Profile>`). */
 export function HasOne<C extends RelatedClass>(
   related: () => C,
   options: HasOptions = {},
@@ -334,7 +336,7 @@ export function HasOne<C extends RelatedClass>(
   return relation(declareRelation("hasOne", related, options));
 }
 
-/** The inverse of HasMany/HasOne. Type the field `BelongsTo<User>`. */
+/** The inverse of HasMany/HasOne. Type the field `User | null` (or `BelongsTo<User>`). */
 export function BelongsTo<C extends RelatedClass>(
   related: () => C,
   options: BelongsToOptions = {},

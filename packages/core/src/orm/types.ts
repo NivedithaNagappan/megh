@@ -13,6 +13,30 @@ import type { AnyRelation, BelongsToMany, RELATION } from "./relations";
 
 type Fn = (...args: any[]) => any;
 
+type IsAny<T> = 0 extends 1 & T ? true : false;
+
+/**
+ * A model instance, recognised by methods every model has. (A full
+ * `extends Model` check would compare `this`-typed methods and recurse
+ * through the related model's own relations.)
+ */
+type ModelLike = { isPersisted(): boolean; isTrashed(): boolean };
+
+/**
+ * Whether a field holds a relation: typed with a marker (`HasMany<Post>`,
+ * `BelongsTo<User>`), as the related model (`role?: Role | null`) or as an
+ * array of it (`posts?: Post[]`). `?`, `| null` and `| undefined` don't
+ * matter; an `any` field stays a column.
+ */
+type IsRelation<T> =
+  IsAny<T> extends true
+    ? false
+    : [NonNullable<T>] extends [never]
+      ? false
+      : NonNullable<T> extends AnyRelation | ModelLike | readonly ModelLike[]
+        ? true
+        : false;
+
 type IsReadonly<T, K extends keyof T> =
   (<X>() => X extends { [Q in K]: T[K] } ? 1 : 2) extends <X>() => X extends {
     -readonly [Q in K]: T[K];
@@ -32,7 +56,7 @@ export type Columns<M> = {
     K in keyof M as K extends string
       ? M[K] extends Fn
         ? never
-        : M[K] extends AnyRelation
+        : IsRelation<M[K]> extends true
           ? never
           : IsReadonly<M, K> extends true
             ? never
@@ -46,7 +70,7 @@ export type ColumnKeys<M> = keyof Columns<M> & string;
 type Relations<M> = {
   [
     K in keyof M as K extends string
-      ? M[K] extends AnyRelation
+      ? IsRelation<M[K]> extends true
         ? K
         : never
       : never
@@ -62,27 +86,47 @@ type Members<M> = {
 
 /** Keys of `belongsToMany` relations. */
 export type BelongsToManyKeys<M> = keyof {
-  [K in keyof M as M[K] extends BelongsToMany<any, any> ? K : never]: 0;
-} &
-  string;
-
-/** Keys of `hasMany` and `hasOne` relations. */
-export type HasRelationKeys<M> = keyof {
   [
-    K in keyof M as M[K] extends {
-      readonly [RELATION]: { type: "hasMany" | "hasOne" };
-    }
+    K in keyof M as NonNullable<M[K]> extends BelongsToMany<any, any>
       ? K
       : never
   ]: 0;
 } &
   string;
 
-export type RelatedModel<R> = R extends {
-  readonly [RELATION]: { model: infer T };
-}
-  ? T
-  : never;
+/**
+ * Keys of `hasMany` and `hasOne` relations. A field typed as a model
+ * (`Profile | null`, `Post[]`) counts too: its type can't tell `hasOne`
+ * from `belongsTo`, and `related()` checks the real kind when it runs.
+ */
+export type HasRelationKeys<M> = keyof {
+  [
+    K in keyof M as IsAny<M[K]> extends true
+      ? never
+      : NonNullable<M[K]> extends
+            | { readonly [RELATION]: { type: "hasMany" | "hasOne" } }
+            | ModelLike
+            | readonly ModelLike[]
+        ? K
+        : never
+  ]: 0;
+} &
+  string;
+
+/** The model a relation field points to: `Post` for `HasMany<Post>`, `Post[]` or `Post | null`. */
+export type RelatedModel<R> =
+  NonNullable<R> extends { readonly [RELATION]: { model: infer T } }
+    ? T
+    : NonNullable<R> extends readonly (infer T)[]
+      ? T
+      : NonNullable<R>;
+
+/** Whether a relation field loads a list (`HasMany<Post>`, `Post[]`, `BelongsToMany<Tag>`). */
+export type IsManyRelation<R> =
+  NonNullable<R> extends
+    { readonly [RELATION]: { kind: "many" } } | readonly unknown[]
+    ? true
+    : false;
 
 /** Relation paths for `with()`, up to 3 levels: "posts" | "posts.comments" | … */
 export type RelationPaths<
@@ -99,16 +143,15 @@ type Head<P> = P extends `${infer H}.${string}` ? H : P;
 type Tail<P, H extends string> = P extends `${H}.${infer R}` ? R : never;
 
 /** Pivot columns of a `belongsToMany` relation. */
-export type PivotOf<R> = R extends {
-  readonly [RELATION]: { pivot: infer Pivot };
-}
-  ? Pivot
-  : never;
+export type PivotOf<R> =
+  NonNullable<R> extends { readonly [RELATION]: { pivot: infer Pivot } }
+    ? Pivot
+    : never;
 
 type Resolve<R, Shape> =
-  R extends BelongsToMany<any, infer Pivot>
+  NonNullable<R> extends BelongsToMany<any, infer Pivot>
     ? (Shape & { readonly pivot: Pivot })[]
-    : R extends { readonly [RELATION]: { kind: "many" } }
+    : IsManyRelation<R> extends true
       ? Shape[]
       : Shape | null;
 

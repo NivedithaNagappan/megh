@@ -684,7 +684,7 @@ export class User extends Model {
   @Column({ nullable: true }) name!: string | null;
   @CreatedAt() createdAt?: Date;
 
-  @HasMany(() => Post) posts!: HasMany<Post>;
+  @HasMany(() => Post) posts?: Post[];
 }
 
 // app.ts: no Kysely setup, no connection file
