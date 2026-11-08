@@ -103,7 +103,7 @@ const nativeImport = new Function("url", "return import(url)") as (
  * 20.19+ / 22.12+. A native `import()` covers what it can't, such as `.ts`
  * files under a loader hook.
  */
-async function loadMigrationFile(file: string): Promise<any> {
+export async function loadMigrationFile(file: string): Promise<any> {
   try {
     return require(file);
   } catch (err) {

@@ -72,6 +72,17 @@ export {
   type MigrationsOptions,
   type MigrationStatus,
 } from "./migrations";
+export {
+  Seeders,
+  SeedError,
+  defineSeeder,
+  readSeederFolder,
+  seederName,
+  ENTRY_SEEDER,
+  type Seeder,
+  type SeedContext,
+  type SeedersOptions,
+} from "./seeders";
 export { ormPlugin } from "./plugin";
 export {
   DatabaseConfigError,
