@@ -129,8 +129,8 @@ io.emit('ping', Date.now());
 enabled. Resolving it during module load will fail.
 :::
 
-Use `MeghContainer`, not `typedi` directly. Megh may replace the underlying
-container in a future release.
+Resolve services through `MeghContainer`. Megh has its own container and no
+longer installs `typedi`.
 
 ## Broadcasting events
 

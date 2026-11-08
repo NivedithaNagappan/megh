@@ -7,7 +7,7 @@
     "sourceMap": true,
     "outDir": "./dist",
 
-    // Decorators (typeorm, typedi, class-validator)
+    // Decorators (typeorm, the DI container, class-validator)
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
 

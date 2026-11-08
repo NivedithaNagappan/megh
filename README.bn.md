@@ -69,7 +69,7 @@ Documentation: **https://meghjs.github.io**
 ## Features
 
 - 🎯 **Decorator-based routing** — TypeScript decorator দিয়ে controller ও route তৈরি করুন
-- 💉 **Dependency injection** — `MeghContainer`, `@Injectable` এবং `Token`, বর্তমানে [TypeDI](https://github.com/typestack/typedi)-এর ওপর ভিত্তি করে
+- 💉 **Dependency injection** — `MeghContainer`, `@Injectable` এবং `Token`, Megh-এর নিজস্ব container-এর ওপর ভিত্তি করে (কোনো third-party DI library ছাড়া)
 - 📄 **OpenAPI / Swagger** — Swagger UI বা [Scalar](https://scalar.com) দিয়ে স্বয়ংক্রিয় documentation
 - ✅ **Validation** — [class-validator](https://github.com/typestack/class-validator) দিয়ে request DTO validate ও whitelist করা হয়
 - 🔑 **Authentication** — pluggable handler, যা `request.user` সেট করে
@@ -1277,7 +1277,7 @@ Redis ছাড়াই job dispatch করে এমন code test করতে
 
 - [x] একটি `exports` map এবং `sideEffects`-সহ শুধু CommonJS build
 - [x] Integration-গুলো optional peer dependency-তে সরানো হয়েছে
-- [x] 1.0-এর জন্য typedi-কে `MeghContainer`-এর পেছনে রাখা; পরের কোনো minor release-এ এটি বদলানো যেতে পারে
+- [x] typedi-এর বদলে `MeghContainer`-এর পেছনে Megh-এর নিজস্ব container
 - [x] MIT license file `package.json`-এর সাথে মেলে
 - [x] rimraf ছাড়া build, ESLint/Jest config ঠিক করা, husky 9, default-ভাবে coverage বন্ধ
 - [x] Node 22 এবং 24-এ CI (typecheck, lint, test, build) এবং tag-based publish workflow

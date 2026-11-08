@@ -69,6 +69,7 @@ export * from "./plugins";
 // ─── Dependency injection ────────────────────────────────────────────────────
 export {
   Container as MeghContainer,
+  ContainerError,
   Token,
   Injectable,
   createInjectDecorator,
