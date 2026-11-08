@@ -6,6 +6,7 @@ import { definePlugin } from "../plugins/plugin";
 import { Container } from "../di";
 import { ORM_CONNECTION } from "./connection";
 import { Model } from "./model";
+import { getNamingStrategy, setNamingStrategy } from "./naming";
 import type { DatabaseOptions } from "./config";
 
 class Note extends Model {
@@ -83,6 +84,12 @@ describe("app.useMeghORM", () => {
     await expect(app.run(0)).rejects.toThrow(
       "Could not connect to sqlite /nonexistent-dir/megh/app.db",
     );
+  });
+
+  it("sets the naming strategy", () => {
+    createApp().useMeghORM({ url: "sqlite::memory:", naming: "snake_case" });
+    expect(getNamingStrategy()).toBe("snake_case");
+    setNamingStrategy("preserve");
   });
 
   it("explains how to install a missing driver", () => {

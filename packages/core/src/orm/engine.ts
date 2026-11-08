@@ -9,6 +9,5 @@ import type * as KyselyModule from "kysely";
 let loaded: typeof KyselyModule | undefined;
 
 export function kysely(): typeof KyselyModule {
-   
   return (loaded ??= require("kysely") as typeof KyselyModule);
 }

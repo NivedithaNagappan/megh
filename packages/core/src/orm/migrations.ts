@@ -140,7 +140,6 @@ export async function readMigrationFolder(
  * which this package's CommonJS module resolution can't type.
  */
 function kyselyMigration(): any {
-   
   return require("kysely/migration");
 }
 

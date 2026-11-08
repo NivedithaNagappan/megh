@@ -5,6 +5,7 @@
  * @url https://github.com/xtareq
  */
 import { runInTransaction } from "./connection";
+import { propertyName } from "./naming";
 import { ModelQuery } from "./query";
 import type { RelationDefinition } from "./relations";
 import type { ModelClass, Row, UpdateInput } from "./types";
@@ -28,8 +29,14 @@ export class HasRelation<R, Kind extends "many" | "one" = "many"> {
     return this.def.related() as unknown as ModelClass<R>;
   }
 
+  /** The related model's property holding the foreign key. */
+  private get foreignProperty(): string {
+    return propertyName(this.relatedClass, this.def.foreignKey);
+  }
+
   private parentKey(): unknown {
-    const key = this.parent[this.def.localKey];
+    const key =
+      this.parent[propertyName(this.parent.constructor, this.def.localKey)];
     if (key === null || key === undefined) {
       throw new Error(
         `[Megh ORM] Save the ${this.parent.constructor.name} before using its related ${this.relatedClass.name} rows.`,
@@ -58,7 +65,7 @@ export class HasRelation<R, Kind extends "many" | "one" = "many"> {
   async create(values: UpdateInput<R>): Promise<Row<R>> {
     return (this.relatedClass as any).create({
       ...values,
-      [this.def.foreignKey]: this.parentKey(),
+      [this.foreignProperty]: this.parentKey(),
     });
   }
 
@@ -73,7 +80,7 @@ export class HasRelation<R, Kind extends "many" | "one" = "many"> {
 
   /** Point `model` at this parent (set its foreign key) and save it. */
   async save<T extends R>(model: T): Promise<T> {
-    (model as any)[this.def.foreignKey] = this.parentKey();
+    (model as any)[this.foreignProperty] = this.parentKey();
     return (model as any).save();
   }
 }

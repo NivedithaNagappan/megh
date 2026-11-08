@@ -2,6 +2,7 @@
  * Connection settings for `app.useMeghORM()` and `megh migrate`: given
  * directly, read from the environment, or both (given settings win).
  */
+import type { NamingStrategy } from "./naming";
 
 export type Dialect = "postgres" | "mysql" | "sqlite" | "mssql";
 
@@ -41,6 +42,12 @@ export interface DatabaseOptions {
   ssl?: boolean | Record<string, unknown>;
   /** SQL Server: accept a self-signed certificate (local development). */
   trustServerCertificate?: boolean;
+  /**
+   * How decorated properties map to columns when `@Column` gives no `name`:
+   * `"preserve"` (default) uses the property name, `"snake_case"` maps
+   * `createdAt` to `created_at`.
+   */
+  naming?: NamingStrategy;
 }
 
 /** Settings after the environment and URL are applied. */

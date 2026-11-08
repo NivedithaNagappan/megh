@@ -97,6 +97,7 @@ app.useMeghORM({
 | `pool.min`, `pool.max` | `DB_POOL_MIN`, `DB_POOL_MAX` | Pool size. `max` defaults to 10 |
 | `ssl` | | `true` or driver TLS options (Postgres, MySQL). SQL Server encrypts unless `false` |
 | `trustServerCertificate` | | SQL Server: accept a self-signed certificate |
+| `naming` | | `"preserve"` (default) or `"snake_case"`. See [Column names](#column-names) |
 
 Settings passed to `useMeghORM()` override the environment. To build them
 in an `@AppConfig` class ([example](/advanced/database#using-a-config-class)), pass the class:
@@ -187,6 +188,7 @@ Column options:
 
 | Option | |
 |---|---|
+| `name` | The column's name, when it differs from the property. See [Column names](#column-names) |
 | `type` | `string`, `text`, `integer`, `bigint`, `float`, `double`, `decimal`, `boolean`, `date`, `datetime`, `timestamp`, `time`, `json`, `uuid`, `binary`. `boolean` and `Date` fields are detected from the TypeScript type |
 | `nullable` | Allows `NULL` |
 | `unique` | |
@@ -209,6 +211,45 @@ export class Tag extends BaseModel {
   @Column() name!: string;
 }
 ```
+
+### Column names
+
+By default a property is stored in the column with the same name. To use
+camelCase properties with snake_case columns, set the naming strategy once:
+
+```ts
+app.useMeghORM({ naming: 'snake_case' });
+
+@Table()
+class Post extends Model {
+  @PrimaryKey() @AutoIncrement() id?: number;
+  @Column() authorId!: number;        // author_id
+  @Column() publishedAt!: Date | null; // published_at
+  @CreatedAt() createdAt?: Date;      // created_at
+}
+```
+
+Or name a column explicitly, which works with either strategy:
+
+```ts
+@Table('legacy_customers')
+class Customer extends Model {
+  @PrimaryKey({ name: 'customer_no' }) @AutoIncrement() id?: number;
+  @Column({ name: 'e_mail' }) email!: string;
+  @CreatedAt({ name: 'created_on' }) createdAt?: Date;
+}
+```
+
+Model code then uses property names everywhere: `create()`, `where()`,
+`orderBy()`, `select()`, `withCount()`, `cursorPaginate({ column })`,
+aggregates, query results and JSON. Relation keys may be given as either the
+property or the column, so the defaults (`author_id`) work with an `authorId`
+property.
+
+Code that writes SQL itself uses column names: the [query builder](#query-builder),
+[raw queries](#raw-queries), `where((eb) => …)` expressions and migrations.
+In scripts and tests without an app, call `setNamingStrategy('snake_case')`
+before querying.
 
 ::: details Models without decorators
 Models written before decorators keep working: every field is a column except

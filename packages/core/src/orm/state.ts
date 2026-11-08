@@ -10,6 +10,7 @@
 import { castFromDatabase, castToDatabase, sameValue } from "./casts";
 import { getConnection } from "./connection";
 import { columnNames } from "./decorators";
+import { columnName, toColumns, toProperties } from "./naming";
 import { getRelations } from "./relations";
 import type { ModelClass } from "./types";
 
@@ -46,7 +47,7 @@ export function hydrate<M>(
       delete instance[key];
     }
   }
-  const values = cast ? castFromDatabase(cls, row) : row;
+  const values = cast ? castFromDatabase(cls, toProperties(cls, row)) : row;
   Object.assign(instance, values);
   markPersisted(instance, values);
   return instance;
@@ -136,26 +137,30 @@ export async function insertRow(
 ): Promise<Record<string, unknown>> {
   const db = getConnection();
   const table = tableOf(cls);
-  const data = castToDatabase(cls, withTimestamps(cls, values, "insert"), db);
+  const pk = columnName(cls, cls.primaryKey);
+  const data = toColumns(
+    cls,
+    castToDatabase(cls, withTimestamps(cls, values, "insert"), db),
+  );
   if (db.getExecutor().adapter.supportsReturning) {
     const row = await db
       .insertInto(table)
       .values(data)
       .returningAll()
       .executeTakeFirstOrThrow();
-    return castFromDatabase(cls, row);
+    return castFromDatabase(cls, toProperties(cls, row));
   }
   const result = await db
     .insertInto(table)
     .values(data)
     .executeTakeFirstOrThrow();
-  const id = data[cls.primaryKey] ?? Number(result.insertId);
+  const id = data[pk] ?? Number(result.insertId);
   const row = await db
     .selectFrom(table)
     .selectAll()
-    .where(cls.primaryKey, "=", id)
+    .where(pk, "=", id)
     .executeTakeFirstOrThrow();
-  return castFromDatabase(cls, row);
+  return castFromDatabase(cls, toProperties(cls, row));
 }
 
 /** Update the row with primary key `id`. `values` are in model form. */
@@ -167,7 +172,7 @@ export async function updateRow(
   const db = getConnection();
   await db
     .updateTable(tableOf(cls))
-    .set(castToDatabase(cls, values, db))
-    .where(cls.primaryKey, "=", id)
+    .set(toColumns(cls, castToDatabase(cls, values, db)))
+    .where(columnName(cls, cls.primaryKey), "=", id)
     .execute();
 }

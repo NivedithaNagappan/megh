@@ -55,6 +55,12 @@ export type ColumnType =
   | "binary";
 
 export interface ColumnOptions {
+  /**
+   * The column's name in the database, when it differs from the property:
+   * `@Column({ name: "created_at" }) createdAt`. Without it, the naming
+   * strategy decides (`useMeghORM({ naming: "snake_case" })`).
+   */
+  name?: string;
   /** Column type. When left out, `boolean` and `Date` fields are read from the TypeScript type. */
   type?: ColumnType;
   /** Allows NULL. */
@@ -266,15 +272,17 @@ export const Identity = AutoIncrement;
 function timestampColumn(
   key: "createdAt" | "updatedAt" | "deletedAt",
   nullable: boolean,
-): () => FieldDecorator {
-  return () => (prototype, property) => {
-    if (typeof property !== "string") return;
-    own(prototype.constructor)[key] = property;
-    updateColumn(prototype, property, {
-      type: "datetime",
-      ...(nullable ? { nullable: true } : {}),
-    });
-  };
+): (options?: { name?: string }) => FieldDecorator {
+  return (options = {}) =>
+    (prototype, property) => {
+      if (typeof property !== "string") return;
+      own(prototype.constructor)[key] = property;
+      updateColumn(prototype, property, {
+        type: "datetime",
+        name: options.name,
+        ...(nullable ? { nullable: true } : {}),
+      });
+    };
 }
 
 /** Set to the current time when the row is inserted. */

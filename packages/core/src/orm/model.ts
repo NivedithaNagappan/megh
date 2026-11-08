@@ -16,6 +16,7 @@ import type { PageRequest, Paginated } from "./core";
 import { getConnection, runInTransaction, setConnection } from "./connection";
 import type { Cast } from "./casts";
 import { HasRelation } from "./has-relation";
+import { columnName } from "./naming";
 import { PivotRelation } from "./pivot";
 import {
   ModelQuery,
@@ -429,7 +430,7 @@ export abstract class Model {
     const cls = this.constructor as ModelClass;
     await getConnection()
       .deleteFrom(tableOf(cls))
-      .where(cls.primaryKey, "=", this.key())
+      .where(columnName(cls, cls.primaryKey), "=", this.key())
       .execute();
     markDeleted(this);
   }

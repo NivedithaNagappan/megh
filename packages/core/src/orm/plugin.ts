@@ -18,6 +18,7 @@ import {
 } from "./config";
 import { createDatabase, verifyConnection } from "./connect";
 import { setConnection } from "./connection";
+import { setNamingStrategy } from "./naming";
 
 function isConfigClass(value: unknown): value is MeghConfigClass {
   return typeof value === "function" && value.prototype instanceof MeghConfig;
@@ -42,6 +43,7 @@ export const ormPlugin = definePlugin({
               .config(ctx.container.get(Environment))
           : options;
         const resolved = resolveDatabaseOptions(given, readEnv(ctx));
+        if (resolved.naming) setNamingStrategy(resolved.naming);
         const db = createDatabase(resolved);
         setConnection(db);
         ctx.onInit(async () => {

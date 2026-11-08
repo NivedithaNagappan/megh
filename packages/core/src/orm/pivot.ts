@@ -6,6 +6,7 @@
  */
 import { bindable, isSqlite } from "./casts";
 import { getConnection, runInTransaction } from "./connection";
+import { propertyName } from "./naming";
 import { loadBelongsToMany } from "./query";
 import type { RelationDefinition } from "./relations";
 import type { ModelClass, Row } from "./types";
@@ -28,7 +29,8 @@ export class PivotRelation<R, Pivot = {}> {
   }
 
   private parentKey(): unknown {
-    const key = this.parent[this.def.localKey];
+    const key =
+      this.parent[propertyName(this.parent.constructor, this.def.localKey)];
     if (key === null || key === undefined) {
       throw new Error(
         `[Megh ORM] Save the ${this.parent.constructor.name} before changing its "${this.pivot.table}" pivot rows.`,
@@ -39,7 +41,7 @@ export class PivotRelation<R, Pivot = {}> {
 
   private keyOf(ref: RelatedRef): unknown {
     return ref !== null && typeof ref === "object"
-      ? (ref as any)[this.pivot.relatedKey]
+      ? (ref as any)[propertyName(ref.constructor, this.pivot.relatedKey)]
       : ref;
   }
 

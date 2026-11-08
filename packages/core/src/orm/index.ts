@@ -92,3 +92,8 @@ export {
   type SchemaDialect,
 } from "./schema";
 export { DB, TableQuery, WhereClauses, WhereGroup, type Operator } from "./db";
+export {
+  setNamingStrategy,
+  getNamingStrategy,
+  type NamingStrategy,
+} from "./naming";
