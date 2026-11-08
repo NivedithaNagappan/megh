@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.1](https://github.com/meghjs/megh/compare/v0.5.0...v0.5.1) (2026-11-08)
+
+### Bug Fixes
+
+- **core:** use the current Megh favicon in Swagger UI ([cf8bbcc](https://github.com/meghjs/megh/commit/cf8bbccb9721dc4ffd601e3b285f6a15a87dd7d7))
+
+### Features
+
+- **core:** extend the ORM query builder and models ([e2448fe](https://github.com/meghjs/megh/commit/e2448fe37bd6662477bcd20448f6fd90385039ca))
+- **core:** inject() for field initializers, tokens and optional services ([9f55a7c](https://github.com/meghjs/megh/commit/9f55a7c8c5ec28da08c35f5e0344051bbd4cb5b8))
+- **core:** MeghORM connects itself, decorators and a schema builder ([e351486](https://github.com/meghjs/megh/commit/e35148688ad6ca04b797e5cc24068e7ff374a0e2))
+- **core:** replace typedi with Megh's own DI container ([82a8743](https://github.com/meghjs/megh/commit/82a87430ab689e06307368f2ff208f4a90cecd87))
+- **core:** show the Megh logo and favicon in Swagger UI ([eff092e](https://github.com/meghjs/megh/commit/eff092eefdf8652799d3e123b82611dc7d9b6771))
+- **orm:** DB query builder, decorator models from make:model, ORM in megh new ([d810a09](https://github.com/meghjs/megh/commit/d810a09bc617acbd3e50cc3ed41130996f419805))
+- **orm:** map model properties to column names ([9cbebce](https://github.com/meghjs/megh/commit/9cbebce7ba369a123b3b755902e78769c66608a0))
+- **rename:** rename Models (ORM) to MeghORM ([ac3369f](https://github.com/meghjs/megh/commit/ac3369f4244eb35fdbda0f86a30e1f4061db0f82))
+
 # [0.5.0](https://github.com/meghjs/megh/compare/v0.4.1...v0.5.0) (2026-11-01)
 
 - refactor!: rename Avleon to Megh ([e4239e0](https://github.com/meghjs/megh/commit/e4239e0b838b78115df655ccf8a25a5cb4c0c27a)), closes [megh-env](https://github.com/me/issues/env) [x-megh-request-body](https://github.com/x-me/issues/request-body)

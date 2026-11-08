@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.1](https://github.com/meghjs/megh/compare/v0.5.0...v0.5.1) (2026-11-08)
+
+### Bug Fixes
+
+* derive resource routes from singularized names ([c30961a](https://github.com/meghjs/megh/commit/c30961afa8b05f6759213ea19effa56ce97668e8))
+
+### Features
+
+* **cli:** add make:resource and generate Megh ORM models from migrations ([9872959](https://github.com/meghjs/megh/commit/9872959a4fca8c3b5ee5faa72eb697e58642150a))
+* **core:** MeghORM connects itself, decorators and a schema builder ([e351486](https://github.com/meghjs/megh/commit/e35148688ad6ca04b797e5cc24068e7ff374a0e2))
+* **orm:** DB query builder, decorator models from make:model, ORM in megh new ([d810a09](https://github.com/meghjs/megh/commit/d810a09bc617acbd3e50cc3ed41130996f419805))
+
+
 # [0.5.0](https://github.com/meghjs/megh/compare/v0.4.1...v0.5.0) (2026-11-01)
 
 * refactor!: rename Avleon to Megh ([e4239e0](https://github.com/meghjs/megh/commit/e4239e0b838b78115df655ccf8a25a5cb4c0c27a)), closes [megh-env](https://github.com/me/issues/env) [x-megh-request-body](https://github.com/x-me/issues/request-body)
