@@ -75,7 +75,7 @@ Documentation: **https://meghjs.github.io**
 - 🔑 **Authentication** — pluggable handler that populates `request.user`
 - 🔒 **Authorization** — deny-by-default `@Authorized` routes
 - 📁 **File uploads** — multipart support with safe, confined storage
-- 🧬 **Models & migrations** — type-safe, Eloquent-style models and migrations built on [Kysely](https://kysely.dev)
+- 🧬 **Models & migrations** — decorator models, a query builder and a schema builder for migrations, all type-safe
 - 🗄️ **Database** — TypeORM and Knex integrations with one pagination shape
 - ⚙️ **Config** — typed, environment-aware config classes
 - 📣 **Events** — typed events with queued delivery and Socket.IO broadcast
@@ -135,7 +135,7 @@ feature needs one:
 | Static files (`useStaticFiles`)              | `npm i @fastify/static`                                                           |
 | OpenAPI with Swagger UI                      | `npm i @fastify/swagger @fastify/swagger-ui`                                      |
 | OpenAPI with Scalar                          | `npm i @fastify/swagger @scalar/fastify-api-reference`                            |
-| Models and migrations (`useDatabase`)        | `npm i kysely` + a driver (`pg`, `mysql2`, `better-sqlite3`)                      |
+| MeghORM (`useMeghORM`)                       | a driver (`pg`, `mysql2`, `better-sqlite3`, or `tedious tarn`)                    |
 | TypeORM                                      | `npm i typeorm` + a driver (`pg`, `mysql2`, `sqlite3`, `better-sqlite3`, `mssql`) |
 | Knex                                         | `npm i knex` + a driver                                                           |
 | Queues & workers                             | `npm i bullmq ioredis` (not needed with the `memory`/`sync` drivers)              |
@@ -657,34 +657,47 @@ Schemas are generated from decorated properties only, and nested DTOs become
 
 ### MeghORM
 
-Type-safe models built on [Kysely](https://kysely.dev): column names, value
-types and loaded relations are checked by TypeScript.
+Megh's own ORM: decorator models plus a query builder, with column names,
+value types and loaded relations checked by TypeScript. Kysely runs
+underneath; you never set it up.
 
 ```bash
-npm install kysely pg   # or: mysql2, better-sqlite3
+npm install pg   # or: mysql2, better-sqlite3, tedious tarn
 ```
 
 ```typescript
-import { Model, hasMany } from "@meghjs/core";
+import {
+  DB,
+  Model,
+  Table,
+  PrimaryKey,
+  AutoIncrement,
+  Column,
+  CreatedAt,
+  HasMany,
+} from "@meghjs/core";
 import { Post } from "./post.model";
 
+@Table("users")
 export class User extends Model {
-  static readonly table = "users";
+  @PrimaryKey() @AutoIncrement() id?: number;
+  @Column({ unique: true }) email!: string;
+  @Column({ nullable: true }) name!: string | null;
+  @CreatedAt() createdAt?: Date;
 
-  id!: number;
-  email!: string;
-  name!: string | null;
-
-  posts = hasMany(() => Post);
+  @HasMany(() => Post) posts!: HasMany<Post>;
 }
 
-// app.ts
-app.useDatabase(db); // a Kysely instance
+// app.ts: no Kysely setup, no connection file
+app.useMeghORM(); // reads DATABASE_URL, or pass { dialect, host, ... }
 
 const users = await User.where("email", "like", "%@acme.io")
   .with("posts")
   .orderBy("name")
   .get();
+
+// or as a query builder
+const ids = await DB.table("users").where("active", true).pluck("id");
 ```
 
 Migrations live in `src/database/migrations` and run with the CLI:
@@ -1367,14 +1380,14 @@ for 2.0. These lists track what has landed and what still blocks 1.0.0.
 
 This monorepo holds the source for every Megh package and the docs site, so a change to the framework, its CLI templates and its documentation can land in one commit.
 
-| Folder           | Package / site                                                | Published from                                                                 |
-|------------------|---------------------------------------------------------------|--------------------------------------------------------------------------------|
-| `packages/core/` | [`@meghjs/core`](https://www.npmjs.com/package/@meghjs/core)  | This repository (Lerna)                                                        |
-| `packages/cli/`  | [`@meghjs/cli`](https://www.npmjs.com/package/@meghjs/cli)    | This repository (Lerna)                                                        |
-| `packages/data/` | [`@meghjs/data`](https://www.npmjs.com/package/@meghjs/data)  | This repository (Lerna)                                                        |
-| `docs/`          | https://meghjs.github.io (VitePress)                        | [meghjs/meghjs.github.io](https://github.com/meghjs/meghjs.github.io)  |
-| `resources/`     | Logos and favicons                                            | n/a                                                                            |
-| `scripts/`       | `mirror.sh`, which syncs `docs/` to its standalone repo       | n/a                                                                            |
+| Folder           | Package / site                                               | Published from                                                        |
+| ---------------- | ------------------------------------------------------------ | --------------------------------------------------------------------- |
+| `packages/core/` | [`@meghjs/core`](https://www.npmjs.com/package/@meghjs/core) | This repository (Lerna)                                               |
+| `packages/cli/`  | [`@meghjs/cli`](https://www.npmjs.com/package/@meghjs/cli)   | This repository (Lerna)                                               |
+| `packages/data/` | [`@meghjs/data`](https://www.npmjs.com/package/@meghjs/data) | This repository (Lerna)                                               |
+| `docs/`          | https://meghjs.github.io (VitePress)                         | [meghjs/meghjs.github.io](https://github.com/meghjs/meghjs.github.io) |
+| `resources/`     | Logos and favicons                                           | n/a                                                                   |
+| `scripts/`       | `mirror.sh`, which syncs `docs/` to its standalone repo      | n/a                                                                   |
 
 `1.0-CHECKLIST.md` tracks the work for the 1.0 release; the current roadmap is in [Roadmap to 1.0.0](#roadmap-to-100) below.
 

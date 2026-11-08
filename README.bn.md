@@ -75,7 +75,7 @@ Documentation: **https://meghjs.github.io**
 - 🔑 **Authentication** — pluggable handler, যা `request.user` সেট করে
 - 🔒 **Authorization** — deny-by-default `@Authorized` route
 - 📁 **File uploads** — নিরাপদ, সীমাবদ্ধ storage-সহ multipart support
-- 🧬 **Models & migrations** — [Kysely](https://kysely.dev)-এর ওপর তৈরি type-safe, Eloquent-style model ও migration
+- 🧬 **Models & migrations** — decorator model, query builder এবং migration-এর জন্য schema builder, সবই type-safe
 - 🗄️ **Database** — একই pagination কাঠামোসহ TypeORM ও Knex integration
 - ⚙️ **Config** — typed, environment-aware config class
 - 📣 **Events** — queue-based delivery ও Socket.IO broadcast-সহ typed event
@@ -135,7 +135,7 @@ Megh integration-গুলোকে মূল install-এর বাইরে র
 | Static files (`useStaticFiles`)            | `npm i @fastify/static`                                                           |
 | OpenAPI with Swagger UI                    | `npm i @fastify/swagger @fastify/swagger-ui`                                      |
 | OpenAPI with Scalar                        | `npm i @fastify/swagger @scalar/fastify-api-reference`                            |
-| Models & migrations (`useDatabase`)        | `npm i kysely` + একটি driver (`pg`, `mysql2`, `better-sqlite3`)                    |
+| MeghORM (`useMeghORM`) | একটি driver (`pg`, `mysql2`, `better-sqlite3`, বা `tedious tarn`) |
 | TypeORM                                    | `npm i typeorm` + একটি driver (`pg`, `mysql2`, `sqlite3`, `better-sqlite3`, `mssql`) |
 | Knex                                       | `npm i knex` + একটি driver                                                         |
 | Queues & workers                           | `npm i bullmq ioredis` (`memory`/`sync` driver-এ দরকার নেই)                         |
@@ -657,34 +657,40 @@ Schema শুধু decorate করা property থেকেই তৈরি হ
 
 ### MeghORM
 
-[Kysely](https://kysely.dev)-এর ওপর তৈরি type-safe model: column-এর নাম, মানের
-type এবং load করা relation TypeScript দিয়ে যাচাই করা হয়।
+Megh-এর নিজস্ব ORM: decorator model এবং query builder; column-এর নাম, মানের
+type এবং load করা relation TypeScript দিয়ে যাচাই করা হয়। ভেতরে Kysely চলে,
+সেটি আপনাকে set up করতে হয় না।
 
 ```bash
-npm install kysely pg   # or: mysql2, better-sqlite3
+npm install pg   # or: mysql2, better-sqlite3, tedious tarn
 ```
 
 ```typescript
-import { Model, hasMany } from "@meghjs/core";
+import {
+  DB, Model, Table, PrimaryKey, AutoIncrement, Column, CreatedAt, HasMany,
+} from "@meghjs/core";
 import { Post } from "./post.model";
 
+@Table("users")
 export class User extends Model {
-  static readonly table = "users";
+  @PrimaryKey() @AutoIncrement() id?: number;
+  @Column({ unique: true }) email!: string;
+  @Column({ nullable: true }) name!: string | null;
+  @CreatedAt() createdAt?: Date;
 
-  id!: number;
-  email!: string;
-  name!: string | null;
-
-  posts = hasMany(() => Post);
+  @HasMany(() => Post) posts!: HasMany<Post>;
 }
 
-// app.ts
-app.useDatabase(db); // a Kysely instance
+// app.ts: no Kysely setup, no connection file
+app.useMeghORM(); // reads DATABASE_URL, or pass { dialect, host, ... }
 
 const users = await User.where("email", "like", "%@acme.io")
   .with("posts")
   .orderBy("name")
   .get();
+
+// or as a query builder
+const ids = await DB.table("users").where("active", true).pluck("id");
 ```
 
 Migration-গুলো `src/database/migrations`-এ থাকে এবং CLI দিয়ে চালানো হয়:

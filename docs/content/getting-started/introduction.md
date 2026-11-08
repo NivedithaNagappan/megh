@@ -15,13 +15,16 @@ for building REST APIs with minimal boilerplate. It gives you:
 - Request validation with class-validator DTOs
 - Authentication and deny-by-default authorization
 - Automatic OpenAPI documentation with Swagger UI or Scalar
-- [Type-safe models and migrations](/advanced/orm) built on Kysely
+- [MeghORM](/advanced/orm): type-safe decorator models, a query builder and
+  migrations with a schema builder
 - TypeORM and Knex integrations with one pagination shape
 - Events, BullMQ queues, task scheduling and caching
 - Socket.IO integration
 - Structured logging and test utilities
 
 Integrations are optional peer dependencies, so you install only what you use.
+
+> **On 0.5.0?** See [Upgrading to 0.5.1](/getting-started/upgrading-0.5).
 
 > **Coming from Avleon?** Avleon is now Megh. See
 > [Moving from Avleon to Megh](/getting-started/upgrading-megh). On 0.3 or
