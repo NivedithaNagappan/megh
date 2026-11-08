@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.3](https://github.com/meghjs/megh/compare/v0.5.2...v0.5.3) (2026-11-08)
+
+### Bug Fixes
+
+* **orm:** return inserted rows with OUTPUT on SQL Server ([2751a28](https://github.com/meghjs/megh/commit/2751a28b73b934b3475250c9488efbbbf0f2aa0c))
+* **orm:** show the real SQL Server error when a transaction is aborted ([53c7e5b](https://github.com/meghjs/megh/commit/53c7e5bc91e4a9ee54ea13b4a1bc12b94f8b9fa7))
+* **orm:** SQL Server inserts and column drops, plus a cross-database REST suite ([df9c175](https://github.com/meghjs/megh/commit/df9c175fbb1f24f281e966fc76a0b29f41b3ce68))
+
+### Features
+
+* **cli:** add update:model to sync a model with alter-table migrations ([09f43b8](https://github.com/meghjs/megh/commit/09f43b811086c18f4bd9e0b2cddacabba4d4277f))
+* **cli:** document generated resources' responses; name nullable column types ([374fd2d](https://github.com/meghjs/megh/commit/374fd2d41c5b32a70319db0046342fc6231cec17))
+* **cli:** make:factory with Faker values per column ([24cffde](https://github.com/meghjs/megh/commit/24cffdee82843960188f5cb20ef3ae626ab830b6))
+* **cli:** make:seeder, db:seed and migrate --seed ([589ade5](https://github.com/meghjs/megh/commit/589ade5d9a0df24e9fc942f63ee6903d6503ef98))
+* **openapi:** typed options and responses from DTOs and models ([fdf954f](https://github.com/meghjs/megh/commit/fdf954ff370ee78f0f93ac0594c567673c70cbaf))
+* **orm:** model factories with Faker ([0886f4e](https://github.com/meghjs/megh/commit/0886f4e3fbdba95ca95671909ff424bd0654c7a1))
+* **orm:** seeders with defineSeeder and a Seeders runner ([5e02c0f](https://github.com/meghjs/megh/commit/5e02c0f73422ff95ac62184ba25db9061d10269d))
+* **orm:** type relation fields with the related model ([eb1f85d](https://github.com/meghjs/megh/commit/eb1f85d7bb842186c8ac8ad226e91e25254ec903))
+
+
 ## [0.5.2](https://github.com/meghjs/megh/compare/v0.5.1...v0.5.2) (2026-11-08)
 
 ### Bug Fixes

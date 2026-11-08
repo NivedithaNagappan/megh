@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.3](https://github.com/meghjs/megh/compare/v0.5.2...v0.5.3) (2026-11-08)
+
+### Features
+
+* **cli:** add update:model to sync a model with alter-table migrations ([09f43b8](https://github.com/meghjs/megh/commit/09f43b811086c18f4bd9e0b2cddacabba4d4277f))
+* **cli:** document generated resources' responses; name nullable column types ([374fd2d](https://github.com/meghjs/megh/commit/374fd2d41c5b32a70319db0046342fc6231cec17))
+* **cli:** make:factory with Faker values per column ([24cffde](https://github.com/meghjs/megh/commit/24cffdee82843960188f5cb20ef3ae626ab830b6))
+* **cli:** make:seeder, db:seed and migrate --seed ([589ade5](https://github.com/meghjs/megh/commit/589ade5d9a0df24e9fc942f63ee6903d6503ef98))
+
+
 ## [0.5.2](https://github.com/meghjs/megh/compare/v0.5.1...v0.5.2) (2026-11-08)
 
 **Note:** Version bump only for package @meghjs/cli
