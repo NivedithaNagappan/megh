@@ -1,9 +1,9 @@
 ---
-title: Database
-description: Connecting Megh to a database with TypeORM or Knex.
+title: TypeORM and Knex
+description: Using TypeORM or Knex through @meghjs/data, as an alternative to MeghORM.
 ---
 
-# Database
+# TypeORM and Knex
 
 ::: tip Built-in models
 `@meghjs/core` also has its own type-safe models and migrations, built on

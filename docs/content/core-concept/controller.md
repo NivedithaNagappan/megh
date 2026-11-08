@@ -1,14 +1,14 @@
 ---
-title: Controller
-description: Megh Controller
+title: Controllers
+description: Defining routes with controllers, reading route parameters, building REST controllers and returning errors.
 ---
 
-# Controller
+# Controllers
 
 A controller groups related routes. Mark the class with `@ApiController` and its
 methods with a route decorator — `@Get`, `@Post`, `@Put`, `@Patch`, `@Delete`.
 
-## Basic Controller
+## Basic controller
 
 ```sh
 npx megh make:controller welcome
@@ -62,7 +62,7 @@ findOne(@Param('id') id: number) {
 }
 ```
 
-## REST controller with in-built collection
+## REST controller with a built-in collection
 
 `Collection` holds items in memory — useful for prototypes and tests, with no
 database required.
@@ -151,7 +151,7 @@ export class User {
 `paginate` returns the same `{ data, meta }` shape as the database paginators;
 see [Pagination](/advanced/database#pagination).
 
-## REST controller with typeorm repository
+## REST controller with a TypeORM repository
 
 With `--orm` the generated controller delegates to a service holding a TypeORM
 repository, which keeps data access out of the controller.

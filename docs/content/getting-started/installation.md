@@ -1,13 +1,13 @@
 ---
 title: Installation
-description: Megh installation
+description: Creating a Megh project with the CLI, or setting one up by hand.
 ---
 
 # Installation
 
 Megh requires **Node.js 22 or newer**.
 
-## Using Cli
+## Using the CLI
 
 If you already installed @meghjs/cli globally then run the following command:
 
@@ -63,7 +63,7 @@ myapi/
 | `start` | Start the production server |
 | `test` | Run unit tests |
 
-## Manual
+## Manual setup
 
 Go to your desired project directory and run the following commands:
 
