@@ -21,6 +21,7 @@ import { BaseHttpException } from "../common/exceptions";
 import { SystemUseError } from "../common/exceptions/system-exception";
 import { Constructor, loadPackageFromClient } from "../common/helpers";
 import { generateSwaggerSchema } from "../openapi/swagger-schema";
+import { applyResponseExtensions } from "../openapi/responses";
 import { applyRequestBodyExtensions } from "../openapi/request-body";
 import { swaggerUiBranding } from "../openapi/branding";
 import { OpenApiUiOptions } from "../openapi/openapi";
@@ -237,10 +238,12 @@ export class MeghApplication implements IMeghApplication {
     );
     const baseSchema = generateSwaggerSchema(safeControllers);
 
+    const security = openApiSecurity(options?.auth);
     await this.app.register(requireSwagger(), {
       // ✅ lazy
       openapi: {
         ...baseSchema,
+        ...(options?.openapi ? { openapi: options.openapi } : {}),
         info: options?.info || { title: "API", version: "1.0.0" },
         servers: options?.servers,
         tags: options?.tags,
@@ -255,13 +258,20 @@ export class MeghApplication implements IMeghApplication {
         security: options?.security,
         externalDocs: options?.externalDocs,
       },
-      transformObject: ({ openapiObject }: { openapiObject: any }) =>
-        applyRequestBodyExtensions(openapiObject),
+      transformObject: ({ openapiObject }: { openapiObject: any }) => {
+        const document = applyResponseExtensions(
+          applyRequestBodyExtensions(openapiObject),
+          security,
+        );
+        if (options?.paths)
+          document.paths = { ...options.paths, ...document.paths };
+        return document;
+      },
     });
 
     const routePrefix = options?.routePrefix || "/swagger";
 
-    if (options?.provider === "scalar") {
+    if ((options?.provider ?? options?.ui) === "scalar") {
       await this.app.register(requireScalar(), {
         // ✅ lazy
         routePrefix,
@@ -270,6 +280,8 @@ export class MeghApplication implements IMeghApplication {
             content: () => requireSwagger(),
           },
           ...options?.uiConfig,
+          ...options?.configuration,
+          ...options?.scalar,
         },
       });
     } else {
@@ -822,4 +834,19 @@ export class MeghApplication implements IMeghApplication {
     await this.runHooks(this.lifecycleHooks.ready);
     if (fn) fn();
   }
+}
+
+/** The security scheme and requirement for `useOpenApi({ auth })`. */
+function openApiSecurity(
+  auth: OpenApiUiOptions["auth"],
+):
+  { requirement: Record<string, string[]>; scheme: [string, any] } | undefined {
+  if (!auth) return undefined;
+  const [name, scheme] =
+    auth === "bearer"
+      ? ["bearerAuth", { type: "http", scheme: "bearer", bearerFormat: "JWT" }]
+      : auth === "apiKey"
+        ? ["apiKey", { type: "apiKey", in: "header", name: "X-API-Key" }]
+        : ["auth", auth];
+  return { requirement: { [name]: [] }, scheme: [name, scheme] };
 }

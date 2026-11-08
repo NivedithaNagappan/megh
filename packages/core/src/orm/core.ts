@@ -50,3 +50,5 @@ declare module "../core/application" {
     useDatabase(db: Kysely<any>): this;
   }
 }
+export { registerSchemaProvider } from "../openapi/responses";
+export type { SchemaClass, SchemaObject } from "../openapi/openapi";
