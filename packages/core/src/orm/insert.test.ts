@@ -21,11 +21,12 @@ class Role extends Model {
 
 // A SQL Server connection that runs nothing, records the SQL it is sent and
 // answers every query with one row. Like the real driver, it gives no insertId.
+// The SQL is kept exactly as sent: `output "inserted"."*"` would be a broken column.
 function fakeSqlServer(row: Record<string, unknown>) {
   const statements: string[] = [];
   const connection: DatabaseConnection = {
     async executeQuery(query) {
-      statements.push(query.sql.replace(/["[\]]/g, ""));
+      statements.push(query.sql);
       return { rows: [row] as any[] };
     },
     async *streamQuery() {},
@@ -63,7 +64,7 @@ describe("inserts on SQL Server", () => {
   it("returns the created model through output inserted.*", async () => {
     const role = await Role.create({ name: "Admin" });
     expect(sql).toEqual([
-      "insert into roles (name) output inserted.* values (@1)",
+      "insert into \"roles\" (\"name\") output \"inserted\".* values (@1)",
     ]);
     expect(role.id).toBe(7);
     expect(role.name).toBe("Admin");
@@ -72,7 +73,7 @@ describe("inserts on SQL Server", () => {
   it("returns the new id from insertGetId() through output", async () => {
     const id = await DB.table("roles").insertGetId({ name: "Admin" });
     expect(sql).toEqual([
-      "insert into roles (name) output inserted.id values (@1)",
+      "insert into \"roles\" (\"name\") output \"inserted\".\"id\" values (@1)",
     ]);
     expect(id).toBe(7);
   });

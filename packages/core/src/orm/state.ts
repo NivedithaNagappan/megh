@@ -148,7 +148,7 @@ export async function insertRow(
     const row = await db
       .insertInto(table)
       .values(data)
-      .output("inserted.*" as any)
+      .outputAll("inserted")
       .executeTakeFirstOrThrow();
     return castFromDatabase(cls, toProperties(cls, row as any));
   }
