@@ -69,7 +69,7 @@ Documentation: **https://meghjs.github.io**
 ## Features
 
 - 🎯 **Decorator-based routing** — define controllers and routes with TypeScript decorators
-- 💉 **Dependency injection** — `MeghContainer`, `@Injectable` and `Token`, currently backed by [TypeDI](https://github.com/typestack/typedi)
+- 💉 **Dependency injection** — `MeghContainer`, `@Injectable` and `Token`, on Megh's own container (no third-party DI library)
 - 📄 **OpenAPI / Swagger** — automatic docs with Swagger UI or [Scalar](https://scalar.com)
 - ✅ **Validation** — request DTOs validated and whitelisted via [class-validator](https://github.com/typestack/class-validator)
 - 🔑 **Authentication** — pluggable handler that populates `request.user`
@@ -1277,7 +1277,7 @@ for 2.0. These lists track what has landed and what still blocks 1.0.0.
 
 - [x] CommonJS-only build with an `exports` map and `sideEffects`
 - [x] Integrations moved to optional peer dependencies
-- [x] Keep typedi behind `MeghContainer` for 1.0; it can be swapped in a later minor release
+- [x] Replace typedi with Megh's own container behind `MeghContainer`
 - [x] MIT license file matches `package.json`
 - [x] Build without rimraf, ESLint/Jest configs fixed, husky 9, coverage off by default
 - [x] CI on Node 22 and 24 (typecheck, lint, test, build) and a tag-based publish workflow
