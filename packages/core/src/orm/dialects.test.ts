@@ -14,9 +14,9 @@ import {
   createDatabase,
   resolveDatabaseOptions,
   type CreateInput,
-  type PageRequest,
   type UpdateInput,
 } from "./index";
+import type { PageRequest } from "../collection/pagination";
 
 /**
  * The REST operations `make:resource` generates (list, paginate, show,
