@@ -25,6 +25,7 @@ import type { PageRequest, Paginated } from "./core";
 import { bindable, isSqlite } from "./casts";
 import { getConnection, runInTransaction } from "./connection";
 import { kysely } from "./engine";
+import { applyPaging } from "./paging";
 
 export type Operator =
   | "="
@@ -646,14 +647,11 @@ export class TableQuery<T extends Row = Row> extends WhereClauses<
           ? query.orderBy(kysely().sql.raw(order.raw))
           : query.orderBy(order.column, order.direction);
     }
-    if (this.limitValue !== undefined) query = query.limit(this.limitValue);
-    if (this.offsetValue !== undefined) {
-      // MySQL and SQLite need a LIMIT before OFFSET.
-      if (this.limitValue === undefined)
-        query = query.limit(Number.MAX_SAFE_INTEGER);
-      query = query.offset(this.offsetValue);
-    }
-    return query;
+    return applyPaging(db, query, {
+      limit: this.limitValue,
+      offset: this.offsetValue,
+      ordered: this.orders.length > 0,
+    });
   }
 
   private async aggregate(fn: (eb: any) => any): Promise<unknown> {

@@ -19,6 +19,7 @@ import {
 } from "./core";
 import { bindable, castFromDatabase, castToDatabase, isSqlite } from "./casts";
 import { getConnection } from "./connection";
+import { applyPaging } from "./paging";
 import { columnName, propertyName, toColumns } from "./naming";
 import { getRelation, type RelationDefinition } from "./relations";
 import { hydrate, tableOf, withTimestamps } from "./state";
@@ -357,10 +358,8 @@ export class ModelQuery<
 
   async get(): Promise<(Row<M, P, S> & X)[]> {
     const ctx = this.context();
-    let qb = this.applyFilters(
-      getConnection().selectFrom(tableOf(this.model)),
-      ctx,
-    );
+    const db = getConnection();
+    let qb = this.applyFilters(db.selectFrom(tableOf(this.model)), ctx);
     const columns = this.selectedColumns();
     qb = columns ? qb.select(columns) : qb.selectAll();
     for (const { relation, constrain } of this.counts) {
@@ -372,12 +371,11 @@ export class ModelQuery<
       );
     }
     for (const step of this.ordering) qb = step(qb, ctx);
-    if (this.limitCount !== undefined) qb = qb.limit(this.limitCount);
-    if (this.offsetCount !== undefined) {
-      // SQLite and MySQL need a LIMIT before OFFSET.
-      if (this.limitCount === undefined) qb = qb.limit(Number.MAX_SAFE_INTEGER);
-      qb = qb.offset(this.offsetCount);
-    }
+    qb = applyPaging(db, qb, {
+      limit: this.limitCount,
+      offset: this.offsetCount,
+      ordered: this.ordering.length > 0,
+    });
 
     const rows: Record<string, unknown>[] = await qb.execute();
     const models = rows.map((row) => {
