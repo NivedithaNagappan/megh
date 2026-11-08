@@ -275,6 +275,7 @@ function renderResourceController(
   const numeric = model.schema!.primaryKeyType === "number";
   return renderStub("controllers/model-controller.stub", {
     ...vars,
+    modelImport: importPath(controllerFile, model.file),
     Plural: pascalCase(pluralize(snakeCase(m.base))),
     dtoImport: importPath(controllerFile, dtoFile),
     primaryKeyType: numeric ? "number" : "string",

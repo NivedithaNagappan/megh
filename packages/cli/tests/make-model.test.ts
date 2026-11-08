@@ -241,7 +241,7 @@ describe("make:model", () => {
 export class User extends Model {
   @PrimaryKey() @AutoIncrement() id?: number;
   @Column() email!: string;
-  @Column({ nullable: true }) name!: string | null;
+  @Column({ nullable: true, type: "text" }) name!: string | null;
   @Column({ type: "boolean" }) is_admin?: boolean;
   @Column({ nullable: true, type: "json" }) settings!: Record<string, unknown> | null;
   @Column({ nullable: true, type: "date" }) born_on!: Date | null;
