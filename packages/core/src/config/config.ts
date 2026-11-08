@@ -1,6 +1,6 @@
 import { Environment } from "./environment-variables";
-import { Constructor, inject } from "../common/helpers";
-import { Container, Injectable } from "../di";
+import { Constructor } from "../common/helpers";
+import { Container, Injectable, inject } from "../di";
 // The abstract base
 export abstract class MeghConfig<T = any> {
   abstract config(env: Environment): T;

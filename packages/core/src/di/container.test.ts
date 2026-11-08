@@ -6,7 +6,9 @@ import {
   Injectable,
   Token,
   createInjectDecorator,
+  inject,
 } from "./container";
+import { SystemUseError } from "../common/exceptions/system-exception";
 
 describe("Container", () => {
   afterEach(() => {
@@ -230,6 +232,119 @@ describe("Container resolution", () => {
 
     expect(copy.Container).not.toBe(Container);
     expect(copy.Container.get(DB)).toBe("one");
+  });
+});
+
+describe("inject", () => {
+  afterEach(() => {
+    Container.reset();
+  });
+
+  it("injects into field initializers, with no constructor metadata", () => {
+    @Injectable()
+    class Clock {
+      now() {
+        return 42;
+      }
+    }
+    // Registered with a call, not a decorator, so TypeScript emits no
+    // design:paramtypes for it: inject() doesn't need any.
+    class Report {
+      private readonly clock = inject(Clock);
+      time() {
+        return this.clock.now();
+      }
+    }
+    Injectable()(Report);
+
+    expect(Container.get(Report).time()).toBe(42);
+  });
+
+  it("returns the same instance constructor injection gets", () => {
+    @Injectable()
+    class Db {}
+    @Injectable()
+    class ByField {
+      readonly db = inject(Db);
+    }
+    @Injectable()
+    class ByConstructor {
+      constructor(readonly db: Db) {}
+    }
+
+    expect(Container.get(ByField).db).toBe(Container.get(ByConstructor).db);
+  });
+
+  it("resolves tokens and named values", () => {
+    const URL = new Token<string>("URL");
+    Container.set(URL, "postgres://db");
+    Container.set("region", "eu");
+
+    expect(inject(URL)).toBe("postgres://db");
+    expect(inject<string>("region")).toBe("eu");
+  });
+
+  it("works outside a class, such as in a startup script", () => {
+    @Injectable()
+    class Settings {
+      port = 4000;
+    }
+    expect(inject(Settings).port).toBe(4000);
+  });
+
+  it("returns undefined for an optional dependency that isn't registered", () => {
+    class Analytics {}
+    @Injectable()
+    class Checkout {
+      readonly analytics = inject(Analytics, { optional: true });
+    }
+
+    expect(Container.get(Checkout).analytics).toBeUndefined();
+  });
+
+  it("still throws when an optional dependency is registered but can't be built", () => {
+    class Missing {}
+    @Injectable()
+    class Analytics {
+      constructor(readonly missing: Missing) {}
+    }
+
+    expect(() => inject(Analytics, { optional: true })).toThrow(
+      "Cannot construct Analytics: Missing is not registered.",
+    );
+  });
+
+  it("names the class whose field needed a missing dependency", () => {
+    class Mailer {}
+    @Injectable()
+    class Signup {
+      readonly mailer = inject(Mailer);
+    }
+
+    expect(() => Container.get(Signup)).toThrow(
+      "Cannot construct Signup: Mailer is not registered.",
+    );
+  });
+
+  it("reports a cycle between field initializers", () => {
+    @Injectable()
+    class Orders {
+      readonly users: Users = inject(Users);
+    }
+    @Injectable()
+    class Users {
+      readonly orders = inject(Orders);
+    }
+
+    expect(() => inject(Orders)).toThrow(
+      "Circular dependency: Orders -> Users -> Orders.",
+    );
+  });
+
+  it("throws a SystemUseError, as the inject() helper it replaces did", () => {
+    class Unknown {}
+    expect(() => inject(Unknown)).toThrow(SystemUseError);
+    expect(() => inject(Unknown)).toThrow(ContainerError);
   });
 });
 

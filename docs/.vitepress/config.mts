@@ -42,6 +42,7 @@ export default defineConfig({
         text: 'Core Concepts',
         items: [
           { text: 'Controller', link: '/core-concept/controller' },
+          { text: 'Dependency Injection', link: '/core-concept/dependency-injection' },
           { text: 'Middleware', link: '/core-concept/middleware' },
           { text: 'Validation', link: '/core-concept/validation' },
           { text: 'Authentication', link: '/core-concept/authentication' },

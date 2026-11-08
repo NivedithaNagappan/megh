@@ -73,5 +73,11 @@ export {
   Token,
   Injectable,
   createInjectDecorator,
+  inject,
 } from "./di";
-export type { ContainerApi, Constructable, ServiceIdentifier } from "./di";
+export type {
+  ContainerApi,
+  Constructable,
+  InjectOptions,
+  ServiceIdentifier,
+} from "./di";

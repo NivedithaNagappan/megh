@@ -19,7 +19,7 @@ import {
 } from "./interfaces";
 import { BaseHttpException } from "../common/exceptions";
 import { SystemUseError } from "../common/exceptions/system-exception";
-import { Constructor, inject, loadPackageFromClient } from "../common/helpers";
+import { Constructor, loadPackageFromClient } from "../common/helpers";
 import { generateSwaggerSchema } from "../openapi/swagger-schema";
 import { applyRequestBodyExtensions } from "../openapi/request-body";
 import { swaggerUiBranding } from "../openapi/branding";

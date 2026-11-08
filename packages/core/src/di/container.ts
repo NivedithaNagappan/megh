@@ -4,8 +4,10 @@
  * Core and plugins use only this module. Classes are registered with
  * `@Injectable()` (or a decorator that applies it, such as `@AppService` or
  * `@Controller`) and built on first `get`, with their constructor parameters
- * resolved from the types TypeScript emits as `design:paramtypes`.
+ * resolved from the types TypeScript emits as `design:paramtypes`, or pulled
+ * in with `inject()` from field initializers.
  */
+import { SystemUseError } from "../common/exceptions/system-exception";
 
 /** A class that can be instantiated with `new`. */
 export type Constructable<T = unknown> = new (...args: any[]) => T;
@@ -40,8 +42,11 @@ export interface ContainerApi {
   reset(): void;
 }
 
-/** Thrown when the container can't resolve or construct a service. */
-export class ContainerError extends Error {
+/**
+ * Thrown when the container can't resolve or construct a service. Extends
+ * `SystemUseError`, which `inject()` threw before it moved here.
+ */
+export class ContainerError extends SystemUseError {
   constructor(message: string) {
     super(message);
     this.name = "ContainerError";
@@ -203,7 +208,7 @@ function resolve(s: Store, id: unknown): unknown {
   if (s.constructing.includes(type)) {
     const cycle = [...s.constructing, type].map(describe).join(" -> ");
     throw new ContainerError(
-      `Circular dependency: ${cycle}. Break the cycle, for example by injecting one side lazily with MeghContainer.get() inside a method.`,
+      `Circular dependency: ${cycle}. Break the cycle, for example by calling inject() for one side inside a method instead of in a constructor or field initializer.`,
     );
   }
 
@@ -246,6 +251,49 @@ export const Container: ContainerApi = {
     }
   },
 };
+
+export type InjectOptions = {
+  /**
+   * Return `undefined` instead of throwing when nothing is registered for
+   * the identifier. Errors while constructing a registered service (a
+   * missing dependency further down, a constructor that throws) still throw.
+   */
+  optional?: boolean;
+};
+
+/**
+ * Resolve a service, token or named value from the container.
+ *
+ * Use it in field initializers, so a class needs no constructor parameters
+ * (and no emitted decorator metadata) to receive its dependencies:
+ *
+ *   @AppService
+ *   class UserService {
+ *     private readonly db = inject(Database);
+ *     private readonly mailer = inject(Mailer, { optional: true });
+ *   }
+ *
+ * Inside a class the container is building, it shares that construction:
+ * cycles and missing dependencies are reported with the full chain. It also
+ * works anywhere else, such as a startup script: `inject(Environment)`.
+ */
+export function inject<T>(id: ServiceIdentifier<T>): T;
+export function inject<T>(
+  id: ServiceIdentifier<T>,
+  options: InjectOptions & { optional: true },
+): T | undefined;
+export function inject<T>(
+  id: ServiceIdentifier<T>,
+  options?: InjectOptions,
+): T | undefined;
+export function inject<T>(
+  id: ServiceIdentifier<T>,
+  options: InjectOptions = {},
+): T | undefined {
+  const s = store();
+  if (options.optional && !s.entries.has(id)) return undefined;
+  return resolve(s, id) as T;
+}
 
 /**
  * Mark a class as resolvable by the container. Its constructor parameters
