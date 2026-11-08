@@ -1,0 +1,10 @@
+import { defineSeeder } from "@meghjs/core";
+
+export default defineSeeder({
+  async run() {
+    // Insert rows with factories, models or the query builder, e.g.
+    // await UserFactory.createMany(10);          // megh make:factory user
+    // await Role.create({ name: "Admin" });
+    // await DB.table("{table}").insert([{ ... }]);
+  },
+});

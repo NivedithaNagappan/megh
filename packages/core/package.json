@@ -52,6 +52,7 @@
     "reflect-metadata": "^0.2.2"
   },
   "peerDependencies": {
+    "@faker-js/faker": ">=9.0.0",
     "@fastify/compress": "^9.0.0",
     "@fastify/cors": "^11.0.0",
     "@fastify/helmet": "^13.0.0",
@@ -74,6 +75,9 @@
     "socket.io": ">=4.0.0"
   },
   "peerDependenciesMeta": {
+    "@faker-js/faker": {
+      "optional": true
+    },
     "@fastify/compress": {
       "optional": true
     },
@@ -130,6 +134,7 @@
     }
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.6.0",
     "@fastify/compress": "^9.3.0",
     "@fastify/cors": "^11.0.0",
     "@fastify/helmet": "^13.2.0",

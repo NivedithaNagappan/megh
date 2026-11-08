@@ -33,6 +33,24 @@ function rootConnection(): Kysely<any> {
   return Container.get(ORM_CONNECTION);
 }
 
+/** Whether a root connection is set. */
+export function hasConnection(): boolean {
+  return Container.has(ORM_CONNECTION);
+}
+
+/**
+ * Run `fn` in a transaction on `db`, which every model query in the call
+ * chain uses, like {@link runInTransaction} but on a given connection.
+ */
+export function transactionOn<T>(
+  db: Kysely<any>,
+  fn: (trx: Transaction<any>) => Promise<T>,
+): Promise<T> {
+  return db
+    .transaction()
+    .execute((trx) => currentTransaction.run(trx, () => fn(trx)));
+}
+
 /** The transaction this call chain runs in, else the root connection. */
 export function getConnection(): Kysely<any> {
   return currentTransaction.getStore() ?? rootConnection();

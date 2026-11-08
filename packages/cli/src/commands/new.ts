@@ -4,6 +4,7 @@ import path from "path";
 import { CliError } from "../errors";
 import { c, log } from "../utils/log";
 import { kebabCase, titleCase } from "../utils/names";
+import { renderEntrySeeder } from "../generators/make";
 import { cliVersion, coreRange, renderStub } from "../utils/stubs";
 import { ENV_TYPES_FILE, envTypesFile } from "../utils/env-types";
 
@@ -65,6 +66,7 @@ const DEP_VERSIONS: Record<string, string> = {
   "@vitest/coverage-v8": "^4.1.12",
   "unplugin-swc": "^2.0.0",
   "@swc/core": "^1.16.20",
+  "@faker-js/faker": "^10.6.0",
 };
 
 function isDirEmpty(dir: string) {
@@ -178,6 +180,8 @@ export function packageJson(
   const pickDev = (...names: string[]) => names.forEach((n) => (devDeps[n] = DEP_VERSIONS[n]));
   pickDev("@types/node", "typescript");
   if (!minimal) pickDev("@swc/core", "@vitest/coverage-v8", "unplugin-swc", "vitest");
+  // Model factories (megh make:factory) fill rows with Faker values.
+  if (features.includes("orm")) pickDev("@faker-js/faker");
 
   const scripts: Record<string, string> = {
     "start:dev": "megh serve",
@@ -318,6 +322,7 @@ export async function createApplication(name: string, opts: NewOptions = {}): Pr
     env = env.replace(/\n*$/, "\n") + `\n# MeghORM: app.useMeghORM() and megh migrate connect with this.\nDATABASE_URL=${url}\n`;
     if (database === "sqlite") gitignore = gitignore.replace(/\n*$/, "\n") + "database.sqlite\n";
     add("src/database/migrations/.gitkeep", "");
+    add("src/database/seeders/database.seeder.ts", renderEntrySeeder([]));
   }
   add(".gitignore", gitignore);
   add(".env", env);
@@ -364,7 +369,7 @@ export async function createApplication(name: string, opts: NewOptions = {}): Pr
   if (orm) {
     if (database !== "sqlite") console.log(c.dim("    # set DATABASE_URL in .env"));
     console.log(c.cyan("    npx megh make:migration create_users_table"));
-    console.log(c.cyan("    npx megh migrate"));
+    console.log(c.cyan("    npx megh migrate --seed"));
   }
   console.log(c.cyan(`    ${devCommand(pm)}`));
   if (features.includes("openapi") || features.includes("scalar")) {

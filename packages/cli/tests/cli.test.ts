@@ -232,12 +232,14 @@ describe("new", () => {
     await createApplication("shop", { cwd: tmp, yes: true, skipInstall: true, features: ["orm"] });
     const pkg = JSON.parse(read("shop", "package.json"));
     expect(pkg.dependencies["better-sqlite3"]).toBeDefined();
+    expect(pkg.devDependencies["@faker-js/faker"]).toBeDefined(); // for make:factory
     expect(pkg.dependencies.kysely).toBeUndefined(); // ships with @meghjs/core
     expect(pkg.dependencies["@meghjs/data"]).toBeUndefined();
     expect(read("shop", "src", "app.ts")).toContain("app.useMeghORM();");
     expect(read("shop", ".env")).toContain("DATABASE_URL=sqlite:./database.sqlite");
     expect(read("shop", ".gitignore")).toContain("database.sqlite");
     expect(exists("shop", "src", "database", "migrations", ".gitkeep")).toBe(true);
+    expect(read("shop", "src", "database", "seeders", "database.seeder.ts")).toContain("export default defineSeeder({");
     expect(exists("shop", "src", "database", "connection.ts")).toBe(false);
   });
 

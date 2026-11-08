@@ -10,6 +10,7 @@ import { readMigrationSchema } from "./migration-schema";
 import { pluralRoute, pluralize, renderBlankOrmModel, renderOrmModel } from "./orm-model";
 import { readModelSchema, renderResourceDto, type ResourceSchema } from "./resource";
 import { syncModelSource, type ModelChanges } from "./update-model";
+import { renderFactory, type ForeignKey } from "./factory";
 
 export type MakeBaseOptions = {
   /** Directory to start the project-root search from. Defaults to `process.cwd()`. */
@@ -473,4 +474,112 @@ export function makeMigration(name: string, opts: MakeMigrationOptions = {}): st
 
   const file = path.join(migrations, `${migrationTimestamp(opts.now)}_${snake}.ts`);
   return write(file, content, opts.force, "Migration", projectRoot);
+}
+
+export type MakeSeederOptions = Pick<MakeBaseOptions, "cwd" | "force">;
+
+/**
+ * Create `<seeders>/<name>.seeder.ts`. `make:seeder database` writes the
+ * entry seeder that `db:seed` runs, calling the seeders that already exist.
+ */
+export function makeSeeder(name: string, opts: MakeSeederOptions = {}): string {
+  const projectRoot = requireProjectRoot(opts.cwd ?? process.cwd());
+  if (/[\/]/.test(name)) throw new CliError(`Seeders live in one folder: use a plain name, not "${name}".`);
+  // `UserSeeder`, `user_seeder` and `users` all name the file after the table.
+  const snake = snakeCase(name.replace(/[-_]?seeder$/i, ""));
+  if (!snake) throw new CliError(`Invalid seeder name "${name}".`);
+  const { seeders } = databasePaths(projectRoot);
+  const file = path.join(seeders, `${snake}.seeder.ts`);
+  const rel = (p: string) => relPath(projectRoot, p);
+
+  let content: string;
+  if (snake === "database") {
+    content = renderEntrySeeder(existingSeeders(seeders).filter((s) => s !== "database"));
+  } else {
+    content = renderStub("seeders/seeder.stub", { table: pluralRoute(snake) });
+  }
+  write(file, content, opts.force, "Seeder", projectRoot);
+
+  if (snake !== "database") {
+    const entry = path.join(seeders, "database.seeder.ts");
+    if (fs.existsSync(entry)) {
+      log.info(`  Run it from ${rel(entry)}: await call(${JSON.stringify(snake)});`);
+    } else {
+      log.info(
+        "  megh db:seed runs every seeder in file-name order. To choose the order, " +
+          "create the entry seeder: megh make:seeder database",
+      );
+    }
+  }
+  return file;
+}
+
+/** The `database` seeder, calling `others` in order. */
+export function renderEntrySeeder(others: string[]): string {
+  return renderStub("seeders/database-seeder.stub", {
+    params: others.length ? "{ call }" : "",
+    body: others.length
+      ? `await call(${others.map((s) => JSON.stringify(s)).join(", ")});`
+      : `// Add { call } to run()'s parameters, then: await call("roles", "users");`,
+  });
+}
+
+/** Names of the seeders in `folder`, in file-name order. */
+function existingSeeders(folder: string): string[] {
+  if (!fs.existsSync(folder)) return [];
+  return fs
+    .readdirSync(folder)
+    .filter((f) => /\.(c?js|mjs|c?ts|mts)$/.test(f) && !/\.d\.[cm]?ts$/.test(f))
+    .sort()
+    .map((f) => f.replace(/\.(c?js|mjs|c?ts|mts)$/, "").replace(/\.seeder$/, ""));
+}
+
+export type MakeFactoryOptions = Pick<MakeBaseOptions, "cwd" | "force">;
+
+/**
+ * `make:factory user`: `<factories>/user.factory.ts` exporting `UserFactory`,
+ * with a Faker value for each of the model's columns. Foreign keys use the
+ * related model's factory when it exists.
+ */
+export function makeFactory(name: string, opts: MakeFactoryOptions = {}): string {
+  const projectRoot = requireProjectRoot(opts.cwd ?? process.cwd());
+  const n = resolveName(name.replace(/[-_.]?factory$/i, ""), "Model");
+  const modelFile = path.join(targetDir(projectRoot, "model", n.dirs), `${n.fileBase}.model.ts`);
+  if (!fs.existsSync(modelFile)) {
+    throw new CliError(
+      `There is no ${n.base} model (${relPath(projectRoot, modelFile)}) to build a factory for. ` +
+        `Create it first: megh make:model ${n.base}`,
+    );
+  }
+  const model = resolveResourceModel(projectRoot, [...n.dirs, n.base].join("/"));
+  if (model.typeorm) throw new CliError(`${relPath(projectRoot, modelFile)} is a TypeORM entity; factories build Megh ORM models.`);
+
+  const { factories } = databasePaths(projectRoot);
+  const file = path.join(factories, ...n.dirs, `${n.fileBase}.factory.ts`);
+  const fields = model.schema!.inputFields;
+  const foreignKeys: ForeignKey[] = fields
+    .filter((f) => /_id$/.test(f.name) && (f.ts === "number" || f.ts === "string"))
+    .map((f) => {
+      const related = resolveName(f.name.replace(/_id$/, ""), "Model");
+      const factoryFile = path.join(factories, `${related.fileBase}.factory.ts`);
+      const exists = fs.existsSync(factoryFile);
+      return {
+        column: f.name,
+        model: snakeCase(related.base),
+        ...(exists ? { factory: `${related.base}Factory`, factoryImport: importPath(file, factoryFile) } : {}),
+      };
+    });
+
+  write(
+    file,
+    renderFactory({ model: n.base, modelImport: importPath(file, modelFile), fields, foreignKeys }),
+    opts.force,
+    "Factory",
+    projectRoot,
+  );
+  log.info(`  Use it in a seeder or test: await ${n.base}Factory.createMany(10);`);
+  if (!installedVersion("@faker-js/faker", projectRoot)) {
+    log.warn("Factories use Faker for fake values. Install it: npm install -D @faker-js/faker");
+  }
+  return file;
 }
