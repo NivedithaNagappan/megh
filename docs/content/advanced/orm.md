@@ -981,6 +981,59 @@ failed run throws a `MigrationError` with `migration` (the one that failed) and
 `completed` (those that ran before it; on PostgreSQL and SQL Server they were
 rolled back with it).
 
+## Seeding
+
+Seeders fill the database with rows for development, tests and demos. Each
+file in `src/database/seeders/` exports `defineSeeder({ run })`, and is named
+after its file without `.seeder.ts`:
+
+```ts [src/database/seeders/users.seeder.ts]
+import { DB, defineSeeder } from '@meghjs/core';
+import { Role } from '../../models/role.model';
+import { User } from '../../models/user.model';
+
+export default defineSeeder({
+  async run() {
+    const admin = await Role.findByOrFail('name', 'Admin');
+    await User.create({ name: 'Ann', email: 'ann@example.com', role_id: admin.id! });
+    await DB.table('settings').insert([{ key: 'theme', value: 'dark' }]);
+  },
+});
+```
+
+The `database` seeder is the entry point. `call()` runs other seeders by
+name, in order:
+
+```ts [src/database/seeders/database.seeder.ts]
+export default defineSeeder({
+  async run({ call }) {
+    await call('roles', 'users');
+  },
+});
+```
+
+Run them with `npx megh db:seed` (see [CLI: Seeders](/cli/basic#seeders)).
+Without a `database` seeder, every seeder runs in file-name order. A run is
+one transaction, which models, `DB.table()` and the `db` passed to `run()`
+all use, so a failing seeder saves nothing. A seeder that calls itself,
+directly or through others, is reported as a loop.
+
+### Seeding from code
+
+`Seeders` runs them from code, for example in test setup:
+
+```ts
+import { Model, Seeders } from '@meghjs/core';
+
+const seeders = new Seeders(Model.db(), { folder: `${__dirname}/database/seeders` });
+await seeders.run();         // the database seeder, else all; returns the names that ran
+await seeders.run('roles');  // one seeder
+```
+
+Pass `seeders: { roles: defineSeeder({ run }) }` instead of `folder` to define
+them inline, and `transaction: false` to commit each statement as it runs. A
+failure throws a `SeedError` whose `seeder` names the seeder that failed.
+
 ## Generating models
 
 `npx megh make:model user` writes `src/models/user.model.ts`, with its

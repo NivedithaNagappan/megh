@@ -1,0 +1,8 @@
+import { defineSeeder } from "@meghjs/core";
+
+// `megh db:seed` runs this seeder. Call the others from here, in order.
+export default defineSeeder({
+  async run({params}) {
+    {body}
+  },
+});

@@ -1,0 +1,9 @@
+import { defineSeeder } from "@meghjs/core";
+
+export default defineSeeder({
+  async run() {
+    // Insert rows with models or the query builder, e.g.
+    // await Role.create({ name: "Admin" });
+    // await DB.table("{table}").insert([{ ... }]);
+  },
+});

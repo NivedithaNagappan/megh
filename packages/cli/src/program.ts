@@ -6,7 +6,7 @@ import { routeList } from "./commands/route-list";
 import { serve } from "./commands/serve";
 import { start } from "./commands/start";
 import { CliError } from "./errors";
-import { migrate, migrateRefresh, migrateReset, migrateRollback, migrateStatus } from "./commands/migrate";
+import { dbSeed, migrate, migrateRefresh, migrateReset, migrateRollback, migrateStatus } from "./commands/migrate";
 import {
   makeConfig,
   makeController,
@@ -15,6 +15,7 @@ import {
   makeMigration,
   makeModel,
   makeResource,
+  makeSeeder,
   updateModel,
   makeService,
 } from "./generators/make";
@@ -149,9 +150,12 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
         "change it. Sources are compiled with SWC first.",
     );
 
-  db("migrate", "Run pending migrations").action(() => {
-    migrate({ cwd: cwd() });
-  });
+  db("migrate", "Run pending migrations")
+    .option("--seed", "Run the seeders afterwards (see db:seed)")
+    .option("--force", "With --seed: seed even when NODE_ENV is production")
+    .action((o) => {
+      migrate({ cwd: cwd(), seed: o.seed, force: o.force });
+    });
 
   db("migrate:rollback", "Undo the last migration (or the last --step n)")
     .option("--step <n>", "Number of migrations to undo", parseInteger, 1)
@@ -163,9 +167,26 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
     migrateReset({ cwd: cwd() });
   });
 
-  db("migrate:refresh", "Undo every migration, then run them all again").action(() => {
-    migrateRefresh({ cwd: cwd() });
-  });
+  db("migrate:refresh", "Undo every migration, then run them all again")
+    .option("--seed", "Run the seeders afterwards (see db:seed)")
+    .option("--force", "With --seed: seed even when NODE_ENV is production")
+    .action((o) => {
+      migrateRefresh({ cwd: cwd(), seed: o.seed, force: o.force });
+    });
+
+  db("db:seed", "Fill the database: run the database seeder, or every seeder in file order")
+    .option("-s, --seeder <name>", "Run only this seeder, e.g. users for users.seeder.ts")
+    .option("--force", "Seed even when NODE_ENV is production")
+    .addHelpText(
+      "after",
+      "\nSeeders live in src/database/seeders (set megh.seeders to change it). Without\n" +
+        "--seeder, database.seeder.ts runs and calls the others in its order; without it,\n" +
+        "every seeder runs in file-name order. A run is one transaction: if a seeder\n" +
+        "throws, nothing is saved.",
+    )
+    .action((o) => {
+      dbSeed({ cwd: cwd(), seeder: o.seeder, force: o.force });
+    });
 
   db("migrate:status", "Show which migrations have run")
     .option("--json", "Print JSON")
@@ -181,6 +202,14 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
     .option("-f, --force", "Overwrite the file if it exists")
     .action((name: string, o) => {
       makeMigration(name, { cwd: cwd(), create: o.create, table: o.table, force: o.force });
+    });
+
+  sub("make:seeder", "Create a seeder in src/database/seeders/<name>.seeder.ts")
+    .alias("m:sd")
+    .argument("<name>", "e.g. users, or database for the entry seeder db:seed runs")
+    .option("-f, --force", "Overwrite the file if it exists")
+    .action((name: string, o) => {
+      makeSeeder(name, { cwd: cwd(), force: o.force });
     });
 
   // ── Generators ──────────────────────────────────────────────────────────

@@ -50,6 +50,8 @@ npm run start:dev
 | `make:config` | `m:cnf` | `-f`, `--root <dir>` | Create an `@AppConfig` class |
 | `make:middleware` | `m:mlwr` | `-f`, `--root <dir>` | Create a middleware |
 | `make:dto` | `m:dto` | `-f`, `--root <dir>` | Create a class-validator DTO |
+| `make:seeder` | `m:sd` | `-f` | Create a seeder in `src/database/seeders` (`database` for the entry seeder) |
+| `db:seed` | | `-s <name>`, `--force` | Run the seeders in one transaction (also `migrate --seed`) |
 
 `-f` / `--force` overwrites an existing file. `-r` / `--resource` generates a
 full REST skeleton. `--root <dir>` (also `-rt`) writes under `src/<dir>`

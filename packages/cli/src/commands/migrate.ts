@@ -10,6 +10,7 @@ import { readPackageJson, requireProjectRoot } from "../utils/project";
 /** Where apps used to export their own Kysely instance. Still used when present. */
 export const LEGACY_CONNECTION = "src/database/connection.ts";
 export const DEFAULT_MIGRATIONS = "src/database/migrations";
+export const DEFAULT_SEEDERS = "src/database/seeders";
 
 export type DatabasePaths = {
   /**
@@ -24,9 +25,11 @@ export type DatabasePaths = {
   settings: Record<string, unknown>;
   /** Folder of migration files. */
   migrations: string;
+  /** Folder of seeder files. */
+  seeders: string;
 };
 
-/** `megh.database` / `megh.migrations` from package.json, else the defaults. */
+/** `megh.database` / `megh.migrations` / `megh.seeders` from package.json, else the defaults. */
 export function databasePaths(root: string, pkg: Record<string, any> = readPackageJson(root)): DatabasePaths {
   const conf = pkg?.megh ?? {};
   const legacy = path.resolve(root, LEGACY_CONNECTION);
@@ -37,10 +40,11 @@ export function databasePaths(root: string, pkg: Record<string, any> = readPacka
     connection,
     settings: conf.database && typeof conf.database === "object" ? conf.database : {},
     migrations: path.resolve(root, typeof conf.migrations === "string" ? conf.migrations : DEFAULT_MIGRATIONS),
+    seeders: path.resolve(root, typeof conf.seeders === "string" ? conf.seeders : DEFAULT_SEEDERS),
   };
 }
 
-export type MigrateAction = "latest" | "rollback" | "reset" | "refresh" | "status";
+export type MigrateAction = "latest" | "rollback" | "reset" | "refresh" | "status" | "seed";
 export type MigrateOptions = { cwd?: string; step?: number };
 
 const MARKER = "__MEGH_MIGRATE__";
@@ -54,7 +58,7 @@ const MARKER = "__MEGH_MIGRATE__";
 const WORKER = `
 const fs = require("fs");
 const path = require("path");
-const [root, connection, settings, folder, action, args] = JSON.parse(process.argv[process.argv.length - 1]);
+const [root, connection, settings, folder, seedersFolder, action, args] = JSON.parse(process.argv[process.argv.length - 1]);
 const send = (value) => console.log(${JSON.stringify(MARKER)} + JSON.stringify(value));
 (async () => {
   let db;
@@ -76,6 +80,18 @@ const send = (value) => console.log(${JSON.stringify(MARKER)} + JSON.stringify(v
         throw new Error("This @meghjs/core version can't connect from DATABASE_URL; upgrade it, or export a Kysely instance from src/database/connection.ts.");
       }
       db = core.createDatabase(core.resolveDatabaseOptions(settings));
+    }
+    if (action === "seed") {
+      const [name, force] = args;
+      if (typeof core.Seeders !== "function") throw new Error("This @meghjs/core version has no seeders; upgrade it.");
+      if (process.env.NODE_ENV === "production" && !force) {
+        throw new Error("NODE_ENV is production. Pass --force to seed anyway.");
+      }
+      // Models in the seeders use the ORM connection.
+      if (core.Model && typeof core.Model.useConnection === "function") core.Model.useConnection(db);
+      const seeders = new core.Seeders(db, { folder: seedersFolder });
+      send({ ok: true, result: await seeders.run(name || undefined) });
+      return;
     }
     const migrations = new core.Migrations(db, { folder });
     send({ ok: true, result: await migrations[action](...args) });
@@ -115,6 +131,13 @@ function compiled(root: string) {
   if (migrationsCompiler !== app) {
     for (const [file, error] of migrationsCompiler.compileAll()) failures.set(file, error);
   }
+  // Seeders likewise; a missing folder just has no seeders.
+  const seedersCompiler = inside(layout.srcDir, paths.seeders)
+    ? app
+    : new SwcCompiler(paths.seeders, path.join(cacheDir, "seeders"), layout.compilerOptions);
+  if (seedersCompiler !== app && fs.existsSync(paths.seeders)) {
+    for (const [file, error] of seedersCompiler.compileAll()) failures.set(file, error);
+  }
   if (failures.size) {
     const list = [...failures].map(([f, e]) => `${rel(f)}: ${e.split("\n")[0]}`).join("\n  ");
     throw new CliError(`Compilation failed:\n  ${list}`);
@@ -128,17 +151,19 @@ function compiled(root: string) {
     settings: paths.settings,
     // outFileFor maps a file; map a placeholder inside the folder and take its directory.
     migrations: path.dirname(migrationsCompiler.outFileFor(path.join(paths.migrations, "x.ts"))),
+    seeders: path.dirname(seedersCompiler.outFileFor(path.join(paths.seeders, "x.ts"))),
   };
 }
 
 /** Run a migration action in a child process and return its result. */
-export function runMigrations(action: MigrateAction, opts: MigrateOptions = {}): any {
+export function runMigrations(action: MigrateAction, opts: MigrateOptions & SeedOptions = {}): any {
   const root = requireProjectRoot(opts.cwd ?? process.cwd());
   const files = compiled(root);
-  const args = action === "rollback" ? [opts.step ?? 1] : [];
+  const args =
+    action === "rollback" ? [opts.step ?? 1] : action === "seed" ? [opts.seeder ?? null, opts.force === true] : [];
   const result = spawnSync(
     process.execPath,
-    ["-e", WORKER, JSON.stringify([root, files.connection, files.settings, files.migrations, action, args])],
+    ["-e", WORKER, JSON.stringify([root, files.connection, files.settings, files.migrations, files.seeders, action, args])],
     {
       cwd: root,
       encoding: "utf8",
@@ -156,7 +181,9 @@ export function runMigrations(action: MigrateAction, opts: MigrateOptions = {}):
   const out = JSON.parse(line.slice(MARKER.length));
   if (!out.ok) {
     const done = out.completed.length ? `\nCompleted before the failure:\n  ${out.completed.join("\n  ")}` : "";
-    throw new CliError(`${out.error}${done}`);
+    // A seed runs in one transaction: a failure saves nothing.
+    const rolledBack = action === "seed" && /^Seeder /.test(out.error) ? "\nNothing was saved." : "";
+    throw new CliError(`${out.error}${done}${rolledBack}`);
   }
   return out.result;
 }
@@ -169,9 +196,24 @@ function list(names: string[], verb: string, empty: string) {
   for (const name of names) log.success(`${verb} ${name}`);
 }
 
-export function migrate(opts: MigrateOptions = {}): string[] {
+export type SeedOptions = {
+  /** Run this seeder instead of the `database` seeder (or all of them). */
+  seeder?: string;
+  /** Seed even when NODE_ENV is production. */
+  force?: boolean;
+};
+
+/** Run the seeders: `seeder`, else the `database` seeder, else all in file order. */
+export function dbSeed(opts: MigrateOptions & SeedOptions = {}): string[] {
+  const names: string[] = runMigrations("seed", opts);
+  list(names, "Seeded:", "Nothing to seed: there are no seeders. Create one with: megh make:seeder <name>");
+  return names;
+}
+
+export function migrate(opts: MigrateOptions & SeedOptions & { seed?: boolean } = {}): string[] {
   const names: string[] = runMigrations("latest", opts);
   list(names, "Migrated:", "Nothing to migrate.");
+  if (opts.seed) dbSeed(opts);
   return names;
 }
 
@@ -187,10 +229,13 @@ export function migrateReset(opts: MigrateOptions = {}): string[] {
   return names;
 }
 
-export function migrateRefresh(opts: MigrateOptions = {}): { down: string[]; up: string[] } {
+export function migrateRefresh(
+  opts: MigrateOptions & SeedOptions & { seed?: boolean } = {},
+): { down: string[]; up: string[] } {
   const result: { down: string[]; up: string[] } = runMigrations("refresh", opts);
   list(result.down, "Rolled back:", "Nothing to roll back.");
   list(result.up, "Migrated:", "Nothing to migrate.");
+  if (opts.seed) dbSeed(opts);
   return result;
 }
 

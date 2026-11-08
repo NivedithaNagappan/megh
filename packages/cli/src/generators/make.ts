@@ -474,3 +474,61 @@ export function makeMigration(name: string, opts: MakeMigrationOptions = {}): st
   const file = path.join(migrations, `${migrationTimestamp(opts.now)}_${snake}.ts`);
   return write(file, content, opts.force, "Migration", projectRoot);
 }
+
+export type MakeSeederOptions = Pick<MakeBaseOptions, "cwd" | "force">;
+
+/**
+ * Create `<seeders>/<name>.seeder.ts`. `make:seeder database` writes the
+ * entry seeder that `db:seed` runs, calling the seeders that already exist.
+ */
+export function makeSeeder(name: string, opts: MakeSeederOptions = {}): string {
+  const projectRoot = requireProjectRoot(opts.cwd ?? process.cwd());
+  if (/[\/]/.test(name)) throw new CliError(`Seeders live in one folder: use a plain name, not "${name}".`);
+  // `UserSeeder`, `user_seeder` and `users` all name the file after the table.
+  const snake = snakeCase(name.replace(/[-_]?seeder$/i, ""));
+  if (!snake) throw new CliError(`Invalid seeder name "${name}".`);
+  const { seeders } = databasePaths(projectRoot);
+  const file = path.join(seeders, `${snake}.seeder.ts`);
+  const rel = (p: string) => relPath(projectRoot, p);
+
+  let content: string;
+  if (snake === "database") {
+    content = renderEntrySeeder(existingSeeders(seeders).filter((s) => s !== "database"));
+  } else {
+    content = renderStub("seeders/seeder.stub", { table: pluralRoute(snake) });
+  }
+  write(file, content, opts.force, "Seeder", projectRoot);
+
+  if (snake !== "database") {
+    const entry = path.join(seeders, "database.seeder.ts");
+    if (fs.existsSync(entry)) {
+      log.info(`  Run it from ${rel(entry)}: await call(${JSON.stringify(snake)});`);
+    } else {
+      log.info(
+        "  megh db:seed runs every seeder in file-name order. To choose the order, " +
+          "create the entry seeder: megh make:seeder database",
+      );
+    }
+  }
+  return file;
+}
+
+/** The `database` seeder, calling `others` in order. */
+export function renderEntrySeeder(others: string[]): string {
+  return renderStub("seeders/database-seeder.stub", {
+    params: others.length ? "{ call }" : "",
+    body: others.length
+      ? `await call(${others.map((s) => JSON.stringify(s)).join(", ")});`
+      : `// Add { call } to run()'s parameters, then: await call("roles", "users");`,
+  });
+}
+
+/** Names of the seeders in `folder`, in file-name order. */
+function existingSeeders(folder: string): string[] {
+  if (!fs.existsSync(folder)) return [];
+  return fs
+    .readdirSync(folder)
+    .filter((f) => /\.(c?js|mjs|c?ts|mts)$/.test(f) && !/\.d\.[cm]?ts$/.test(f))
+    .sort()
+    .map((f) => f.replace(/\.(c?js|mjs|c?ts|mts)$/, "").replace(/\.seeder$/, ""));
+}

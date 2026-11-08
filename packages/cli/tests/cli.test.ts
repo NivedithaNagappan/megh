@@ -238,6 +238,7 @@ describe("new", () => {
     expect(read("shop", ".env")).toContain("DATABASE_URL=sqlite:./database.sqlite");
     expect(read("shop", ".gitignore")).toContain("database.sqlite");
     expect(exists("shop", "src", "database", "migrations", ".gitkeep")).toBe(true);
+    expect(read("shop", "src", "database", "seeders", "database.seeder.ts")).toContain("export default defineSeeder({");
     expect(exists("shop", "src", "database", "connection.ts")).toBe(false);
   });
 
