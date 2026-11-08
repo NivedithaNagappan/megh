@@ -19,6 +19,7 @@ npm i -g @meghjs/cli
 | `serve` | | Start the dev server with watch + rebuild |
 | `build` | | Compile using `tsconfig.build.json` |
 | `make:model` | `m:m` | Create an ORM model (columns from its migrations) or TypeORM entity |
+| `update:model` | `u:m` | Sync an existing model's columns with its migrations |
 | `make:resource` | `m:r` | Create a REST resource for a model: DTOs, CRUD service and controller |
 | `make:controller` | `m:c` | Create a controller |
 | `make:service` | `m:s` | Create a service |
@@ -179,6 +180,39 @@ Columns the database fills in (auto-increment, defaults, timestamps) are
 declared with `?`, so `create()` can leave them out. If no migration creates
 the table, you get a model with an `id` and commented examples to fill in. The migrations are read, not run, so no database is needed.
 Relations aren't generated; add them yourself.
+
+### Updating a model
+
+After a migration alters the table, bring the model up to date without
+regenerating it:
+
+```sh
+npx megh update:model user
+npx megh u:m user --dry-run   # show the changes, write nothing
+npx megh u:m user --dto       # also rewrite src/dtos/user.dto.ts
+```
+
+For a migration such as:
+
+```ts
+await schema.table("users", (table) => {
+  table.string("phone", 20).nullable();
+  table.dropColumn("age");
+});
+```
+
+`update:model` adds `@Column({ nullable: true }) phone!: string | null;` after the
+model's existing columns, removes the `age` field (with its doc comment), and
+rewrites any field still in the shape `make:model` writes when its type or
+nullability changed. Only column fields are touched: relations, methods,
+getters and comments stay as they are. A field you customized (a `name:`
+mapping, a custom cast, extra options) is kept as written and reported so you
+can check it. A renamed column shows up as one field removed and one added.
+
+The model must be a decorated (`@Table`) model; for an older model with
+`static table` and `static casts`, regenerate it with `make:model --force`.
+Without `--dto`, a DTO from `make:resource` is not changed, and the command
+reminds you it may be out of date.
 
 ## Middleware
 

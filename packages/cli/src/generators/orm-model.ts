@@ -124,7 +124,7 @@ export function renderOrmModel(model: string, table: MigrationTable): string {
 }
 
 /** The decorators and declaration of one column. */
-function renderField(column: MigrationColumn): { decorators: string[]; field: string } {
+export function renderField(column: MigrationColumn): { decorators: string[]; field: string } {
   const { ts, cast } = fieldType(column.type);
   const name = property(column.name);
 

@@ -1,5 +1,8 @@
 import "reflect-metadata";
-import { afterEach, describe, expect, it } from "vitest";
+import fs from "fs";
+import os from "os";
+import path from "path";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { MeghApplication } from "../core/application";
 import { AppConfig, MeghConfig } from "../config/config";
 import { definePlugin } from "../plugins/plugin";
@@ -93,9 +96,17 @@ describe("app.useMeghORM", () => {
   });
 
   it("explains how to install a missing driver", () => {
-    expect(() =>
-      createApp().useMeghORM({ url: "mssql://sa:pw@localhost/app" }),
-    ).toThrow(/npm install tedious/);
+    // Drivers load from the app's folder: use one with nothing installed.
+    const empty = fs.mkdtempSync(path.join(os.tmpdir(), "megh-no-drivers-"));
+    const cwd = vi.spyOn(process, "cwd").mockReturnValue(empty);
+    try {
+      expect(() =>
+        createApp().useMeghORM({ url: "mssql://sa:pw@localhost/app" }),
+      ).toThrow(/npm install tedious/);
+    } finally {
+      cwd.mockRestore();
+      fs.rmSync(empty, { recursive: true, force: true });
+    }
   });
 
   it("explains what to configure when nothing is set", () => {

@@ -15,6 +15,7 @@ import {
   makeMigration,
   makeModel,
   makeResource,
+  updateModel,
   makeService,
 } from "./generators/make";
 import { log } from "./utils/log";
@@ -195,6 +196,24 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
     .option("--root <dir>", "Folder under src/ to write to (also -rt)")
     .action((name: string, o) => {
       makeModel(name, { cwd: cwd(), ...o });
+    });
+
+  sub("update:model", "Sync a model's columns with its migrations, keeping relations and methods")
+    .alias("u:m")
+    .argument("<name>", "Model name, optionally nested (e.g. admin/User)")
+    .option("-t, --table <table>", "Table to read (default: the model's @Table, else the plural snake_case name)")
+    .option("--dto", "Also rewrite src/dtos/<name>.dto.ts from the updated columns")
+    .option("--dry-run", "Show what would change without writing")
+    .option("--root <dir>", "Folder under src/ the model is in (also -rt)")
+    .addHelpText(
+      "after",
+      "\nAfter an alter-table migration, e.g. schema.table(\"users\", t => { t.string(\"phone\"); t.dropColumn(\"age\") }):\n" +
+        "new columns are added to the model, dropped ones removed, and fields still as make:model\n" +
+        "wrote them get the current type and nullability. Fields you customized (a name: mapping,\n" +
+        "a custom cast, extra options) are kept and reported.",
+    )
+    .action((name: string, o) => {
+      updateModel(name, { cwd: cwd(), table: o.table, dto: o.dto, dryRun: o.dryRun, root: o.root });
     });
 
   make(

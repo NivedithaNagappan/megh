@@ -517,7 +517,15 @@ export class TableQuery<T extends Row = Row> extends WhereClauses<
     const db = getConnection();
     const values = bindRow(row, isSqlite(db));
     const insert = db.insertInto(this.tableName).values(values);
-    if (db.getExecutor().adapter.supportsReturning) {
+    const adapter = db.getExecutor().adapter;
+    if (adapter.supportsOutput) {
+      // SQL Server has no RETURNING and its driver gives no insertId.
+      const result: any = await insert
+        .output(`inserted.${idColumn}` as any)
+        .executeTakeFirstOrThrow();
+      return result[idColumn] as Id;
+    }
+    if (adapter.supportsReturning) {
       const result: any = await insert
         .returning(idColumn)
         .executeTakeFirstOrThrow();

@@ -713,6 +713,27 @@ export class Schema {
     return col;
   }
 
+  /** SQL Server: drop the (auto-named) default constraint on `table.column`, if any. */
+  private async dropDefaultConstraint(
+    table: string,
+    column: string,
+  ): Promise<void> {
+    await kysely().sql`
+      declare @table int = object_id(${table});
+      declare @name sysname = (
+        select d.name from sys.default_constraints d
+        join sys.columns c on c.object_id = d.parent_object_id and c.column_id = d.parent_column_id
+        where d.parent_object_id = @table and c.name = ${column}
+      );
+      if @name is not null
+      begin
+        declare @drop nvarchar(max) = 'alter table ' + quotename(object_schema_name(@table)) + '.'
+          + quotename(object_name(@table)) + ' drop constraint ' + quotename(@name);
+        exec sp_executesql @drop;
+      end
+    `.execute(this.db);
+  }
+
   private actions(
     builder: any,
     onDelete?: ReferentialAction,
@@ -777,6 +798,10 @@ export class Schema {
           break;
         }
         case "dropColumn":
+          // SQL Server won't drop a column while its default constraint exists.
+          if (this.dialect === "mssql") {
+            await this.dropDefaultConstraint(table, command.name);
+          }
           await schema.alterTable(table).dropColumn(command.name).execute();
           break;
         case "renameColumn":

@@ -128,8 +128,8 @@ export function withTimestamps(
 /**
  * Insert `values` (model form) into the model's table and return the stored
  * row, cast to model form. Fills timestamps. Uses `RETURNING` where the
- * dialect has it (Postgres, SQLite, MSSQL) and reads the row back by its id
- * otherwise (MySQL).
+ * dialect has it (Postgres, SQLite), `OUTPUT inserted.*` on SQL Server, and
+ * reads the row back by its id otherwise (MySQL).
  */
 export async function insertRow(
   cls: ModelClass,
@@ -142,7 +142,17 @@ export async function insertRow(
     cls,
     castToDatabase(cls, withTimestamps(cls, values, "insert"), db),
   );
-  if (db.getExecutor().adapter.supportsReturning) {
+  const adapter = db.getExecutor().adapter;
+  if (adapter.supportsOutput) {
+    // SQL Server has no RETURNING and its driver gives no insertId.
+    const row = await db
+      .insertInto(table)
+      .values(data)
+      .outputAll("inserted")
+      .executeTakeFirstOrThrow();
+    return castFromDatabase(cls, toProperties(cls, row as any));
+  }
+  if (adapter.supportsReturning) {
     const row = await db
       .insertInto(table)
       .values(data)

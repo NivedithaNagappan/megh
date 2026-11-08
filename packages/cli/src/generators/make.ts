@@ -9,6 +9,7 @@ import { databasePaths } from "../commands/migrate";
 import { readMigrationSchema } from "./migration-schema";
 import { pluralRoute, pluralize, renderBlankOrmModel, renderOrmModel } from "./orm-model";
 import { readModelSchema, renderResourceDto, type ResourceSchema } from "./resource";
+import { syncModelSource, type ModelChanges } from "./update-model";
 
 export type MakeBaseOptions = {
   /** Directory to start the project-root search from. Defaults to `process.cwd()`. */
@@ -99,6 +100,80 @@ export function makeModel(name: string, opts: MakeModelOptions = {}): string {
     );
   }
   return file;
+}
+
+export type UpdateModelOptions = Pick<MakeBaseOptions, "cwd" | "root"> & {
+  /** Table to read (default: the model's `@Table`, else the plural snake_case name). */
+  table?: string;
+  /** Also rewrite the model's DTO file from the updated columns. */
+  dto?: boolean;
+  /** Report the changes without writing anything. */
+  dryRun?: boolean;
+};
+
+/**
+ * `update:model user`: sync an existing model's column fields with its table
+ * as the migrations now leave it (after an alter-table migration, say). Only
+ * the column declarations change; relations, methods and other code stay.
+ */
+export function updateModel(name: string, opts: UpdateModelOptions = {}): ModelChanges {
+  const projectRoot = requireProjectRoot(opts.cwd ?? process.cwd());
+  const n = resolveName(name, "Model");
+  const file = path.join(targetDir(projectRoot, "model", n.dirs, opts.root), `${n.fileBase}.model.ts`);
+  const rel = (p: string) => relPath(projectRoot, p);
+  if (!fs.existsSync(file)) {
+    throw new CliError(`There is no ${n.base} model (${rel(file)}). Create it: megh make:model ${name}`);
+  }
+  const source = fs.readFileSync(file, "utf8");
+  if (/@Entity\s*\(/.test(source)) {
+    throw new CliError(`${rel(file)} is a TypeORM entity; update:model only updates Megh ORM models.`);
+  }
+  if (!/@Table\s*\(/.test(source)) {
+    throw new CliError(
+      `${rel(file)} declares its columns without decorators (static table/casts), which update:model ` +
+        `can't edit safely. Regenerate it with: megh make:model ${name} --force (then re-add relations and methods).`,
+    );
+  }
+
+  const { migrations } = databasePaths(projectRoot);
+  const snake = snakeCase(n.base);
+  const declared = source.match(/@Table\s*\(\s*["'`]([^"'`]+)["'`]/)?.[1];
+  const candidates = opts.table ? [opts.table] : [declared, pluralize(snake), snake].filter((t): t is string => !!t);
+  const tables = readMigrationSchema(migrations);
+  const table = candidates.map((t) => tables.get(t)).find((t) => t !== undefined);
+  if (!table) {
+    throw new CliError(
+      `No migration in ${rel(migrations)} creates the "${candidates[0]}" table, so there is nothing to sync. ` +
+        `Pass the table with --table if it has another name.`,
+    );
+  }
+
+  const result = syncModelSource(source, table);
+  const { added, removed, updated, kept } = result.changes;
+  const changed = result.source !== source;
+  const prefix = opts.dryRun ? "Would update" : "Model updated";
+  if (!changed) {
+    log.info(`${rel(file)} already matches the "${table.name}" table.`);
+  } else {
+    if (!opts.dryRun) fs.writeFileSync(file, result.source, "utf8");
+    log.success(`${prefix}: ${rel(file)}`);
+  }
+  for (const c of added) log.info(`  + ${c}`);
+  for (const c of removed) log.info(`  - ${c}`);
+  for (const c of updated) log.info(`  ~ ${c}`);
+  for (const c of kept) {
+    log.warn(`  ${c} has hand-made changes, so it was kept as written; check it against the migration.`);
+  }
+
+  const dtoFile = path.join(targetDir(projectRoot, "dto", n.dirs), `${n.fileBase}.dto.ts`);
+  if (opts.dto) {
+    const model: ResourceModel = { name: n, file, schema: readModelSchema(result.source, table), typeorm: false };
+    if (opts.dryRun) log.info(`  Would rewrite ${rel(dtoFile)}`);
+    else write(dtoFile, renderDtoFor(model), true, "DTO", projectRoot);
+  } else if (changed && fs.existsSync(dtoFile)) {
+    log.info(`  ${rel(dtoFile)} may be out of date: rerun with --dto to rewrite it.`);
+  }
+  return result.changes;
 }
 
 function renderEntityModel(model: string) {

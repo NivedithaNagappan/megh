@@ -50,7 +50,7 @@ function staticList(source: string, name: string): string[] | undefined {
   return (m[1].match(/["'`][^"'`]+["'`]/g) ?? []).map((s) => s.slice(1, -1));
 }
 
-interface Declared {
+export interface Declared {
   name: string;
   ts: string;
   /** `| null`, `| undefined` or `?`. */
@@ -60,6 +60,10 @@ interface Declared {
   /** `| null` or `| undefined` in the type. */
   nullInType: boolean;
   decorators: string[];
+  /** First line (0-based) of the declaration, including its decorators. */
+  startLine: number;
+  /** Line (0-based) of the property itself. */
+  endLine: number;
 }
 
 /** Split leading decorators off a line: `@PrimaryKey() @AutoIncrement() id?: number;`. */
@@ -101,14 +105,16 @@ function leadingDecorators(line: string): { decorators: string[]; rest: string }
  * decorators above each one. Initialised properties (relations such as
  * `posts = hasMany(...)`), statics and methods are skipped.
  */
-function declaredProperties(source: string): Declared[] {
+export function declaredProperties(source: string): Declared[] {
   const out: Declared[] = [];
   let decorators: string[] = [];
+  let startLine = -1;
   // Bracket depth at the start of each line: properties sit directly in the
   // class body (depth 1), not inside object literals or decorator arguments.
   let depth = 0;
-  for (const raw of source.split(/\r?\n/)) {
-    const line = withoutLineComment(raw).trim();
+  const lines = source.split(/\r?\n/);
+  for (let index = 0; index < lines.length; index++) {
+    const line = withoutLineComment(lines[index]).trim();
     const atDepth = depth;
     depth += bracketDelta(line);
     if (atDepth !== 1) {
@@ -117,6 +123,7 @@ function declaredProperties(source: string): Declared[] {
       continue;
     }
     const split = leadingDecorators(line);
+    if (split.decorators.length > 0 && decorators.length === 0) startLine = index;
     decorators.push(...split.decorators);
     // A decorator on its own line, possibly continued on the next lines.
     if (split.decorators.length > 0 && !split.rest) continue;
@@ -127,7 +134,16 @@ function declaredProperties(source: string): Declared[] {
       const nullInType = parts.includes("null") || parts.includes("undefined");
       const optional = prop[2] === "?";
       const ts = parts.filter((p) => p !== "null" && p !== "undefined").join(" | ") || "unknown";
-      out.push({ name, ts, nullable: optional || nullInType, optional, nullInType, decorators });
+      out.push({
+        name,
+        ts,
+        nullable: optional || nullInType,
+        optional,
+        nullInType,
+        decorators,
+        startLine: decorators.length > 0 ? startLine : index,
+        endLine: index,
+      });
     }
     if (line && !line.startsWith("//") && !line.startsWith("*") && !line.startsWith("/*")) decorators = [];
   }
