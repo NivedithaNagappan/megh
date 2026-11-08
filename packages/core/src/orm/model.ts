@@ -30,7 +30,7 @@ import {
   type Scope,
   type SimplePaginated,
 } from "./query";
-import { RELATION, getRelation, isRelationMarker } from "./relations";
+import { getRelation, isRelationMarker } from "./relations";
 import {
   changedValues,
   columnValues,
@@ -49,6 +49,7 @@ import type {
   Columns,
   CreateInput,
   HasRelationKeys,
+  IsManyRelation,
   ModelClass,
   PivotOf,
   PrimaryKeyValue,
@@ -468,7 +469,7 @@ export abstract class Model {
     name: K,
   ): HasRelation<
     RelatedModel<this[K]>,
-    this[K] extends HasManyMarker ? "many" : "one"
+    IsManyRelation<this[K]> extends true ? "many" : "one"
   >;
   related(name: string): unknown {
     const def = getRelation(this.constructor as ModelClass, name);
@@ -496,8 +497,6 @@ export abstract class Model {
     return out;
   }
 }
-
-type HasManyMarker = { readonly [RELATION]: { type: "hasMany" } };
 
 /** A query matching `findBy(column, value)` or `findBy({ column: value })`. */
 function whereAll(cls: ModelClass, args: any[]): ModelQuery<any> {
