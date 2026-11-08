@@ -35,8 +35,6 @@ import { MeghConfig } from "../config/config";
 import { MeghAuthentication } from "../security/authentication";
 import { registerPlugins } from "../plugins/registry";
 import { internalLogger } from "../observability/internal-logger";
-import { setConnection } from "../orm/connection";
-import type { Kysely } from "kysely";
 // ---------------------------------------------------------------------------
 // Lazy loaders for optional peer dependencies
 // ---------------------------------------------------------------------------
@@ -191,16 +189,6 @@ export class MeghApplication implements IMeghApplication {
 
   useCors(options: CorsOptions) {
     this.app.register(requireCors(), options); // ✅ lazy
-    return this;
-  }
-
-  /**
-   * Use `db` for models (`@meghjs/core` ORM). It is also registered in the
-   * container under `ORM_CONNECTION`, and destroyed when the app shuts down.
-   */
-  useDatabase(db: Kysely<any>) {
-    setConnection(db);
-    this.onClose(() => db.destroy());
     return this;
   }
 

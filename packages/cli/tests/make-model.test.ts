@@ -53,6 +53,74 @@ export async function down(db: Kysely<any>): Promise<void> {
 }
 `;
 
+describe("readMigrationSchema with defineMigration", () => {
+  it("replays schema.create / table / rename / drop", () => {
+    migration(
+      "20260101000000_create_users_table.ts",
+      `import { defineMigration } from "@meghjs/core";
+export default defineMigration({
+  async up(schema) {
+    await schema.create("users", (table) => {
+      table.id();
+      table.string("email", 100).unique();
+      table.string("name").nullable();
+      // table.string("ignored");
+      table.boolean("is_admin").default(false);
+      table.json("settings").nullable();
+      table.decimal("balance", 10, 2);
+      table.foreignId("team_id").nullable().constrained();
+      table.timestamps();
+      table.softDeletes();
+    });
+    await schema.create("tmp", (t) => t.id());
+  },
+  async down(schema) {
+    await schema.drop("users");
+  },
+});`,
+    );
+    migration(
+      "20260102000000_change_users.ts",
+      `import { defineMigration } from "@meghjs/core";
+export default defineMigration({
+  up: async (schema) => {
+    await schema.table("users", (t) => {
+      t.text("bio").nullable();
+      t.renameColumn("name", "full_name");
+      t.dropColumn("settings");
+    });
+    await schema.dropIfExists("tmp");
+    await schema.rename("users", "members");
+  },
+});`,
+    );
+
+    const tables = readMigrationSchema(migrationsDir());
+    expect([...tables.keys()]).toEqual(["members"]);
+    const members = tables.get("members")!;
+    expect(members.createdIn).toBe("20260101000000_create_users_table.ts");
+    expect(members.columns.map((c) => c.name)).toEqual([
+      "id",
+      "email",
+      "full_name",
+      "is_admin",
+      "balance",
+      "team_id",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+      "bio",
+    ]);
+    const col = (name: string) => members.columns.find((c) => c.name === name)!;
+    expect(col("id")).toMatchObject({ primaryKey: true, autoIncrement: true, notNull: true });
+    expect(col("email")).toMatchObject({ type: "varchar", notNull: true });
+    expect(col("full_name").notNull).toBe(false);
+    expect(col("is_admin")).toMatchObject({ type: "boolean", generated: true });
+    expect(col("team_id").notNull).toBe(false);
+    expect(col("deleted_at").notNull).toBe(false);
+  });
+});
+
 describe("readMigrationSchema", () => {
   it("reads create-table columns and their modifiers, ignoring down() and comments", () => {
     migration("20260101000000_create_users_table.ts", CREATE_USERS);

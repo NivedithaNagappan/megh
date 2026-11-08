@@ -6,20 +6,57 @@
  *
  * Schema migrations, run with Kysely's `Migrator`.
  *
- * A migration is a module exporting `up(db)` and, to be reversible,
- * `down(db)`. Migrations run in file-name order, so names start with a
- * timestamp: `20261101093000_create_users_table.ts`. `megh make:migration`
- * creates them.
+ * A migration is a module whose default export is `defineMigration({ up,
+ * down })`, which receive Megh's schema builder. Modules exporting
+ * `up(db)` / `down(db)` functions that take the Kysely instance still work.
+ * Migrations run in file-name order, so names start with a timestamp:
+ * `20261101093000_create_users_table.ts`. `megh make:migration` creates them.
  */
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Kysely } from "kysely";
-import { loadPackageFromClient } from "../common/utils/common-utils";
+import { Schema } from "./schema";
 
+/** A migration as the runner calls it. */
 export interface Migration {
   up(db: Kysely<any>): Promise<void>;
   down?(db: Kysely<any>): Promise<void>;
+}
+
+/** A migration written with the schema builder. */
+export interface SchemaMigration {
+  up(schema: Schema): Promise<void>;
+  /** Undo `up()`. Without it, the migration can't be rolled back. */
+  down?(schema: Schema): Promise<void>;
+}
+
+/**
+ * Define a migration with Megh's schema builder:
+ *
+ * ```ts
+ * export default defineMigration({
+ *   async up(schema) {
+ *     await schema.create("users", (table) => {
+ *       table.id();
+ *       table.string("email").unique();
+ *       table.timestamps();
+ *     });
+ *   },
+ *   async down(schema) {
+ *     await schema.drop("users");
+ *   },
+ * });
+ * ```
+ */
+export function defineMigration(migration: SchemaMigration): Migration {
+  const { up, down } = migration;
+  return {
+    up: (db) => up.call(migration, new Schema(db)),
+    ...(down
+      ? { down: (db: Kysely<any>) => down.call(migration, new Schema(db)) }
+      : {}),
+  };
 }
 
 export interface MigrationsOptions {
@@ -90,7 +127,7 @@ export async function readMigrationFolder(
     const migration = typeof mod?.up === "function" ? mod : mod?.default;
     if (typeof migration?.up !== "function") {
       throw new Error(
-        `[Megh ORM] Migration ${file} must export an \`up(db)\` function.`,
+        `[Megh ORM] Migration ${file} must export defineMigration({ up, down }) as its default export.`,
       );
     }
     out[file.replace(EXTENSIONS, "")] = migration;
@@ -98,15 +135,13 @@ export async function readMigrationFolder(
   return out;
 }
 
-/** Kysely's migration module: `kysely/migration` (0.28+) or `kysely` (0.27). */
+/**
+ * Kysely's migration module. Required at runtime: it's a subpath export,
+ * which this package's CommonJS module resolution can't type.
+ */
 function kyselyMigration(): any {
-  try {
-    const mod = loadPackageFromClient("kysely/migration");
-    if (mod?.Migrator) return mod;
-  } catch {
-    // fall through
-  }
-  return loadPackageFromClient("kysely");
+   
+  return require("kysely/migration");
 }
 
 /**

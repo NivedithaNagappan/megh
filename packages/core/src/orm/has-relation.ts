@@ -43,7 +43,7 @@ export class HasRelation<R, Kind extends "many" | "one" = "many"> {
     return (new ModelQuery<R>(this.relatedClass) as ModelQuery<any>).where(
       this.def.foreignKey,
       this.parentKey(),
-    );
+    ) as ModelQuery<R>;
   }
 
   /** The related rows (`hasMany`) or row (`hasOne`, `null` when missing). */

@@ -225,9 +225,10 @@ A `create_<table>_table` name gives a create-table migration, and
 `add_<x>_to_<table>_table` an alter-table one; `--create <table>` and
 `--table <table>` choose explicitly.
 
-The `migrate` commands load the Kysely instance exported from
-`src/database/connection.ts`. Set `megh.database` and `megh.migrations` in
-`package.json` to use other paths. See [MeghORM: Migrations](/advanced/orm#migrations).
+The `migrate` commands connect the way `app.useMeghORM()` does, from
+`DATABASE_URL` (or the `DB_*` variables) in the environment or `.env`. Set
+`megh.migrations` in `package.json` to use another folder. See
+[MeghORM: Migrations](/advanced/orm#migrations).
 
 ## Build
 

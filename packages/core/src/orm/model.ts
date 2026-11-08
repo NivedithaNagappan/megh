@@ -11,8 +11,8 @@ import type {
   SqlBool,
   Transaction,
 } from "kysely";
-import { NotFoundException } from "../common/exceptions";
-import type { PageRequest, Paginated } from "../collection/pagination";
+import { NotFoundException } from "./core";
+import type { PageRequest, Paginated } from "./core";
 import { getConnection, runInTransaction, setConnection } from "./connection";
 import type { Cast } from "./casts";
 import { HasRelation } from "./has-relation";
@@ -100,8 +100,9 @@ export abstract class Model {
 
   /** Fill `createdAt` on insert and `updatedAt` on every write. */
   static readonly timestamps: boolean = false;
-  static readonly createdAt: string = "created_at";
-  static readonly updatedAt: string = "updated_at";
+  /** `null` when the model has no such column (`@CreatedAt` without `@UpdatedAt`). */
+  static readonly createdAt: string | null = "created_at";
+  static readonly updatedAt: string | null = "updated_at";
 
   /**
    * `delete()` sets `deletedAt` instead of removing the row, and queries
@@ -251,7 +252,7 @@ export abstract class Model {
   ): Promise<Row<Instance<C>> | undefined> {
     return (new ModelQuery<Instance<C>>(this) as ModelQuery<any>)
       .where(this.primaryKey, id)
-      .first();
+      .first() as Promise<Row<Instance<C>> | undefined>;
   }
 
   /** Find by primary key, or throw a 404 `NotFoundException`. */

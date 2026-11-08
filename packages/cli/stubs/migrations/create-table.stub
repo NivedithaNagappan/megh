@@ -1,15 +1,15 @@
-import type { Kysely } from "kysely";
+import { defineMigration } from "@meghjs/core";
 
-export async function up(db: Kysely<any>): Promise<void> {
-  await db.schema
-    .createTable("{table}")
-    {idColumn}
-    // .addColumn("name", "text", (col) => col.notNull())
-    .addColumn("created_at", "timestamp")
-    .addColumn("updated_at", "timestamp")
-    .execute();
-}
+export default defineMigration({
+  async up(schema) {
+    await schema.create("{table}", (table) => {
+      table.id();
+      // table.string("name");
+      table.timestamps();
+    });
+  },
 
-export async function down(db: Kysely<any>): Promise<void> {
-  await db.schema.dropTable("{table}").execute();
-}
+  async down(schema) {
+    await schema.drop("{table}");
+  },
+});

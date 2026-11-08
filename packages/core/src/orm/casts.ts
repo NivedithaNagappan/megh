@@ -12,6 +12,7 @@
  *   `Date` and `boolean` values are converted for SQLite.
  */
 import type { Kysely } from "kysely";
+import { columnCasts } from "./decorators";
 import type { ModelClass } from "./types";
 
 /** A custom cast: `get` reads from the database, `set` writes to it. */
@@ -34,15 +35,18 @@ export interface CustomCast<T = any, DB = any> {
 export type Cast =
   "boolean" | "number" | "string" | "json" | "date" | "datetime" | CustomCast;
 
-/** Casts in effect for a model, including the implicit timestamp casts. */
+/**
+ * Casts in effect for a model: the implicit timestamp casts, then casts
+ * from column decorators, then `static casts`.
+ */
 export function castsOf(cls: ModelClass): Record<string, Cast> {
   const implicit: Record<string, Cast> = {};
   if (cls.timestamps) {
-    implicit[cls.createdAt] = "datetime";
-    implicit[cls.updatedAt] = "datetime";
+    if (cls.createdAt) implicit[cls.createdAt] = "datetime";
+    if (cls.updatedAt) implicit[cls.updatedAt] = "datetime";
   }
   if (cls.softDeletes) implicit[cls.deletedAt] = "datetime";
-  return { ...implicit, ...cls.casts };
+  return { ...implicit, ...columnCasts(cls), ...cls.casts };
 }
 
 function toDate(value: unknown): Date {

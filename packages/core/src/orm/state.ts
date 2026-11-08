@@ -9,6 +9,7 @@
  */
 import { castFromDatabase, castToDatabase, sameValue } from "./casts";
 import { getConnection } from "./connection";
+import { columnNames } from "./decorators";
 import { getRelations } from "./relations";
 import type { ModelClass } from "./types";
 
@@ -76,10 +77,22 @@ export function markDeleted(instance: object) {
   states.set(instance, { ...state, exists: false });
 }
 
-/** The instance's column values: own fields that are not relations. */
+/**
+ * The instance's column values: its decorated columns, or for models
+ * without column decorators, own fields that are not relations.
+ */
 export function columnValues(instance: object): Record<string, unknown> {
-  const relations = getRelations(instance.constructor as ModelClass);
+  const cls = instance.constructor as ModelClass;
   const out: Record<string, unknown> = {};
+  const declared = columnNames(cls);
+  if (declared) {
+    for (const key of declared) {
+      const value = (instance as Record<string, unknown>)[key];
+      if (value !== undefined) out[key] = value;
+    }
+    return out;
+  }
+  const relations = getRelations(cls);
   for (const [key, value] of Object.entries(instance)) {
     if (value !== undefined && !relations.has(key)) out[key] = value;
   }
@@ -106,8 +119,8 @@ export function withTimestamps(
   if (!cls.timestamps) return values;
   const now = new Date();
   const out = { ...values };
-  if (on === "insert") out[cls.createdAt] ??= now;
-  out[cls.updatedAt] ??= now;
+  if (on === "insert" && cls.createdAt) out[cls.createdAt] ??= now;
+  if (cls.updatedAt) out[cls.updatedAt] ??= now;
   return out;
 }
 

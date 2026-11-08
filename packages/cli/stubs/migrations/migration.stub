@@ -1,9 +1,11 @@
-import type { Kysely } from "kysely";
+import { defineMigration } from "@meghjs/core";
 
-export async function up(db: Kysely<any>): Promise<void> {
-  // Schema changes: https://kysely.dev/docs/migrations
-}
+export default defineMigration({
+  async up(schema) {
+    // await schema.create(...), schema.table(...), schema.drop(...) or schema.raw(...)
+  },
 
-export async function down(db: Kysely<any>): Promise<void> {
-  // Undo the changes made in up().
-}
+  async down(schema) {
+    // Undo the changes made in up().
+  },
+});

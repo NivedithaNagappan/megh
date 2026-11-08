@@ -2,14 +2,14 @@ import fs from "fs";
 import path from "path";
 
 /**
- * Reads table schemas out of Kysely migration files, without running them:
- * the `up()` code of every migration is scanned, in file order, for
- * `createTable` / `alterTable` / `dropTable` chains, and their column calls
- * are replayed. Used by `make:model` to declare a model's columns.
+ * Reads table schemas out of migration files, without running them: the
+ * `up()` code of every migration is scanned, in file order, and its schema
+ * changes are replayed. Used by `make:model` to declare a model's columns.
  *
- * It understands the schema-builder calls `make:migration` generates and
- * Kysely's documentation shows; anything it cannot read (raw SQL, computed
- * names) is skipped.
+ * It understands Megh's schema builder (`defineMigration`, with
+ * `schema.create` / `schema.table` / `schema.drop`), and Kysely's
+ * `createTable` / `alterTable` / `dropTable` chains in older migrations.
+ * Anything it cannot read (raw SQL, computed names) is skipped.
  */
 
 export interface MigrationColumn {
@@ -149,6 +149,10 @@ const COLUMN_CALL =
   /\.(addColumn|modifyColumn|dropColumn|renameColumn|alterColumn|renameTo|addPrimaryKeyConstraint)\s*\(/g;
 
 function applyMigration(tables: Map<string, MigrationTable>, code: string, file: string) {
+  if (/\bdefineMigration\s*\(/.test(code)) {
+    applySchemaMigration(tables, code, file);
+    return;
+  }
   const statements = [...code.matchAll(STATEMENT)];
   statements.forEach((match, index) => {
     const open = match.index! + match[0].length - 1;
@@ -243,4 +247,160 @@ function parseColumn(name: string, typeArg: string | undefined, build: string): 
     autoIncrement,
     generated: autoIncrement || /\.(defaultTo|generatedAlwaysAs)\s*\(/.test(build),
   };
+}
+
+// ── Megh's schema builder (defineMigration) ──────────────────────────────
+
+const SCHEMA_STATEMENT = /\b\w+\s*\.\s*(create|table|drop|dropIfExists|rename)\s*\(/g;
+
+/** SQL types the builder's column methods create, as `fieldType` reads them. */
+const BUILDER_TYPES: Record<string, string> = {
+  id: "integer",
+  increments: "integer",
+  bigIncrements: "bigint",
+  string: "varchar",
+  text: "text",
+  integer: "integer",
+  bigInteger: "bigint",
+  float: "real",
+  double: "double precision",
+  decimal: "numeric",
+  boolean: "boolean",
+  date: "date",
+  datetime: "timestamp",
+  timestamp: "timestamptz",
+  time: "time",
+  json: "json",
+  uuid: "uuid",
+  binary: "blob",
+  foreignId: "integer",
+};
+
+function applySchemaMigration(tables: Map<string, MigrationTable>, code: string, file: string) {
+  for (const match of code.matchAll(SCHEMA_STATEMENT)) {
+    const open = match.index! + match[0].length - 1;
+    const args = splitArgs(readCall(code, open).inner);
+    const name = tableName(args[0]);
+    if (!name) continue;
+    switch (match[1]) {
+      case "drop":
+      case "dropIfExists":
+        tables.delete(name);
+        break;
+      case "rename": {
+        const to = tableName(args[1]);
+        const table = tables.get(name);
+        if (!to || !table) break;
+        tables.delete(name);
+        table.name = to;
+        tables.set(to, table);
+        break;
+      }
+      case "create": {
+        const table: MigrationTable = { name, columns: [], createdIn: file };
+        tables.set(name, table);
+        applyBlueprint(table, args[1]);
+        break;
+      }
+      case "table": {
+        const table = tables.get(name);
+        if (table) applyBlueprint(table, args[1]);
+        break;
+      }
+    }
+  }
+}
+
+/** Replay the calls in `(table) => { … }` on `table`. */
+function applyBlueprint(table: MigrationTable, callback: string | undefined) {
+  const head = callback?.match(/^(?:async\s+)?\(?\s*([A-Za-z_$][\w$]*)\s*(?::[^)=]*)?\)?\s*=>/);
+  if (!callback || !head) return;
+  const param = head[1].replace(/[$]/g, String.raw`\$`);
+  const body = callback.slice(head[0].length);
+  const calls = [...body.matchAll(new RegExp(String.raw`(?<![\w$.])${param}\s*\.\s*(\w+)\s*\(`, "g"))];
+  calls.forEach((call, i) => {
+    const open = call.index! + call[0].length - 1;
+    const { inner, end } = readCall(body, open);
+    const args = splitArgs(inner);
+    // Modifiers run until the next call on the blueprint.
+    const chain = body.slice(end, i + 1 < calls.length ? calls[i + 1].index! : body.length);
+    applyBlueprintCall(table, call[1], args, chain);
+  });
+}
+
+function setColumn(table: MigrationTable, column: MigrationColumn) {
+  const index = table.columns.findIndex((c) => c.name === column.name);
+  if (index === -1) table.columns.push(column);
+  else table.columns[index] = column;
+}
+
+function applyBlueprintCall(table: MigrationTable, method: string, args: string[], chain: string) {
+  const name = literal(args[0]);
+  const drop = (column: string) => {
+    const index = table.columns.findIndex((c) => c.name === column);
+    if (index !== -1) table.columns.splice(index, 1);
+  };
+
+  switch (method) {
+    case "timestamps":
+      for (const column of ["created_at", "updated_at"]) {
+        setColumn(table, { name: column, type: "timestamptz", notNull: false, primaryKey: false, generated: false, autoIncrement: false });
+      }
+      return;
+    case "softDeletes":
+      setColumn(table, {
+        name: name ?? "deleted_at",
+        type: "timestamptz",
+        notNull: false,
+        primaryKey: false,
+        generated: false,
+        autoIncrement: false,
+      });
+      return;
+    case "dropColumn":
+      for (const arg of args) {
+        const column = literal(arg);
+        if (column) drop(column);
+      }
+      return;
+    case "dropTimestamps":
+      drop("created_at");
+      drop("updated_at");
+      return;
+    case "dropSoftDeletes":
+      drop(name ?? "deleted_at");
+      return;
+    case "renameColumn": {
+      const to = literal(args[1]);
+      const column = table.columns.find((c) => c.name === name);
+      if (column && to) column.name = to;
+      return;
+    }
+    case "primary": {
+      const columns = (args[0]?.match(/["'`][^"'`]+["'`]/g) ?? []).map((c) => c.slice(1, -1));
+      for (const column of table.columns) {
+        if (columns.includes(column.name)) {
+          column.primaryKey = true;
+          column.notNull = true;
+        }
+      }
+      return;
+    }
+  }
+
+  const type = BUILDER_TYPES[method];
+  if (!type) return;
+  const columnName = name ?? (method === "id" ? "id" : undefined);
+  if (!columnName) return;
+  const autoIncrement = /^(id|increments|bigIncrements)$/.test(method) || /\.autoIncrement\s*\(/.test(chain);
+  const primaryKey = autoIncrement || /\.primary\s*\(/.test(chain);
+  const nullable = /\.nullable\s*\(\s*(true)?\s*\)/.test(chain) || /\.nullOnDelete\s*\(/.test(chain);
+  setColumn(table, {
+    name: columnName,
+    type,
+    notNull: primaryKey || !nullable,
+    primaryKey,
+    autoIncrement,
+    generated: autoIncrement || /\.(default|useCurrent)\s*\(/.test(chain),
+  });
 }

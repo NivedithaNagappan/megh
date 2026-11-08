@@ -5,9 +5,9 @@ description: "Megh's built-in, type-safe models on top of Kysely: queries, relat
 
 # MeghORM
 
-`@meghjs/core` includes a model layer in the style of Laravel's Eloquent. It is
-built on [Kysely](https://kysely.dev): your models are plain classes, and
-column names, value types and loaded relations are checked by TypeScript.
+`@meghjs/core` includes its own ORM. You describe tables with decorators, and
+column names, value types and loaded relations are checked by TypeScript. Use
+it through models, or as a query builder when you need SQL-level control.
 
 ```ts
 const users = await User.where('email', 'like', '%@acme.io')
@@ -19,101 +19,134 @@ users[0].posts[0].comments[0].body; // typed
 User.where('emial', 'x');           // compile error: '"emial"' is not assignable to '"id" | "email" | "name"'
 ```
 
+Everything the ORM does is on this page. You don't need another library's
+docs.
+
 ## Installation
 
-Install Kysely and the driver for your database:
+The ORM ships with `@meghjs/core`. Install only the driver for your database:
 
 ::: code-group
 ```sh [PostgreSQL]
-npm i kysely pg
+npm i pg
 ```
 ```sh [MySQL]
-npm i kysely mysql2
+npm i mysql2
 ```
 ```sh [SQLite]
-npm i kysely better-sqlite3
+npm i better-sqlite3
 ```
-:::
-
-::: info Node.js version
-Kysely 0.29 ships ES modules only and needs Node.js 22 or later. Megh apps
-compile to CommonJS, which loads them through `require()` support for ES
-modules (Node.js 22.12+). On older Node.js versions, use Kysely 0.27.
+```sh [SQL Server]
+npm i tedious tarn
+```
 :::
 
 ## Connecting
 
-Create the Kysely instance in its own module. The app uses it, and the
-[migration commands](#migrations) load it from this file.
-
-::: code-group
-```ts [PostgreSQL]
-// src/database/connection.ts
-import { Kysely, PostgresDialect } from 'kysely';
-import { Pool } from 'pg';
-
-const db = new Kysely<any>({
-  dialect: new PostgresDialect({
-    pool: new Pool({ connectionString: process.env.DATABASE_URL }),
-  }),
-});
-
-export default db;
-```
-```ts [MySQL]
-// src/database/connection.ts
-import { Kysely, MysqlDialect } from 'kysely';
-import { createPool } from 'mysql2';
-
-const db = new Kysely<any>({
-  dialect: new MysqlDialect({ pool: createPool(process.env.DATABASE_URL!) }),
-});
-
-export default db;
-```
-```ts [SQLite]
-// src/database/connection.ts
-import { Kysely, SqliteDialect } from 'kysely';
-import Database from 'better-sqlite3';
-
-const db = new Kysely<any>({
-  dialect: new SqliteDialect({ database: new Database('database.sqlite') }),
-});
-
-export default db;
-```
-:::
-
-Then hand it to the app:
+Call `useMeghORM()` with the connection settings. Megh creates the connection
+and its pool, checks it when the app starts, and closes it on shutdown:
 
 ```ts [app.ts]
 import { Megh } from '@meghjs/core';
-import db from './database/connection';
 
 const app = Megh.createApplication();
-app.useDatabase(db);
+app.useMeghORM({ dialect: 'postgres', url: process.env.DATABASE_URL });
 ```
 
-`useDatabase` sets the connection models use, registers it in the container
-under `ORM_CONNECTION`, and destroys it when the app shuts down. Outside an app, in
-scripts and tests, call `Model.useConnection(db)` instead.
+With no arguments, the settings come from the environment (and `.env`), which
+is also where the [migration commands](#migrations) read them:
+
+```sh [.env]
+DATABASE_URL=postgres://app:secret@localhost:5432/app
+```
+
+```ts
+app.useMeghORM(); // reads DATABASE_URL
+```
+
+The URL scheme picks the database, so `dialect` is optional with a URL:
+
+| Database | URL |
+|---|---|
+| PostgreSQL | `postgres://user:pass@host:5432/db` |
+| MySQL / MariaDB | `mysql://user:pass@host:3306/db` |
+| SQL Server | `mssql://user:pass@host:1433/db` (or `sqlserver://`). Add `?encrypt=false` or `?trustServerCertificate=true` for local servers |
+| SQLite | `sqlite:./database.sqlite`, or `sqlite::memory:` |
+
+Instead of a URL, give the parts:
+
+```ts
+app.useMeghORM({
+  dialect: 'mysql',
+  host: 'localhost',
+  port: 3306,
+  user: 'app',
+  password: process.env.DB_PASSWORD,
+  database: 'app',
+  pool: { max: 20 },
+});
+```
+
+| Option | Environment variable | |
+|---|---|---|
+| `dialect` | `DB_DIALECT` | `postgres`, `mysql`, `sqlite` or `mssql` |
+| `url` | `DATABASE_URL` | Connection URL |
+| `host`, `port` | `DB_HOST`, `DB_PORT` | |
+| `user`, `password` | `DB_USER`, `DB_PASSWORD` | |
+| `database` | `DB_NAME` | Database name; for SQLite, the file path |
+| `pool.min`, `pool.max` | `DB_POOL_MIN`, `DB_POOL_MAX` | Pool size. `max` defaults to 10 |
+| `ssl` | | `true` or driver TLS options (Postgres, MySQL). SQL Server encrypts unless `false` |
+| `trustServerCertificate` | | SQL Server: accept a self-signed certificate |
+
+Settings passed to `useMeghORM()` override the environment. To build them
+in an `@AppConfig` class ([example](/advanced/database#using-a-config-class)), pass the class:
+
+```ts
+@AppConfig
+class DatabaseConfig extends MeghConfig<DatabaseOptions> {
+  config(env: Environment): DatabaseOptions {
+    return { url: env.get('DATABASE_URL'), pool: { max: Number(env.get('POOL')) || 10 } };
+  }
+}
+
+app.useMeghORM(DatabaseConfig);
+```
+
+If the database can't be reached, `app.run()` fails with the reason and where
+it tried to connect (without the password). A missing driver is reported with
+the `npm install` command to run.
+
+Outside an app, in scripts and tests, connect with
+`Model.useConnection(createDatabase(resolveDatabaseOptions({ url })))`.
+
+::: details Upgrading from `useDatabase(kysely)`
+`app.useDatabase(db)` still works, with a deprecation warning, for apps that
+create their own Kysely instance. Replace it with `useMeghORM()` and delete
+`src/database/connection.ts`: the migration commands now connect from
+`DATABASE_URL` too.
+:::
 
 ## Defining models
 
-Extend `Model`, name the table, and declare the columns as fields:
+Extend `Model` and describe the table with decorators:
 
 ```ts [src/models/user.model.ts]
-import { Model, hasMany } from '@meghjs/core';
+import {
+  Model, Table, PrimaryKey, AutoIncrement, Column,
+  CreatedAt, UpdatedAt, HasMany,
+} from '@meghjs/core';
 import { Post } from './post.model';
 
+@Table('users')
 export class User extends Model {
-  static readonly table = 'users';
+  @PrimaryKey() @AutoIncrement() id?: number;
+  @Column({ unique: true }) email!: string;
+  @Column({ nullable: true }) name!: string | null;
+  @Column() active!: boolean;
+  @CreatedAt() created_at?: Date;
+  @UpdatedAt() updated_at?: Date;
 
-  id!: number;
-  email!: string;
-  name!: string | null;
-
-  posts = hasMany(() => Post);
+  @HasMany(() => Post) posts!: HasMany<Post>;
 
   get displayName() {
     return this.name ?? this.email;
@@ -125,23 +158,65 @@ export class User extends Model {
 }
 ```
 
-Every field is a column, except:
-
-- **relations**, declared with `hasMany()`, `hasOne()`, `belongsTo()` or `belongsToMany()`
-- **methods**
-- **getters** and other `readonly` properties, which count as computed values.
-  This means a column itself must not be `readonly`.
-
 Query results are instances of the model, so methods and getters work on them.
 
-| Static field | Default | Purpose |
-|---|---|---|
-| `table` | — (required) | Table name |
-| `primaryKey` | `'id'` | Primary key column |
-| `generated` | `['id']` | Columns the database fills in; optional in `create()`. Declare a literal: `['id', 'slug'] as const` |
-| `timestamps` | `false` | See [Timestamps](#timestamps) |
-| `softDeletes` | `false` | See [Soft deletes](#soft-deletes) |
-| `casts` | `{}` | See [Casts](#casts) |
+**Optional fields.** Declare columns the database fills in with `?`: the
+auto-increment `id`, timestamps, columns with a default. They're optional in
+`create()`, and present on every row you load, so `user.id` is a `number` on
+query results.
+
+**Fields that aren't columns.** Only decorated fields are saved. For
+TypeScript to leave a field out of `where()` and `create()` too, make it
+`private`, `readonly` or a getter.
+
+### Decorators
+
+| Decorator | |
+|---|---|
+| `@Table(name?)` | The table. Without a name, the plural snake_case class name: `BlogPost` → `blog_posts` |
+| `@Column(options?)` | A column. Also `@Column('text')` or `@Column('text', options)` |
+| `@PrimaryKey(options?)` | The primary key. Defaults to `id` when no field has it |
+| `@AutoIncrement()` | A column the database numbers: `SERIAL`/`IDENTITY` on PostgreSQL, `AUTO_INCREMENT` on MySQL, `IDENTITY(1,1)` on SQL Server, `AUTOINCREMENT` on SQLite. Left out of inserts |
+| `@Identity()` | Same as `@AutoIncrement()` |
+| `@CreatedAt()` | Set when the row is inserted. See [Timestamps](#timestamps) |
+| `@UpdatedAt()` | Set on every insert and update |
+| `@DeletedAt()` | Turns on [soft deletes](#soft-deletes) |
+| `@HasMany`, `@HasOne`, `@BelongsTo`, `@BelongsToMany` | [Relations](#relations) |
+
+Column options:
+
+| Option | |
+|---|---|
+| `type` | `string`, `text`, `integer`, `bigint`, `float`, `double`, `decimal`, `boolean`, `date`, `datetime`, `timestamp`, `time`, `json`, `uuid`, `binary`. `boolean` and `Date` fields are detected from the TypeScript type |
+| `nullable` | Allows `NULL` |
+| `unique` | |
+| `default` | Default value |
+| `length` | For `string` |
+| `precision`, `scale` | For `decimal` |
+| `cast` | How stored values convert. Defaults from `type`; see [Casts](#casts) |
+
+Decorated columns are inherited, so shared columns can live in a base class:
+
+```ts
+export abstract class BaseModel extends Model {
+  @PrimaryKey() @AutoIncrement() id?: number;
+  @CreatedAt() created_at?: Date;
+  @UpdatedAt() updated_at?: Date;
+}
+
+@Table()
+export class Tag extends BaseModel {
+  @Column() name!: string;
+}
+```
+
+::: details Models without decorators
+Models written before decorators keep working: every field is a column except
+relations (declared with `hasMany()` and the others), methods and getters, and
+settings are static fields (`static readonly table = 'users'`, `primaryKey`,
+`generated`, `timestamps`, `softDeletes`, `casts`). Decorators set the same
+settings, so the two styles can be mixed while you migrate.
+:::
 
 ## Querying
 
@@ -267,31 +342,33 @@ present, and generated, nullable and timestamp columns may be left out.
 ## Relations
 
 ```ts
+@Table()
 class User extends Model {
-  static readonly table = 'users';
-  id!: number;
+  @PrimaryKey() @AutoIncrement() id?: number;
 
-  posts = hasMany(() => Post);       // posts.user_id → users.id
-  profile = hasOne(() => Profile);   // profiles.user_id → users.id
+  @HasMany(() => Post) posts!: HasMany<Post>;         // posts.user_id → users.id
+  @HasOne(() => Profile) profile!: HasOne<Profile>;   // profiles.user_id → users.id
 }
 
+@Table()
 class Post extends Model {
-  static readonly table = 'posts';
-  id!: number;
-  user_id!: number;
+  @PrimaryKey() @AutoIncrement() id?: number;
+  @Column() user_id!: number;
 
-  author = belongsTo(() => User, 'user_id');
+  @BelongsTo(() => User, { foreignKey: 'user_id' }) author!: BelongsTo<User>;
 }
 ```
 
-The related class is passed as a function, so models can refer to each other
-in any order. Key defaults follow Laravel:
+Each relation decorator has a field type of the same name. The type is what
+lets `with('posts')` load `Post[]` and type-check. The related class is
+passed as a function, so models can refer to each other in any order. Key
+defaults:
 
-| Relation | Foreign key default | Arguments |
+| Relation | Foreign key default | Options |
 |---|---|---|
-| `hasMany(() => Post)` | `<owner class>_id` on the related table, e.g. `user_id` | `(related, foreignKey?, localKey?)` |
-| `hasOne(() => Profile)` | same as `hasMany` | `(related, foreignKey?, localKey?)` |
-| `belongsTo(() => User)` | `<relation name>_id` on this table, e.g. `author_id` | `(related, foreignKey?, ownerKey?)` |
+| `@HasMany(() => Post)` | `<owner class>_id` on the related table, e.g. `user_id` | `foreignKey`, `localKey` |
+| `@HasOne(() => Profile)` | same as `HasMany` | `foreignKey`, `localKey` |
+| `@BelongsTo(() => User)` | `<field name>_id` on this table, e.g. `author_id` | `foreignKey`, `ownerKey` |
 
 ### Eager loading
 
@@ -361,11 +438,12 @@ const profile = await user.related('profile').get(); // Profile | null
 ### Many-to-many
 
 ```ts
+@Table()
 class User extends Model {
-  static readonly table = 'users';
-  id!: number;
+  @PrimaryKey() @AutoIncrement() id?: number;
 
-  roles = belongsToMany(() => Role).withPivot<{ granted_by: string | null }>('granted_by');
+  @BelongsToMany(() => Role, { pivotColumns: ['granted_by'] })
+  roles!: BelongsToMany<Role, { granted_by: string | null }>;
 }
 ```
 
@@ -374,11 +452,12 @@ The pivot table defaults to both snake_case class names, sorted and joined:
 with options:
 
 ```ts
-roles = belongsToMany(() => Role, {
+@BelongsToMany(() => Role, {
   table: 'user_roles',
   foreignPivotKey: 'member_id',
   relatedPivotKey: 'role_id',
-});
+})
+roles!: BelongsToMany<Role>;
 ```
 
 Loaded models carry their pivot row in `pivot`, which also appears in JSON:
@@ -400,35 +479,31 @@ const roles = await user.related('roles').get();
 ## Timestamps
 
 ```ts
+@Table()
 class Post extends Model {
-  static readonly table = 'posts';
-  static readonly timestamps = true;
-
-  id!: number;
-  title!: string;
-  created_at!: Date;
-  updated_at!: Date;
+  @PrimaryKey() @AutoIncrement() id?: number;
+  @Column() title!: string;
+  @CreatedAt() created_at?: Date;
+  @UpdatedAt() updated_at?: Date;
 }
 ```
 
-`created_at` is set on insert, and `updated_at` on every insert and update:
-`create()`, `save()`, query `update()`, and soft deletes and restores. Both are
-read back as `Date`. Rename the columns with `static readonly createdAt` and
-`static readonly updatedAt`.
+The `@CreatedAt` column is set on insert, and the `@UpdatedAt` column on every
+insert and update: `create()`, `save()`, query `update()`, and soft deletes and
+restores. Both are read back as `Date`. Use either one on its own, and name
+the fields after your columns.
 
 ## Soft deletes
 
 ```ts
+@Table()
 class Post extends Model {
-  static readonly table = 'posts';
-  static readonly softDeletes = true;
-
-  id!: number;
-  deleted_at!: Date | null;
+  @PrimaryKey() @AutoIncrement() id?: number;
+  @DeletedAt() deleted_at?: Date | null;
 }
 ```
 
-With soft deletes, `delete()` sets `deleted_at` instead of removing the row,
+With a `@DeletedAt` column, `delete()` sets it instead of removing the row,
 and every query, eager load included, leaves those rows out:
 
 ```ts
@@ -445,29 +520,26 @@ await post.forceDelete();                      // really delete
 await Post.onlyTrashed().forceDelete();
 ```
 
-Rename the column with `static readonly deletedAt`.
-
 ## Casts
 
-Casts convert between what the database stores and what the model holds:
+Casts convert between what the database stores and what the model holds. A
+column's `type` picks its cast (`boolean`, `json`, `date`, `datetime` and
+`timestamp` have one), and `cast` sets it explicitly:
 
 ```ts
+@Table()
 class Member extends Model {
-  static readonly table = 'members';
-  static readonly casts = {
-    is_admin: 'boolean',
-    settings: 'json',
-    born_on: 'date',
-    balance: 'number',
-  } as const;
-
-  id!: number;
-  is_admin!: boolean;
-  settings!: { theme: string } | null;
-  born_on!: Date | null;
-  balance!: number;
+  @PrimaryKey() @AutoIncrement() id?: number;
+  @Column() is_admin!: boolean;                                  // boolean, from the TypeScript type
+  @Column({ type: 'json', nullable: true }) settings!: { theme: string } | null;
+  @Column({ type: 'date', nullable: true }) born_on!: Date | null;
+  @Column({ type: 'decimal', cast: 'number' }) balance!: number;
 }
 ```
+
+`boolean` and `Date` fields get their cast from the TypeScript type. A
+nullable field (`boolean | null`) has no single type at runtime, so give it
+`type`.
 
 | Cast | Read as | Written as |
 |---|---|---|
@@ -551,10 +623,10 @@ const db = MeghContainer.get(ORM_CONNECTION); // Kysely<any>
 
 ## Migrations
 
-A migration is a file in `src/database/migrations` that exports `up(db)` and,
-to be reversible, `down(db)`. Both receive the Kysely instance and change the
-schema with its [schema builder](https://kysely.dev/docs/migrations).
-Migrations run in file-name order, so names start with a timestamp.
+A migration is a file in `src/database/migrations` whose default export is
+`defineMigration({ up, down })`. Both functions receive the schema builder.
+`down` undoes `up`, so the migration can be rolled back. Migrations run in
+file-name order, so names start with a timestamp.
 
 Create one with the CLI:
 
@@ -563,33 +635,138 @@ npx megh make:migration create_users_table
 ```
 
 ```ts [src/database/migrations/20261101093000_create_users_table.ts]
-import type { Kysely } from 'kysely';
+import { defineMigration } from '@meghjs/core';
 
-export async function up(db: Kysely<any>): Promise<void> {
-  await db.schema
-    .createTable('users')
-    .addColumn('id', 'serial', (col) => col.primaryKey())
-    .addColumn('email', 'text', (col) => col.notNull().unique())
-    .addColumn('created_at', 'timestamp')
-    .addColumn('updated_at', 'timestamp')
-    .execute();
-}
+export default defineMigration({
+  async up(schema) {
+    await schema.create('users', (table) => {
+      table.id();
+      table.string('email').unique();
+      table.string('name').nullable();
+      table.boolean('active').default(true);
+      table.foreignId('team_id').constrained().cascadeOnDelete();
+      table.timestamps();
+    });
+  },
 
-export async function down(db: Kysely<any>): Promise<void> {
-  await db.schema.dropTable('users').execute();
-}
+  async down(schema) {
+    await schema.drop('users');
+  },
+});
 ```
+
+The same migration runs on PostgreSQL, MySQL, SQLite and SQL Server. Each
+column type becomes the right SQL type for the database, and statements are
+issued the way each one needs them.
 
 The name picks the template:
 
-- `create_<table>_table` gives a create-table migration. Its `id` column suits
-  the project's driver: `serial` with `pg`, an identity column with `tedious`,
-  and auto-increment otherwise.
+- `create_<table>_table` gives a create-table migration.
 - `add_<x>_to_<table>_table` (also `remove`/`drop`/`alter`/`change`/`update`,
   with `to`/`from`/`in`/`on`) gives an alter-table one.
 - Anything else gives an empty migration.
 
 `--create <table>` and `--table <table>` choose the template explicitly.
+
+### Tables
+
+| | |
+|---|---|
+| `schema.create(name, (table) => …)` | Create a table |
+| `schema.table(name, (table) => …)` | Change a table |
+| `schema.drop(name)` / `schema.dropIfExists(name)` | Drop a table |
+| `schema.rename(from, to)` | Rename a table |
+| `schema.hasTable(name)` / `schema.hasColumn(table, column)` | Check what exists |
+| `schema.raw(sql)` | Run SQL as written, for anything else |
+
+### Columns
+
+Columns are `NOT NULL` unless marked `nullable()`.
+
+| Method | PostgreSQL | MySQL | SQLite | SQL Server |
+|---|---|---|---|---|
+| `id(name = 'id')`, `increments(name)` | `integer` identity | `int auto_increment` | `integer autoincrement` | `int identity` |
+| `bigIncrements(name)` | `bigint` identity | `bigint auto_increment` | `integer autoincrement` | `bigint identity` |
+| `string(name, length = 255)` | `varchar` | `varchar` | `varchar` | `nvarchar` |
+| `text(name)` | `text` | `text` | `text` | `nvarchar(max)` |
+| `integer(name)` | `integer` | `int` | `integer` | `int` |
+| `bigInteger(name)` | `bigint` | `bigint` | `integer` | `bigint` |
+| `float(name)` | `real` | `float` | `real` | `real` |
+| `double(name)` | `double precision` | `double` | `real` | `float` |
+| `decimal(name, precision = 8, scale = 2)` | `numeric` | `decimal` | `numeric` | `decimal` |
+| `boolean(name)` | `boolean` | `boolean` | `integer` | `bit` |
+| `date(name)` | `date` | `date` | `date` | `date` |
+| `datetime(name)` | `timestamp` | `datetime` | `datetime` | `datetime2` |
+| `timestamp(name)` | `timestamptz` | `datetime` | `datetime` | `datetimeoffset` |
+| `time(name)` | `time` | `time` | `time` | `time` |
+| `json(name)` | `jsonb` | `json` | `text` | `nvarchar(max)` |
+| `uuid(name)` | `uuid` | `char(36)` | `varchar(36)` | `uniqueidentifier` |
+| `binary(name)` | `bytea` | `blob` | `blob` | `varbinary(max)` |
+| `foreignId(name)` | `integer` | `int` | `integer` | `int` |
+| `timestamps()` | nullable `created_at` and `updated_at`, for `@CreatedAt` / `@UpdatedAt` | | | |
+| `softDeletes(name = 'deleted_at')` | nullable timestamp, for `@DeletedAt` | | | |
+
+`id()` is a 32-bit integer, so drivers return it as a number. `bigIncrements()`
+holds more rows, but PostgreSQL and MySQL drivers return 64-bit integers as
+strings.
+
+Modifiers, chained after a column:
+
+| | |
+|---|---|
+| `.nullable()` | Allow `NULL` |
+| `.unique()` | Unique index |
+| `.primary()` | Primary key |
+| `.default(value)` | Default value. Booleans, dates and objects are converted for the database |
+| `.useCurrent()` | Default to the current time |
+| `.autoIncrement()` | Numbered by the database |
+| `.constrained(table?, column = 'id')` | Foreign key. The table comes from the column name: `team_id` → `teams` |
+| `.references('teams.id')` | Foreign key to a given table and column |
+| `.onDelete(action)`, `.onUpdate(action)` | `'cascade'`, `'set null'`, `'restrict'`, `'no action'`, `'set default'` |
+| `.cascadeOnDelete()`, `.nullOnDelete()` | Shorthands. `nullOnDelete()` also makes the column nullable |
+
+### Indexes and keys
+
+```ts
+await schema.create('posts', (table) => {
+  table.id();
+  table.integer('author_id');
+  table.string('slug');
+  table.unique(['author_id', 'slug']);    // posts_author_id_slug_unique
+  table.index('slug');                    // posts_slug_index
+  table.foreign('author_id').references('users.id').cascadeOnDelete();
+});
+```
+
+Indexes and keys are named `<table>_<columns>_<index|unique|foreign>`, so you
+can drop them by their columns: `table.dropIndex(['slug'])`,
+`table.dropUnique([...])`, `table.dropForeign(['author_id'])`.
+`table.primary(['a', 'b'])` declares a primary key over several columns.
+
+### Changing tables
+
+```ts
+await schema.table('users', (table) => {
+  table.string('phone').nullable();
+  table.foreignId('company_id').nullable().constrained();
+  table.renameColumn('name', 'full_name');
+  table.dropColumn('legacy');
+});
+```
+
+A column added to an existing table must be `nullable()` or have a
+`default()`, because rows already in the table need a value.
+
+SQLite can't add a foreign key or primary key to an existing column, or drop
+one. Declare them in `schema.create()`, or add the foreign key together with
+its new column (`foreignId(...).constrained()`), which SQLite supports. Doing
+otherwise throws a `SchemaError` that explains this.
+
+::: details Migrations written against Kysely
+Migration files that export `up(db)` / `down(db)` functions taking the Kysely
+instance still run, in order with the others. New migrations use the schema
+builder.
+:::
 
 Then run them:
 
@@ -601,18 +778,22 @@ Then run them:
 | `megh migrate:reset` | Undo every migration |
 | `megh migrate:refresh` | Undo every migration, then run them all again |
 
-The commands compile `src/` with SWC, load `.env`, and import the Kysely
-instance from `src/database/connection.ts` (its default export, or an export
-named `db`). To use other locations, set them in `package.json`:
+The commands compile `src/` with SWC, load `.env`, and connect the way
+`app.useMeghORM()` does: from `DATABASE_URL` or the `DB_*` variables. Settings
+that aren't secret can go in `package.json`, as can a different migrations
+folder:
 
 ```json [package.json]
 {
   "megh": {
-    "database": "src/db/index.ts",
+    "database": { "dialect": "postgres", "pool": { "max": 2 } },
     "migrations": "migrations"
   }
 }
 ```
+
+A project that still has `src/database/connection.ts` exporting a Kysely
+instance keeps using it, as does `"database": "path/to/module.ts"`.
 
 A failing migration stops the run, and the error names it. What happens to
 the migrations before it depends on the database:
@@ -631,16 +812,16 @@ projects already using Kysely migrations keep their history.
 at deploy time:
 
 ```ts
-import { Migrations } from '@meghjs/core';
-import db from './database/connection';
+import { Migrations, Model } from '@meghjs/core';
 
-const migrations = new Migrations(db, { folder: `${__dirname}/database/migrations` });
+// After app.useMeghORM() (or Model.useConnection()):
+const migrations = new Migrations(Model.db(), { folder: `${__dirname}/database/migrations` });
 await migrations.latest();     // names that ran
 await migrations.rollback(2);
 await migrations.status();     // [{ name, executedAt }]
 ```
 
-Pass `migrations: { name: { up, down } }` instead of `folder` to define them
+Pass `migrations: { name: defineMigration({ up, down }) }` instead of `folder` to define them
 inline, and `table` / `lockTable` to change the bookkeeping table names. A
 failed run throws a `MigrationError` with `migration` (the one that failed) and
 `completed` (those that ran before it; on PostgreSQL and SQL Server they were

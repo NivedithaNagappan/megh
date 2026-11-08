@@ -16,12 +16,32 @@ export {
   hasOne,
   belongsTo,
   belongsToMany,
-  type BelongsToMany,
   type BelongsToManyOptions,
-  type HasMany,
-  type HasOne,
-  type BelongsTo,
 } from "./relations";
+// HasMany, HasOne, BelongsTo and BelongsToMany are both the relation
+// decorators and the field types: `@HasMany(() => Post) posts: HasMany<Post>`.
+export {
+  Table,
+  Column,
+  PrimaryKey,
+  AutoIncrement,
+  Identity,
+  CreatedAt,
+  UpdatedAt,
+  DeletedAt,
+  HasMany,
+  HasOne,
+  BelongsTo,
+  BelongsToMany,
+  getModelMetadata,
+  type ColumnType,
+  type ColumnOptions,
+  type ColumnMetadata,
+  type ModelMetadata,
+  type HasOptions,
+  type BelongsToOptions,
+  type BelongsToManyDecoratorOptions,
+} from "./decorators";
 export { ORM_CONNECTION } from "./connection";
 export { PivotRelation, type RelatedRef } from "./pivot";
 export type { Cast, CustomCast } from "./casts";
@@ -45,8 +65,29 @@ export type {
 export {
   Migrations,
   MigrationError,
+  defineMigration,
+  type SchemaMigration,
   readMigrationFolder,
   type Migration,
   type MigrationsOptions,
   type MigrationStatus,
 } from "./migrations";
+export { ormPlugin } from "./plugin";
+export {
+  DatabaseConfigError,
+  resolveDatabaseOptions,
+  type DatabaseOptions,
+  type Dialect,
+  type PoolOptions,
+  type ResolvedDatabaseOptions,
+} from "./config";
+export { createDatabase } from "./connect";
+export {
+  Schema,
+  Blueprint,
+  ColumnDefinition,
+  ForeignKeyDefinition,
+  SchemaError,
+  type ReferentialAction,
+  type SchemaDialect,
+} from "./schema";

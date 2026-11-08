@@ -138,9 +138,10 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
   const db = (name: string, description: string) =>
     sub(name, description).addHelpText(
       "after",
-      "\nThe Kysely instance is the default (or `db`) export of src/database/connection.ts and\n" +
-        "migrations live in src/database/migrations; set megh.database / megh.migrations in\n" +
-        "package.json to change them. Sources are compiled with SWC first, and .env is loaded.",
+      "\nConnects the way app.useMeghORM() does: from DATABASE_URL (or DB_DIALECT, DB_HOST,\n" +
+        "DB_NAME, ...) in the environment or .env, with optional settings in megh.database in\n" +
+        "package.json. Migrations live in src/database/migrations; set megh.migrations to\n" +
+        "change it. Sources are compiled with SWC first.",
     );
 
   db("migrate", "Run pending migrations").action(() => {

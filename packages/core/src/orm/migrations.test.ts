@@ -160,7 +160,7 @@ describe("Migrations", () => {
       write("1_broken.js", "exports.nope = 1;");
       await expect(
         new Migrations(db, { folder: dir }).latest(),
-      ).rejects.toThrow(/1_broken.js must export an `up\(db\)` function/);
+      ).rejects.toThrow(/1_broken.js must export defineMigration/);
     });
 
     it("a missing folder means no migrations", async () => {

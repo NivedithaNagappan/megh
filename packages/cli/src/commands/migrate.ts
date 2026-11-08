@@ -7,12 +7,21 @@ import { projectLayout } from "../utils/entry";
 import { c, log } from "../utils/log";
 import { readPackageJson, requireProjectRoot } from "../utils/project";
 
-export const DEFAULT_CONNECTION = "src/database/connection.ts";
+/** Where apps used to export their own Kysely instance. Still used when present. */
+export const LEGACY_CONNECTION = "src/database/connection.ts";
 export const DEFAULT_MIGRATIONS = "src/database/migrations";
 
 export type DatabasePaths = {
-  /** Module exporting the app's Kysely instance (`default` or `db`). */
-  connection: string;
+  /**
+   * A module exporting the app's own Kysely instance (`default` or `db`),
+   * from before `useMeghORM`. `null` when the connection comes from settings.
+   */
+  connection: string | null;
+  /**
+   * Connection settings from `megh.database` in package.json, merged over
+   * the environment (DATABASE_URL, DB_*) the way `app.useMeghORM()` does.
+   */
+  settings: Record<string, unknown>;
   /** Folder of migration files. */
   migrations: string;
 };
@@ -20,8 +29,13 @@ export type DatabasePaths = {
 /** `megh.database` / `megh.migrations` from package.json, else the defaults. */
 export function databasePaths(root: string, pkg: Record<string, any> = readPackageJson(root)): DatabasePaths {
   const conf = pkg?.megh ?? {};
+  const legacy = path.resolve(root, LEGACY_CONNECTION);
+  let connection: string | null = null;
+  if (typeof conf.database === "string") connection = path.resolve(root, conf.database);
+  else if (!conf.database && fs.existsSync(legacy)) connection = legacy;
   return {
-    connection: path.resolve(root, typeof conf.database === "string" ? conf.database : DEFAULT_CONNECTION),
+    connection,
+    settings: conf.database && typeof conf.database === "object" ? conf.database : {},
     migrations: path.resolve(root, typeof conf.migrations === "string" ? conf.migrations : DEFAULT_MIGRATIONS),
   };
 }
@@ -32,14 +46,15 @@ export type MigrateOptions = { cwd?: string; step?: number };
 const MARKER = "__MEGH_MIGRATE__";
 
 /**
- * Runs in a child process: loads `.env`, the compiled connection module and
- * @meghjs/core from the project, runs the action, prints the result as JSON
- * after MARKER and closes the connection.
+ * Runs in a child process: loads `.env` and @meghjs/core from the project,
+ * connects from the settings (or loads a legacy connection module), runs
+ * the action, prints the result as JSON after MARKER and closes the
+ * connection.
  */
 const WORKER = `
 const fs = require("fs");
 const path = require("path");
-const [root, connection, folder, action, args] = JSON.parse(process.argv[process.argv.length - 1]);
+const [root, connection, settings, folder, action, args] = JSON.parse(process.argv[process.argv.length - 1]);
 const send = (value) => console.log(${JSON.stringify(MARKER)} + JSON.stringify(value));
 (async () => {
   let db;
@@ -50,10 +65,17 @@ const send = (value) => console.log(${JSON.stringify(MARKER)} + JSON.stringify(v
     try { core = require(require.resolve("@meghjs/core", { paths: [root] })); }
     catch { throw new Error("@meghjs/core is not installed in this project."); }
     if (typeof core.Migrations !== "function") throw new Error("This @meghjs/core version has no migrations; upgrade it.");
-    const mod = require(connection);
-    db = mod && (mod.default || mod.db);
-    if (!db || typeof db.schema !== "object" || typeof db.destroy !== "function") {
-      throw new Error("The connection module must export a Kysely instance as its default export or as \`db\`.");
+    if (connection) {
+      const mod = require(connection);
+      db = mod && (mod.default || mod.db);
+      if (!db || typeof db.schema !== "object" || typeof db.destroy !== "function") {
+        throw new Error("The connection module must export a Kysely instance as its default export or as \`db\`.");
+      }
+    } else {
+      if (typeof core.createDatabase !== "function") {
+        throw new Error("This @meghjs/core version can't connect from DATABASE_URL; upgrade it, or export a Kysely instance from src/database/connection.ts.");
+      }
+      db = core.createDatabase(core.resolveDatabaseOptions(settings));
     }
     const migrations = new core.Migrations(db, { folder });
     send({ ok: true, result: await migrations[action](...args) });
@@ -70,11 +92,10 @@ function compiled(root: string) {
   const layout = projectLayout(root);
   const paths = databasePaths(root);
   const rel = (p: string) => path.relative(root, p).split(path.sep).join("/");
-  if (!fs.existsSync(paths.connection)) {
+  if (paths.connection && !fs.existsSync(paths.connection)) {
     throw new CliError(
       `No database connection module at ${rel(paths.connection)}.\n` +
-        "Create it and export your Kysely instance (export default db), or point " +
-        '"megh.database" in package.json at it.',
+        'Remove "megh.database" from package.json to connect from DATABASE_URL, as app.useMeghORM() does.',
     );
   }
 
@@ -99,11 +120,12 @@ function compiled(root: string) {
     throw new CliError(`Compilation failed:\n  ${list}`);
   }
 
-  if (!inside(layout.srcDir, paths.connection)) {
+  if (paths.connection && !inside(layout.srcDir, paths.connection)) {
     throw new CliError(`The connection module ${rel(paths.connection)} must be inside ${rel(layout.srcDir)}/.`);
   }
   return {
-    connection: app.outFileFor(paths.connection),
+    connection: paths.connection ? app.outFileFor(paths.connection) : null,
+    settings: paths.settings,
     // outFileFor maps a file; map a placeholder inside the folder and take its directory.
     migrations: path.dirname(migrationsCompiler.outFileFor(path.join(paths.migrations, "x.ts"))),
   };
@@ -116,7 +138,7 @@ export function runMigrations(action: MigrateAction, opts: MigrateOptions = {}):
   const args = action === "rollback" ? [opts.step ?? 1] : [];
   const result = spawnSync(
     process.execPath,
-    ["-e", WORKER, JSON.stringify([root, files.connection, files.migrations, action, args])],
+    ["-e", WORKER, JSON.stringify([root, files.connection, files.settings, files.migrations, action, args])],
     {
       cwd: root,
       encoding: "utf8",
