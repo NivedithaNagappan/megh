@@ -356,6 +356,14 @@ It orders by the primary key by default; pass `column` (it must be unique)
 and `direction: 'desc'` to change that. An invalid cursor throws a 400
 `BadRequestException`.
 
+### Paging on SQL Server
+
+SQL Server has no `LIMIT`, so on SQL Server `limit()` becomes `select top(n)`
+and `offset()` becomes `offset … rows fetch next … rows only`. SQL Server only
+allows an offset after an `ORDER BY`, so a query with an offset but no
+`orderBy()` gets `order by (select null)`, and its row order is not
+guaranteed. Add an `orderBy()` when paging so pages stay stable.
+
 ## Creating, updating and deleting
 
 ```ts

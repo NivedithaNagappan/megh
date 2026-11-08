@@ -24,7 +24,7 @@ for building REST APIs with minimal boilerplate. It gives you:
 
 Integrations are optional peer dependencies, so you install only what you use.
 
-> **On 0.5.0?** See [Upgrading to 0.5.1](/getting-started/upgrading-0.5).
+> **On 0.5.0 or 0.5.1?** See [Upgrading to 0.5.2](/getting-started/upgrading-0.5).
 
 > **Coming from Avleon?** Avleon is now Megh. See
 > [Moving from Avleon to Megh](/getting-started/upgrading-megh). On 0.3 or

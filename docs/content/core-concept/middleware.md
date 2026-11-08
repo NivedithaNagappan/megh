@@ -67,18 +67,13 @@ export default app;
 
 ### Controller scoped
 
-::: warning
-In 0.3.0, passing a middleware **class** to `@UseMiddleware` crashes
-`app.run()`. Pass an instance, as in the examples below, until this is fixed.
-:::
-
 Runs for every route on that controller:
 
 ```ts
 import { ApiController, Get, UseMiddleware } from '@meghjs/core';
 import { LoggerMiddleware } from '../middlewares/logger.middleware';
 
-@UseMiddleware(new LoggerMiddleware())
+@UseMiddleware(LoggerMiddleware)
 @ApiController('/home')
 export class HomeController {
   @Get()
@@ -98,7 +93,7 @@ import { LoggerMiddleware } from '../middlewares/logger.middleware';
 
 @ApiController('/home')
 export class HomeController {
-  @UseMiddleware(new LoggerMiddleware())
+  @UseMiddleware(LoggerMiddleware)
   @Get()
   sayHello() {
     return 'Hello';
@@ -106,11 +101,18 @@ export class HomeController {
 }
 ```
 
-`UseMiddleware` also accepts an array:
+A class is resolved through the DI container when the route is registered, so
+it can use constructor injection. You can also pass an instance, for example to
+give it settings. `UseMiddleware` also accepts an array, and both forms can be
+mixed:
 
 ```ts
-@UseMiddleware([new LoggerMiddleware(), new ApiKeyMiddleware()])
+@UseMiddleware([LoggerMiddleware, new RateLimitMiddleware(100)])
 ```
+
+::: tip
+Passing a class to `@UseMiddleware` crashed `app.run()` before 0.5.2.
+:::
 
 ::: info
 `@UseMiddleware` must sit above `@ApiController` on a class, and above the route

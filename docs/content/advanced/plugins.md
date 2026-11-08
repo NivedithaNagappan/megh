@@ -46,7 +46,7 @@ declare module '@meghjs/core' {
   "name": "@acme/db",
   "main": "dist/index.js",
   "megh": { "plugin": "./dist/plugin.js" },
-  "peerDependencies": { "@meghjs/core": "^0.5.1" }
+  "peerDependencies": { "@meghjs/core": "^0.5.2" }
 }
 ```
 

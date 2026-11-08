@@ -1,19 +1,36 @@
 ---
-title: Upgrading to 0.5.1
-description: What changes in Megh 0.5.1 - useMeghORM, decorator models, the schema builder, the DB query builder and Megh's own DI container.
+title: Upgrading to 0.5.2
+description: What changes in Megh 0.5.1 and 0.5.2 - useMeghORM, decorator models, the schema builder, the DB query builder, Megh's own DI container, and fixes for scoped middleware and SQL Server paging.
 ---
 
-# Upgrading to 0.5.1
+# Upgrading to 0.5.2
 
-0.5.1 needs no code changes: apps written for 0.5.0 keep working. It brings
-Megh's own ORM setup and DI container, and deprecates `app.useDatabase()`.
+0.5.1 and 0.5.2 need no code changes: apps written for 0.5.0 keep working.
+0.5.1 brings Megh's own ORM setup and DI container, and deprecates
+`app.useDatabase()`. 0.5.2 is a bug-fix release.
 
 ```sh
-npm i @meghjs/core@^0.5.1
-npm i -D @meghjs/cli@^0.5.1
+npm i @meghjs/core@^0.5.2
+npm i -D @meghjs/cli@^0.5.2
 ```
 
-## Connect with `useMeghORM()`
+## Fixes in 0.5.2
+
+- **`@UseMiddleware(SomeClass)` works.** Passing a middleware class to
+  `@UseMiddleware` on a controller or route crashed `app.run()` with
+  `Function is not registered`. Classes are now resolved through the DI
+  container, so they can use constructor injection. The
+  `@UseMiddleware(new SomeClass())` workaround still works. See
+  [Middleware](/core-concept/middleware#controller-scoped).
+- **Paging works on SQL Server.** `limit()`, `offset()`, `first()`, `find()`,
+  `exists()`, `paginate()`, `simplePaginate()` and `forPage()` failed with
+  `Incorrect syntax near 'limit'`. Queries now use `top(n)` and
+  `offset … fetch next … rows only` on SQL Server. See
+  [Paging on SQL Server](/advanced/orm#paging-on-sql-server).
+
+## Changes in 0.5.1
+
+### Connect with `useMeghORM()`
 
 Megh now creates the database connection itself. Kysely ships with
 `@meghjs/core`, so an app only installs the driver for its database.
@@ -23,7 +40,7 @@ Megh now creates the database connection itself. Kysely ships with
 import { db } from "./database/connection";
 app.useDatabase(db);
 
-// After (0.5.1)
+// After (0.5.1+)
 app.useMeghORM(); // reads DATABASE_URL, or pass { dialect, host, ... }
 ```
 
@@ -36,9 +53,9 @@ app.useMeghORM(); // reads DATABASE_URL, or pass { dialect, host, ... }
    keeps using it; once it's gone, migrations connect from `DATABASE_URL` too.
 4. Uninstall `kysely` unless your own code imports it.
 
-`app.useDatabase(db)` still works in 0.5.1 and logs a deprecation warning.
+`app.useDatabase(db)` still works in 0.5.x and logs a deprecation warning.
 
-## Models with decorators
+### Models with decorators
 
 Models can describe their table with decorators. Models written with
 `static table` and `hasMany(() => Post)` keep working, so move them over
@@ -62,7 +79,7 @@ export class User extends Model {
   [Column names](/advanced/orm#column-names).
 - `npx megh make:model` now writes decorator models.
 
-## Migrations with the schema builder
+### Migrations with the schema builder
 
 `npx megh make:migration` now writes migrations with Megh's schema builder,
 which picks the right SQL type for each database:
@@ -85,7 +102,7 @@ export default defineMigration({
 Existing Kysely migrations (`export async function up(db)`) still run, in
 order with the new ones.
 
-## The `DB` query builder
+### The `DB` query builder
 
 For queries that don't need a model:
 
@@ -100,7 +117,7 @@ await DB.transaction(async () => {
 
 See [Query builder](/advanced/orm#query-builder).
 
-## Megh's own DI container
+### Megh's own DI container
 
 `typedi` is no longer a dependency. `MeghContainer`, `@Injectable()`, `Token`
 and `inject()` keep their API, and `inject()` now also works in field
@@ -119,7 +136,7 @@ If your app imported `typedi` directly, switch to `MeghContainer` or add
 fail with the full constructor chain in the error. See
 [Dependency Injection](/core-concept/dependency-injection).
 
-## `megh new`
+### `megh new`
 
 New projects can include the ORM: pick **MeghORM** from the features, or pass
 `--database postgres|mysql|sqlite|mssql`.

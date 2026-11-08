@@ -321,20 +321,19 @@ class LoggingMiddleware extends MeghMiddleware {
 app.useMiddlewares([LoggingMiddleware]);
 ```
 
-Scope middleware to a controller or route with `@UseMiddleware`. In 0.3.0, pass
-an **instance**. The class form crashes at boot (see
-[Known Issues](#known-issues-in-030)):
+Scope middleware to a controller or route with `@UseMiddleware`. Classes are
+resolved through DI, so they can use constructor injection. Instances work too:
 
 ```typescript
 // Apply to entire controller
-@UseMiddleware(new LoggingMiddleware())
+@UseMiddleware(LoggingMiddleware)
 @ApiController('/users')
 class UserController { ... }
 
 // Or apply to a specific route
 @ApiController('/users')
 class UserController {
-  @UseMiddleware(new LoggingMiddleware())
+  @UseMiddleware([LoggingMiddleware, new RateLimitMiddleware(100)])
   @Get('/')
   getAll() { ... }
 }
@@ -1232,8 +1231,6 @@ dispatches jobs without Redis.
 
 These are regressions or gaps in 0.3.0 that are expected to be fixed in a patch release:
 
-- **`@UseMiddleware(SomeClass)` crashes `app.run()`.** Pass an instance,
-  `@UseMiddleware(new SomeClass())`, or use `app.useMiddlewares()`.
 - **`@Repository` and `@Queue` classes without an explicit constructor break
   under dependency injection.** Add `constructor() { super(); }`.
 - **Status codes from `Results.Created`, `Results.NoContent`,
@@ -1306,7 +1303,7 @@ for 2.0. These lists track what has landed and what still blocks 1.0.0.
 
 **Regressions from 0.3.0** (see [Known Issues](#known-issues-in-030))
 
-- [ ] `@UseMiddleware(SomeClass)` crashes boot
+- [x] `@UseMiddleware(SomeClass)` crashes boot (fixed in 0.5.2)
 - [ ] `@Repository` / `@Queue` classes without a constructor break under DI
 - [ ] Apply status codes from `Results`, `HttpResponse.Created` and `@HttpCode`
 - [ ] Put `@Body()` / `@Query()` DTO schemas back into the OpenAPI document

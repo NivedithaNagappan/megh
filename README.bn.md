@@ -321,20 +321,19 @@ class LoggingMiddleware extends MeghMiddleware {
 app.useMiddlewares([LoggingMiddleware]);
 ```
 
-`@UseMiddleware` দিয়ে middleware-কে একটি controller বা route-এর মধ্যে সীমাবদ্ধ করুন। 0.3.0-এ
-একটি **instance** পাস করুন। Class পাস করলে boot-এর সময় crash করে (দেখুন
-[known issues](#known-issues-in-030)):
+`@UseMiddleware` দিয়ে middleware-কে একটি controller বা route-এর মধ্যে সীমাবদ্ধ করুন। Class
+DI-এর মাধ্যমে resolve হয়, তাই constructor injection ব্যবহার করা যায়। Instance-ও কাজ করে:
 
 ```typescript
 // Apply to entire controller
-@UseMiddleware(new LoggingMiddleware())
+@UseMiddleware(LoggingMiddleware)
 @ApiController('/users')
 class UserController { ... }
 
 // Or apply to a specific route
 @ApiController('/users')
 class UserController {
-  @UseMiddleware(new LoggingMiddleware())
+  @UseMiddleware([LoggingMiddleware, new RateLimitMiddleware(100)])
   @Get('/')
   getAll() { ... }
 }
@@ -1225,8 +1224,6 @@ Redis ছাড়াই job dispatch করে এমন code test করতে
 
 এগুলো 0.3.0-এর regression বা ঘাটতি, যেগুলো একটি patch release-এ ঠিক হওয়ার কথা:
 
-- **`@UseMiddleware(SomeClass)` `app.run()`-কে crash করায়।** একটি instance পাস করুন,
-  `@UseMiddleware(new SomeClass())`, অথবা `app.useMiddlewares()` ব্যবহার করুন।
 - **স্পষ্ট constructor ছাড়া `@Repository` এবং `@Queue` class dependency
   injection-এর অধীনে ভেঙে যায়।** `constructor() { super(); }` যোগ করুন।
 - **`Results.Created`, `Results.NoContent`,
@@ -1299,7 +1296,7 @@ Redis ছাড়াই job dispatch করে এমন code test করতে
 
 **0.3.0-এর regression** ([known issues](#known-issues-in-030) দেখুন)
 
-- [ ] `@UseMiddleware(SomeClass)` boot-এ crash করায়
+- [x] `@UseMiddleware(SomeClass)` boot-এ crash করায় (0.5.2-এ ঠিক করা হয়েছে)
 - [ ] constructor ছাড়া `@Repository` / `@Queue` class DI-এর অধীনে ভেঙে যায়
 - [ ] `Results`, `HttpResponse.Created` এবং `@HttpCode`-এর status code প্রয়োগ করা
 - [ ] `@Body()` / `@Query()` DTO schema আবার OpenAPI document-এ যুক্ত করা

@@ -128,7 +128,7 @@ These are expected to be fixed in a patch release:
 
 | Issue | Workaround |
 |-------|------------|
-| `@UseMiddleware(SomeClass)` crashes `app.run()` | Pass an instance: `@UseMiddleware(new SomeClass())`, or use `app.useMiddlewares()` |
+| `@UseMiddleware(SomeClass)` crashes `app.run()` | Fixed in 0.5.2. On older versions, pass an instance: `@UseMiddleware(new SomeClass())` |
 | `@Repository` and `@Queue` classes without a constructor break under DI | Add `constructor() { super(); }` |
 | `Results.Created`/`NoContent`/`NotFound`, `HttpResponse.Created` and `@HttpCode` respond with 200 | Throw `HttpExceptions` for error statuses |
 | `@Body()`/`@Query()` DTOs are missing from the OpenAPI document | Describe them with `@OpenApi({ requestBody, query })` |

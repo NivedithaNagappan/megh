@@ -16,9 +16,9 @@ export default defineConfig({
       { text: 'Guide', link: '/getting-started/introduction', activeMatch: '^/(getting-started|core-concept|advanced|microservices|ai)/' },
       { text: 'CLI', link: '/cli/basic', activeMatch: '^/cli/' },
       {
-        text: 'v0.5.1',
+        text: 'v0.5.2',
         items: [
-          { text: 'Upgrading to 0.5.1', link: '/getting-started/upgrading-0.5' },
+          { text: 'Upgrading to 0.5.2', link: '/getting-started/upgrading-0.5' },
           { text: 'Moving from Avleon', link: '/getting-started/upgrading-megh' },
           { text: 'Upgrading to 0.4', link: '/getting-started/upgrading-0.4' },
           { text: 'Upgrading to 0.3', link: '/getting-started/upgrading' },
@@ -34,7 +34,7 @@ export default defineConfig({
           { text: 'Introduction', link: '/getting-started/introduction' },
           { text: 'Installation', link: '/getting-started/installation' },
           { text: 'Usage', link: '/getting-started/usage' },
-          { text: 'Upgrading to 0.5.1', link: '/getting-started/upgrading-0.5' },
+          { text: 'Upgrading to 0.5.2', link: '/getting-started/upgrading-0.5' },
           { text: 'Moving from Avleon', link: '/getting-started/upgrading-megh' },
           { text: 'Upgrading to 0.4', link: '/getting-started/upgrading-0.4' },
           { text: 'Upgrading to 0.3', link: '/getting-started/upgrading' },
