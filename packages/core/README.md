@@ -579,15 +579,21 @@ app.useOpenApi({
 **Config class:**
 
 ```typescript
-import { AppConfig, MeghConfig, Environment } from "@meghjs/core";
+import {
+  AppConfig,
+  MeghConfig,
+  Environment,
+  OpenApiUiOptions,
+} from "@meghjs/core";
 
 @AppConfig
-export class OpenApiConfig extends MeghConfig {
-  config(env: Environment) {
+export class OpenApiConfig extends MeghConfig<OpenApiUiOptions> {
+  config(env: Environment): OpenApiUiOptions {
     return {
       info: { title: "My API", version: "1.0.0" },
       routePrefix: "/docs",
       provider: "scalar", // or 'default' for Swagger UI
+      auth: "bearer", // marks @Authorized routes, for the "Authorize" button
     };
   }
 }
@@ -601,7 +607,7 @@ if (app.isDevelopment()) {
 **Route-level docs with `@OpenApi`:**
 
 ```typescript
-import { OpenApi, OpenApiProperty, OpenApiSchema } from '@meghjs/core';
+import { ApiResponse, Authorized, OpenApi, OpenApiProperty, OpenApiSchema, Paginated } from '@meghjs/core';
 
 @OpenApiSchema()
 export class UserQuery {
@@ -614,24 +620,11 @@ export class UserQuery {
   page?: number;
 }
 
-@OpenApi({
-  summary: 'Get all users',
-  tags: ['users'],
-  security: [{ bearerAuth: [] }],
-  response: {
-    200: {
-      description: 'List of users',
-      type: 'object',
-      properties: {
-        data: { type: 'array' },
-        total: { type: 'integer', example: 100 },
-      },
-    },
-    401: { description: 'Unauthorized' },
-  },
-})
+@OpenApi({ summary: 'Get all users', tags: ['users'] })
+@ApiResponse(200, Paginated(User)) // a MeghORM model or a DTO: { data: User[], meta }
+@Authorized() // documents 401 and 403
 @Get('/')
-getAll(@Query() query: UserQuery) { ... }
+getAll(@Query() query: UserQuery) { ... } // the DTO documents the query and a 400
 ```
 
 Schemas are generated from decorated properties only, and nested DTOs become
@@ -693,8 +686,17 @@ npx megh make:migration create_users_table
 npx megh migrate
 ```
 
-Relations, timestamps, soft deletes, casts, transactions and the migration
-commands are covered in the [MeghORM guide](https://meghjs.github.io/advanced/orm).
+Seeders fill the database, and factories build rows with fake values from
+[Faker](https://fakerjs.dev):
+
+```bash
+npx megh make:factory user      # UserFactory, a Faker value per column
+npx megh make:seeder users      # await UserFactory.createMany(10)
+npx megh migrate --seed         # or: npx megh db:seed
+```
+
+Relations, timestamps, soft deletes, casts, transactions, migrations, seeding
+and factories are covered in the [MeghORM guide](https://meghjs.github.io/advanced/orm).
 
 ---
 

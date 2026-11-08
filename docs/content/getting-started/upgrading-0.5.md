@@ -1,18 +1,73 @@
 ---
-title: Upgrading to 0.5.2
-description: What changes in Megh 0.5.1 and 0.5.2 - useMeghORM, decorator models, the schema builder, the DB query builder, Megh's own DI container, and fixes for scoped middleware and SQL Server paging.
+title: Upgrading to 0.5.3
+description: "What changes in Megh 0.5.1 to 0.5.3: seeders and factories, typed OpenAPI responses, SQL Server fixes, useMeghORM, decorator models, the schema builder and Megh's own DI container."
 ---
 
-# Upgrading to 0.5.2
+# Upgrading to 0.5.3
 
-0.5.1 and 0.5.2 need no code changes: apps written for 0.5.0 keep working.
-0.5.1 brings Megh's own ORM setup and DI container, and deprecates
-`app.useDatabase()`. 0.5.2 is a bug-fix release.
+0.5.1, 0.5.2 and 0.5.3 need no code changes: apps written for 0.5.0 keep
+working. 0.5.1 brings Megh's own ORM setup and DI container, and deprecates
+`app.useDatabase()`. 0.5.2 is a bug-fix release. 0.5.3 adds seeders,
+factories and documented responses, and fixes the ORM on SQL Server.
 
 ```sh
-npm i @meghjs/core@^0.5.2
-npm i -D @meghjs/cli@^0.5.2
+npm i @meghjs/core@^0.5.3
+npm i -D @meghjs/cli@^0.5.3
 ```
+
+## New in 0.5.3
+
+- **Seeders.** `npx megh make:seeder users` writes a seeder, and
+  `npx megh db:seed` (or `megh migrate --seed`) runs them in one transaction,
+  so a failing seeder saves nothing. See
+  [Seeding and Factories](/advanced/orm/seeding).
+- **Factories with Faker.** `defineFactory(User, ({ faker }) => ({ … }))`
+  builds rows with fake values, and `npx megh make:factory user` writes one
+  from the model's columns. Install Faker to use them:
+  `npm i -D @faker-js/faker`. See [Factories](/advanced/orm/seeding#factories).
+- **`megh update:model`.** After an alter-table migration, it brings a model's
+  column fields up to date and keeps relations and methods. See
+  [Updating a model](/cli/generators#updating-a-model).
+- **Relation fields typed with the model.** Write
+  `@BelongsTo(() => Role) role?: Role | null` and `posts?: Post[]` instead of
+  `BelongsTo<Role>` and `HasMany<Post>`, which still work. See
+  [Relations](/advanced/orm/relations).
+- **Documented responses.** `@ApiResponse(200, User)` documents a response
+  with a model or DTO, `Paginated(User)` a page, and Megh adds the `400`,
+  `401` and `403` a route can return. `make:resource` writes them. See
+  [Responses](/microservices/openapi#responses).
+- **Typed OpenAPI options.** `OpenApiUiOptions` types every option, including
+  Swagger UI's settings, and `auth: 'bearer'` marks `@Authorized` routes. See
+  [Securing routes](/microservices/openapi#securing-routes).
+
+## Fixes in 0.5.3
+
+- **Creating rows works on SQL Server.** `create()`, `save()` and
+  `insertGetId()` saved the row, then failed with `Validation failed for
+  parameter '1'. Invalid number.` They now return the row with
+  `OUTPUT inserted.*`.
+- **SQL Server shows the real error.** A failing migration or transaction
+  could report `The ROLLBACK TRANSACTION request has no corresponding BEGIN
+  TRANSACTION` instead of what went wrong, for example a foreign key to a
+  table that doesn't exist.
+- **`dropColumn()` works on SQL Server** for columns with a default.
+- **Optional relation fields are relations.** A field such as
+  `role?: BelongsTo<Role>` was treated as a column, so `create()` accepted it
+  and `with('role')` didn't type-check.
+- **The route decorators' `openapi` option is read.**
+  `@Get('/', { openapi: { … } })` was ignored.
+
+## Changes to note in 0.5.3
+
+- `make:model` writes the column type on nullable columns
+  (`@Column({ nullable: true, type: "string" })`), so OpenAPI can document
+  them. Running `update:model` adds it to fields it generated before.
+- Migrations' `table.string("name", 20)` is read as `varchar(20)`, so
+  `make:resource` DTOs now get `@MaxLength(20)`.
+- `OpenApiResponse()` is deprecated: it documents a `{ code, status, data }`
+  wrapper that Megh doesn't send. Use `@ApiResponse()`.
+- Code that passed a relation to `create()` or `fill()` through an optional
+  marker field now fails to compile, as it should.
 
 ## Fixes in 0.5.2
 
