@@ -16,6 +16,8 @@
  * the marker's runtime definition is read from a probe instance.
  */
 
+import { getModelMetadata } from "./decorators";
+
 /** Brand of a relation marker. */
 export const RELATION: unique symbol = Symbol("megh.orm.relation");
 
@@ -67,7 +69,7 @@ export interface BelongsToManyOptions {
 }
 
 /** The definition as declared, before defaults are filled in. */
-interface DeclaredRelation {
+export interface DeclaredRelation {
   kind: RelationKind;
   related: () => RelatedClass;
   foreignKey?: string;
@@ -199,6 +201,15 @@ export function belongsToMany<C extends RelatedClass>(
   });
 }
 
+/** A relation definition, as the relation decorators record it. */
+export function declareRelation(
+  kind: RelationKind,
+  related: () => RelatedClass,
+  options: Omit<DeclaredRelation, "kind" | "related"> = {},
+): DeclaredRelation {
+  return { kind, related, ...options };
+}
+
 export function isRelationMarker(value: unknown): boolean {
   return !!value && typeof value === "object" && RELATION in value;
 }
@@ -212,7 +223,10 @@ export function snakeCase(name: string): string {
 
 const cache = new WeakMap<Function, Map<string, RelationDefinition>>();
 
-/** Relations of a model class, read once from a probe instance. */
+/**
+ * Relations of a model class: those declared with decorators, and those
+ * declared as field initializers, read once from a probe instance.
+ */
 export function getRelations(
   cls: (new () => any) & { primaryKey?: string },
 ): Map<string, RelationDefinition> {
@@ -220,6 +234,9 @@ export function getRelations(
   if (defs) return defs;
 
   defs = new Map();
+  for (const [name, declared] of getModelMetadata(cls)?.relations ?? []) {
+    defs.set(name, resolve(cls, name, declared));
+  }
   const probe = new cls();
   for (const [name, value] of Object.entries(probe)) {
     if (!isRelationMarker(value)) continue;

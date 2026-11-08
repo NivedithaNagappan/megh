@@ -32,31 +32,34 @@ describe("make:migration", () => {
 
   it("create_<table>_table gives a create-table migration", () => {
     const content = read(makeMigration("create_blog_posts_table", { cwd: tmp, now: NOW }));
-    expect(content).toContain('.createTable("blog_posts")');
-    expect(content).toContain('.addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())');
-    expect(content).toContain('await db.schema.dropTable("blog_posts").execute();');
+    expect(content).toContain('import { defineMigration } from "@meghjs/core";');
+    expect(content).toContain('await schema.create("blog_posts", (table) => {');
+    expect(content).toContain("table.id();");
+    expect(content).toContain("table.timestamps();");
+    expect(content).toContain('await schema.drop("blog_posts");');
   });
 
-  it("uses serial ids for Postgres projects", () => {
+  it("writes the same create-table migration for every database", () => {
     fs.writeFileSync(path.join(tmp, "package.json"), JSON.stringify({ name: "x", dependencies: { pg: "^8" } }));
     const content = read(makeMigration("create_users_table", { cwd: tmp, now: NOW }));
-    expect(content).toContain('.addColumn("id", "serial", (col) => col.primaryKey())');
+    expect(content).toContain("table.id();");
+    expect(content).not.toContain("kysely");
   });
 
   it("add_x_to_<table>_table gives an alter-table migration", () => {
     const content = read(makeMigration("add_role_to_users_table", { cwd: tmp, now: NOW }));
-    expect(content).toContain('alterTable("users")');
-    expect(content).not.toContain("createTable");
+    expect(content).toContain('schema.table("users"');
+    expect(content).not.toContain("schema.create");
   });
 
   it("--create / --table override the guess; other names are blank", () => {
-    expect(read(makeMigration("users", { cwd: tmp, now: NOW, create: "people" }))).toContain('.createTable("people")');
+    expect(read(makeMigration("users", { cwd: tmp, now: NOW, create: "people" }))).toContain('schema.create("people"');
     expect(read(makeMigration("add_index", { cwd: tmp, now: new Date(2026, 10, 1, 9, 31), table: "users" }))).toContain(
-      'alterTable("users")',
+      'schema.table("users"',
     );
     const blank = read(makeMigration("seed_roles", { cwd: tmp, now: NOW }));
-    expect(blank).toContain("export async function up(db: Kysely<any>)");
-    expect(blank).not.toMatch(/createTable|alterTable/);
+    expect(blank).toContain("export default defineMigration({");
+    expect(blank).not.toMatch(/schema\.(create|table)\("/);
   });
 
   it("honours megh.migrations and refuses to overwrite", () => {
@@ -94,17 +97,10 @@ describe("migrate commands", () => {
     root = fs.mkdtempSync(path.join(base, "app-"));
     fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "app" }));
     fs.mkdirSync(path.join(root, "src", "database"), { recursive: true });
-    fs.writeFileSync(path.join(root, ".env"), `DB_FILE=${path.join(root, "db.sqlite")}\n`);
+    // No connection module: the CLI connects from DATABASE_URL, like app.useMeghORM().
     fs.writeFileSync(
-      path.join(root, "src", "database", "connection.ts"),
-      [
-        'import { Kysely, SqliteDialect } from "kysely";',
-        'import Database from "better-sqlite3";',
-        "",
-        "export default new Kysely<any>({",
-        "  dialect: new SqliteDialect({ database: new Database(process.env.DB_FILE!) }),",
-        "});",
-      ].join("\n"),
+      path.join(root, ".env"),
+      `DATABASE_URL=sqlite:${path.join(root, "db.sqlite")}\nDB_FILE=${path.join(root, "db.sqlite")}\n`,
     );
     out = [];
     err = [];
@@ -177,9 +173,46 @@ describe("migrate commands", () => {
     expect(tables()).toEqual(["users"]);
   });
 
-  it("explains a missing connection module", async () => {
-    fs.rmSync(path.join(root, "src", "database", "connection.ts"));
+  it("still uses a src/database/connection.ts that exports a Kysely instance", async () => {
+    fs.writeFileSync(path.join(root, ".env"), `DB_FILE=${path.join(root, "db.sqlite")}\n`);
+    fs.writeFileSync(
+      path.join(root, "src", "database", "connection.ts"),
+      [
+        'import { Kysely, SqliteDialect } from "kysely";',
+        'import Database from "better-sqlite3";',
+        "",
+        "export default new Kysely<any>({",
+        "  dialect: new SqliteDialect({ database: new Database(process.env.DB_FILE!) }),",
+        "});",
+      ].join("\n"),
+    );
+    makeMigration("create_users_table", { cwd: root, now: new Date(2026, 0, 1) });
+
+    expect(await runCli(["migrate"], { cwd: root })).toBe(0);
+    expect(tables()).toEqual(["users"]);
+  });
+
+  it("takes settings from megh.database in package.json", async () => {
+    fs.writeFileSync(path.join(root, ".env"), "");
+    fs.writeFileSync(
+      path.join(root, "package.json"),
+      JSON.stringify({ name: "app", megh: { database: { dialect: "sqlite", database: path.join(root, "db.sqlite") } } }),
+    );
+    makeMigration("create_users_table", { cwd: root, now: new Date(2026, 0, 1) });
+
+    expect(await runCli(["migrate"], { cwd: root })).toBe(0);
+    expect(tables()).toEqual(["users"]);
+  });
+
+  it("explains what to set when no database is configured", async () => {
+    fs.writeFileSync(path.join(root, ".env"), "");
     expect(await runCli(["migrate"], { cwd: root })).toBe(1);
-    expect(err.join("\n")).toContain("No database connection module at src/database/connection.ts");
+    expect(err.join("\n")).toContain("No database configured. Set DATABASE_URL");
+  });
+
+  it("explains a megh.database path that doesn't exist", async () => {
+    fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "app", megh: { database: "src/db.ts" } }));
+    expect(await runCli(["migrate"], { cwd: root })).toBe(1);
+    expect(err.join("\n")).toContain("No database connection module at src/db.ts");
   });
 });

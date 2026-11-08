@@ -372,14 +372,6 @@ export function migrationTimestamp(date = new Date()): string {
   );
 }
 
-/** The `id` column for the project's database driver. */
-function idColumn(pkg: Record<string, any>): string {
-  const deps = { ...pkg?.dependencies, ...pkg?.devDependencies };
-  if (deps.pg || deps.postgres) return `.addColumn("id", "serial", (col) => col.primaryKey())`;
-  if (deps.tedious) return `.addColumn("id", "integer", (col) => col.identity().primaryKey())`;
-  return `.addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())`;
-}
-
 /**
  * Create `<migrations>/<timestamp>_<name>.ts`. `create_<table>_table` gives a
  * create-table migration, `add_x_to_<table>_table` (also from/in, and
@@ -399,7 +391,7 @@ export function makeMigration(name: string, opts: MakeMigrationOptions = {}): st
     (opts.create ? undefined : snake.match(/^(?:add|remove|drop|alter|change|update)_\w+_(?:to|from|in|on)_(\w+?)_table$/)?.[1]);
 
   const content = createTable
-    ? renderStub("migrations/create-table.stub", { table: createTable, idColumn: idColumn(pkg) })
+    ? renderStub("migrations/create-table.stub", { table: createTable })
     : alterTable
       ? renderStub("migrations/alter-table.stub", { table: alterTable })
       : renderStub("migrations/migration.stub");

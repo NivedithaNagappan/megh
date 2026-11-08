@@ -32,4 +32,50 @@ export default [
       "@typescript-eslint/no-explicit-any": "warn",
     },
   },
+  // The ORM is a plugin that will move to @meghjs/orm. Only orm/core.ts may
+  // reach into core; everything else in orm/ goes through it. Tests may use
+  // core directly to build apps.
+  {
+    files: ["src/orm/**/*.ts"],
+    ignores: ["src/orm/core.ts", "src/orm/**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["../*", "!../orm/*"],
+              message:
+                "Import core through ./core so the ORM can move to @meghjs/orm.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // Core doesn't depend on the ORM, apart from registering it as a built-in
+  // plugin and re-exporting its API.
+  {
+    files: ["src/**/*.ts"],
+    ignores: [
+      "src/orm/**",
+      "src/plugins/builtin.ts",
+      "src/index.ts",
+      "src/**/*.test.ts",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/orm", "**/orm/*"],
+              message:
+                "Core must not depend on the ORM; it will move to @meghjs/orm.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];

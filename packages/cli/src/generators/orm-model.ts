@@ -90,56 +90,71 @@ export function fieldType(sqlType: string): FieldType {
   return { ts: "unknown" };
 }
 
-const TIMESTAMPS = ["created_at", "updated_at"];
+/** Columns with their own decorator, filled in by the ORM. */
+const TIMESTAMP_DECORATORS: Record<string, string> = {
+  created_at: "CreatedAt",
+  updated_at: "UpdatedAt",
+  deleted_at: "DeletedAt",
+};
+
+/** Column type for a cast, so the column converts its values. */
+const CAST_TYPES: Partial<Record<Cast, string>> = {
+  boolean: "boolean",
+  json: "json",
+  date: "date",
+  datetime: "datetime",
+};
 
 /** A model class for `table`, declaring the columns its migrations create. */
 export function renderOrmModel(model: string, table: MigrationTable): string {
-  const columns = table.columns;
-  const has = (name: string) => columns.some((c) => c.name === name);
-  const timestamps = TIMESTAMPS.every(has);
-  const softDeletes = has("deleted_at");
-  const implicit = new Set([...(timestamps ? TIMESTAMPS : []), ...(softDeletes ? ["deleted_at"] : [])]);
-
-  const pk = columns.find((c) => c.primaryKey);
-  const statics: string[] = [`static readonly table = ${q(table.name)};`];
-  if (pk && pk.name !== "id") statics.push(`static readonly primaryKey = ${q(pk.name)};`);
-
-  // `generated` defaults to ["id"]; spell it out when that is wrong.
-  const generated = columns.filter((c) => c.generated && !implicit.has(c.name)).map((c) => c.name);
-  const isDefault = generated.length === 1 && generated[0] === "id";
-  if (!isDefault && (generated.length > 0 || has("id"))) {
-    statics.push(`static readonly generated = [${generated.map(q).join(", ")}] as const;`);
-  }
-  if (timestamps) statics.push("static readonly timestamps = true;");
-  if (softDeletes) statics.push("static readonly softDeletes = true;");
-
-  const casts: string[] = [];
-  const fields = columns.map((column) => {
-    const { ts, cast } = fieldType(column.type);
-    if (cast && !implicit.has(column.name)) casts.push(`${property(column.name)}: ${q(cast)}`);
-    return `${property(column.name)}!: ${nullable(column, ts, implicit)};`;
+  const imports = new Set(["Model", "Table"]);
+  const fields = table.columns.map((column) => {
+    const { decorators, field } = renderField(column);
+    for (const d of decorators) imports.add(d.match(/^@(\w+)/)![1]);
+    return `${decorators.join(" ")} ${field}`;
   });
-  if (casts.length > 0) {
-    statics.push(`static readonly casts = {\n    ${casts.join(",\n    ")},\n  } as const;`);
-  }
 
   return renderStub("models/orm-model.stub", {
+    imports: [...imports].sort().join(", "),
     Model: model,
+    table: q(table.name),
     source: table.createdIn,
-    statics: statics.join("\n  "),
     fields: fields.join("\n  "),
   });
+}
+
+/** The decorators and declaration of one column. */
+function renderField(column: MigrationColumn): { decorators: string[]; field: string } {
+  const { ts, cast } = fieldType(column.type);
+  const name = property(column.name);
+
+  const timestamp = TIMESTAMP_DECORATORS[column.name];
+  if (timestamp && ts === "Date") {
+    const type = timestamp === "DeletedAt" ? "Date | null" : "Date";
+    return { decorators: [`@${timestamp}()`], field: `${name}?: ${type};` };
+  }
+
+  const decorators: string[] = [];
+  if (column.primaryKey) decorators.push("@PrimaryKey()");
+  if (column.autoIncrement) decorators.push("@AutoIncrement()");
+
+  const options: string[] = [];
+  if (!column.notNull) options.push("nullable: true");
+  if (cast && CAST_TYPES[cast]) options.push(`type: ${q(CAST_TYPES[cast]!)}`);
+  else if (cast === "number") options.push(`cast: "number"`); // e.g. Postgres bigint, read as text
+  // Key columns are already declared by @PrimaryKey / @AutoIncrement.
+  if (options.length > 0 || decorators.length === 0) {
+    decorators.push(options.length ? `@Column({ ${options.join(", ")} })` : "@Column()");
+  }
+
+  // `?`: the database fills it in (auto-increment or a default), so create() may leave it out.
+  const mark = column.generated ? "?" : "!";
+  return { decorators, field: `${name}${mark}: ${column.notNull ? ts : `${ts} | null`};` };
 }
 
 /** A model class for a table with no migration yet: placeholder columns. */
 export function renderBlankOrmModel(model: string, table: string): string {
   return renderStub("models/orm-model-blank.stub", { Model: model, table: q(table) });
-}
-
-function nullable(column: MigrationColumn, ts: string, implicit: Set<string>): string {
-  // Timestamps are always filled in, even when the column allows NULL.
-  if (column.notNull || (implicit.has(column.name) && column.name !== "deleted_at")) return ts;
-  return `${ts} | null`;
 }
 
 const q = (value: string) => JSON.stringify(value);

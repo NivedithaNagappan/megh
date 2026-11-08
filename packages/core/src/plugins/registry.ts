@@ -2,6 +2,7 @@ import type { MeghApplication } from "../core/application";
 import { Container } from "../di";
 import { LoggerService } from "../observability/logger";
 import { SystemUseError } from "../common/exceptions/system-exception";
+import { BUILTIN_PLUGINS } from "./builtin";
 import { discoverPlugins } from "./discovery";
 import { assertPlugin, type MeghPlugin, type PluginContext } from "./plugin";
 
@@ -13,12 +14,15 @@ export type PluginOptions = {
 };
 
 /**
- * Register the app's plugins, dependencies first, and return their names in
- * registration order.
+ * Register the app's plugins, dependencies first, and return the names of
+ * the installed and explicitly given ones in registration order. Core's
+ * built-in plugins are registered too, unless a plugin with the same name
+ * replaces them, but aren't listed.
  */
 export function registerPlugins(
   app: MeghApplication,
   options: PluginOptions = {},
+  builtins: readonly MeghPlugin[] = BUILTIN_PLUGINS,
 ): string[] {
   const byName = new Map<string, MeghPlugin>();
   for (const plugin of options.plugins ?? []) {
@@ -34,6 +38,13 @@ export function registerPlugins(
     for (const plugin of discoverPlugins()) {
       if (!byName.has(plugin.name)) byName.set(plugin.name, plugin);
     }
+  }
+
+  const builtin = new Set<MeghPlugin>();
+  for (const plugin of builtins) {
+    if (byName.has(plugin.name)) continue;
+    byName.set(plugin.name, plugin);
+    builtin.add(plugin);
   }
 
   const ordered = sortByDependencies(byName);
@@ -53,7 +64,7 @@ export function registerPlugins(
       );
     }
   }
-  return ordered.map((p) => p.name);
+  return ordered.filter((p) => !builtin.has(p)).map((p) => p.name);
 }
 
 function createContext(

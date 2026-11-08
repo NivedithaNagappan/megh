@@ -69,7 +69,7 @@ describe("make:resource from a migration", () => {
       "src/services/user.service.ts",
       "src/controllers/user.controller.ts",
     ]);
-    expect(read("src", "models", "user.model.ts")).toContain('static readonly table = "users";');
+    expect(read("src", "models", "user.model.ts")).toContain('@Table("users")');
   });
 
   it("validates the writable columns in the DTOs", () => {
@@ -129,7 +129,7 @@ describe("make:resource from a migration", () => {
 
   it("reads another table with --table", () => {
     makeResource("member", { cwd: tmp, table: "users" });
-    expect(read("src", "models", "member.model.ts")).toContain('static readonly table = "users";');
+    expect(read("src", "models", "member.model.ts")).toContain('@Table("users")');
     expect(read("src", "dtos", "member.dto.ts")).toContain("email!: string;");
   });
 
@@ -235,6 +235,35 @@ export class Order {
 });
 
 describe("readModelSchema", () => {
+  it("reads a model described with decorators", () => {
+    const schema = readModelSchema(`import { Model, Table, Column, PrimaryKey, AutoIncrement, CreatedAt, HasMany } from "@meghjs/core";
+
+@Table("orders")
+export class Order extends Model {
+  @PrimaryKey() @AutoIncrement() id?: number;
+  @Column() customer_id!: number;
+  @Column({ nullable: true }) note!: string | null;
+  @Column({
+    type: "decimal",
+    cast: "number",
+  })
+  total!: number;
+  @Column({ default: "new" }) status?: string;
+  @CreatedAt() created_at?: Date;
+
+  @HasMany(() => Line) lines!: HasMany<Line>;
+  private cache!: string;
+  scratch!: string;
+}`);
+    expect(schema).toMatchObject({ kind: "megh", table: "orders", primaryKey: "id", primaryKeyType: "number" });
+    expect(schema.inputFields).toEqual([
+      { name: "customer_id", ts: "number", nullable: false, generated: false },
+      { name: "note", ts: "string", nullable: true, generated: false },
+      { name: "total", ts: "number", nullable: false, generated: false },
+      { name: "status", ts: "string", nullable: false, generated: true },
+    ]);
+  });
+
   it("reads TypeORM columns, with multi-line decorators", () => {
     const schema = readModelSchema(`@Entity('orders')
 export class Order {

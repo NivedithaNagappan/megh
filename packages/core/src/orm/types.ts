@@ -122,13 +122,14 @@ type Loaded<M, P extends string> = {
 
 /**
  * A query result: the selected columns `S`, the relations loaded through
- * paths `P`, and the model's methods and getters.
+ * paths `P`, and the model's methods and getters. Columns declared optional
+ * (`id?: number`, filled in by the database) are present on loaded rows.
  */
 export type Row<
   M,
   P extends string = never,
   S extends ColumnKeys<M> = ColumnKeys<M>,
-> = Pick<Columns<M>, S> & Loaded<M, P> & Members<M>;
+> = Required<Pick<Columns<M>, S>> & Loaded<M, P> & Members<M>;
 
 /** The static side of a model class. */
 export interface ModelClass<M = any> {
@@ -138,8 +139,8 @@ export interface ModelClass<M = any> {
   readonly primaryKey: string;
   readonly generated: readonly string[];
   readonly timestamps: boolean;
-  readonly createdAt: string;
-  readonly updatedAt: string;
+  readonly createdAt: string | null;
+  readonly updatedAt: string | null;
   readonly softDeletes: boolean;
   readonly deletedAt: string;
   readonly casts: Readonly<Record<string, Cast>>;
@@ -163,7 +164,15 @@ export type TimestampKeys<C extends ModelClass> = C["timestamps"] extends true
 
 /** Columns `create()` may leave out. */
 type OptionalKeys<C extends ModelClass> =
-  GeneratedKeys<C> | TimestampKeys<C> | NullableKeys<InstanceType<C>>;
+  | GeneratedKeys<C>
+  | TimestampKeys<C>
+  | NullableKeys<InstanceType<C>>
+  | OptionalFieldKeys<InstanceType<C>>;
+
+/** Columns declared with `?`, such as `@AutoIncrement() id?: number`. */
+type OptionalFieldKeys<M> = {
+  [K in ColumnKeys<M>]-?: {} extends Pick<Columns<M>, K> ? K : never;
+}[ColumnKeys<M>];
 
 type NullableKeys<M> = {
   [K in ColumnKeys<M>]: null extends M[K] ? K : never;

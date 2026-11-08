@@ -53,6 +53,74 @@ export async function down(db: Kysely<any>): Promise<void> {
 }
 `;
 
+describe("readMigrationSchema with defineMigration", () => {
+  it("replays schema.create / table / rename / drop", () => {
+    migration(
+      "20260101000000_create_users_table.ts",
+      `import { defineMigration } from "@meghjs/core";
+export default defineMigration({
+  async up(schema) {
+    await schema.create("users", (table) => {
+      table.id();
+      table.string("email", 100).unique();
+      table.string("name").nullable();
+      // table.string("ignored");
+      table.boolean("is_admin").default(false);
+      table.json("settings").nullable();
+      table.decimal("balance", 10, 2);
+      table.foreignId("team_id").nullable().constrained();
+      table.timestamps();
+      table.softDeletes();
+    });
+    await schema.create("tmp", (t) => t.id());
+  },
+  async down(schema) {
+    await schema.drop("users");
+  },
+});`,
+    );
+    migration(
+      "20260102000000_change_users.ts",
+      `import { defineMigration } from "@meghjs/core";
+export default defineMigration({
+  up: async (schema) => {
+    await schema.table("users", (t) => {
+      t.text("bio").nullable();
+      t.renameColumn("name", "full_name");
+      t.dropColumn("settings");
+    });
+    await schema.dropIfExists("tmp");
+    await schema.rename("users", "members");
+  },
+});`,
+    );
+
+    const tables = readMigrationSchema(migrationsDir());
+    expect([...tables.keys()]).toEqual(["members"]);
+    const members = tables.get("members")!;
+    expect(members.createdIn).toBe("20260101000000_create_users_table.ts");
+    expect(members.columns.map((c) => c.name)).toEqual([
+      "id",
+      "email",
+      "full_name",
+      "is_admin",
+      "balance",
+      "team_id",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+      "bio",
+    ]);
+    const col = (name: string) => members.columns.find((c) => c.name === name)!;
+    expect(col("id")).toMatchObject({ primaryKey: true, autoIncrement: true, notNull: true });
+    expect(col("email")).toMatchObject({ type: "varchar", notNull: true });
+    expect(col("full_name").notNull).toBe(false);
+    expect(col("is_admin")).toMatchObject({ type: "boolean", generated: true });
+    expect(col("team_id").notNull).toBe(false);
+    expect(col("deleted_at").notNull).toBe(false);
+  });
+});
+
 describe("readMigrationSchema", () => {
   it("reads create-table columns and their modifiers, ignoring down() and comments", () => {
     migration("20260101000000_create_users_table.ts", CREATE_USERS);
@@ -165,29 +233,21 @@ describe("make:model", () => {
   it("declares the columns of the migration that creates the table", () => {
     migration("20260101000000_create_users_table.ts", CREATE_USERS);
     makeModel("user", { cwd: tmp });
-    expect(read("src", "models", "user.model.ts")).toBe(`import { Model } from "@meghjs/core";
+    expect(read("src", "models", "user.model.ts"))
+      .toBe(`import { AutoIncrement, Column, CreatedAt, Model, PrimaryKey, Table, UpdatedAt } from "@meghjs/core";
 
 // Columns read from the migrations (the table is created in 20260101000000_create_users_table.ts).
+@Table("users")
 export class User extends Model {
-  static readonly table = "users";
-  static readonly generated = ["id", "is_admin"] as const;
-  static readonly timestamps = true;
-  static readonly casts = {
-    is_admin: "boolean",
-    settings: "json",
-    born_on: "date",
-    balance: "number",
-  } as const;
-
-  id!: number;
-  email!: string;
-  name!: string | null;
-  is_admin!: boolean;
-  settings!: Record<string, unknown> | null;
-  born_on!: Date | null;
-  balance!: number;
-  created_at!: Date;
-  updated_at!: Date;
+  @PrimaryKey() @AutoIncrement() id?: number;
+  @Column() email!: string;
+  @Column({ nullable: true }) name!: string | null;
+  @Column({ type: "boolean" }) is_admin?: boolean;
+  @Column({ nullable: true, type: "json" }) settings!: Record<string, unknown> | null;
+  @Column({ nullable: true, type: "date" }) born_on!: Date | null;
+  @Column({ cast: "number" }) balance!: number;
+  @CreatedAt() created_at?: Date;
+  @UpdatedAt() updated_at?: Date;
 }
 `);
   });
@@ -205,13 +265,10 @@ export class User extends Model {
     );
     makeModel("BlogPost", { cwd: tmp });
     const content = read("src", "models", "blog-post.model.ts");
-    expect(content).toContain('static readonly primaryKey = "uuid";');
-    expect(content).toContain('static readonly generated = ["views"] as const;');
-    expect(content).toContain("static readonly softDeletes = true;");
-    expect(content).toContain("deleted_at!: Date | null;");
-    expect(content).toContain("uuid!: string;");
-    expect(content).toContain("views!: number;");
-    expect(content).toContain('views: "number"'); // Postgres returns bigint as text
+    expect(content).toContain("@PrimaryKey() uuid!: string;");
+    // Postgres returns bigint as text: the cast reads it as a number.
+    expect(content).toContain('@AutoIncrement() @Column({ cast: "number" }) views?: number;');
+    expect(content).toContain("@DeletedAt() deleted_at?: Date | null;");
   });
 
   it("uses an explicit table, or the singular name when that is what exists", () => {
@@ -223,20 +280,20 @@ export class User extends Model {
       }`,
     );
     makeModel("person", { cwd: tmp });
-    expect(read("src", "models", "person.model.ts")).toContain('static readonly table = "person";');
+    expect(read("src", "models", "person.model.ts")).toContain('@Table("person")');
     makeModel("account", { cwd: tmp, table: "app_accounts" });
     const account = read("src", "models", "account.model.ts");
-    expect(account).toContain('static readonly table = "app_accounts";');
+    expect(account).toContain('@Table("app_accounts")');
     // A primary key without auto-increment is not generated: create() requires it.
-    expect(account).toContain("static readonly generated = [] as const;");
+    expect(account).toContain("@PrimaryKey() id!: number;");
   });
 
   it("falls back to a placeholder model when no migration creates the table", () => {
     makeModel("product", { cwd: tmp });
     const content = read("src", "models", "product.model.ts");
     expect(content).toContain("export class Product extends Model");
-    expect(content).toContain('static readonly table = "products";');
-    expect(content).toContain("id!: number;");
+    expect(content).toContain('@Table("products")');
+    expect(content).toContain("@PrimaryKey() @AutoIncrement() id?: number;");
     expect(content).not.toMatch(/\{(Model|table|statics|fields|source)\}/);
   });
 
@@ -246,6 +303,6 @@ export class User extends Model {
 
     migration("20260101000000_create_users_table.ts", CREATE_USERS);
     expect(await runCli(["make:model", "admin/User", "-t", "users"], { cwd: tmp })).toBe(0);
-    expect(read("src", "models", "admin", "user.model.ts")).toContain("email!: string;");
+    expect(read("src", "models", "admin", "user.model.ts")).toContain("@Column() email!: string;");
   });
 });

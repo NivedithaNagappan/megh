@@ -1,10 +1,10 @@
-import { Model } from "@meghjs/core";
+import { AutoIncrement, Column, Model, PrimaryKey, Table } from "@meghjs/core";
 
+@Table({table})
 export class {Model} extends Model {
-  static readonly table = {table};
+  @PrimaryKey() @AutoIncrement() id?: number;
 
-  id!: number;
-  // One field per column, e.g.:
-  // email!: string;
-  // name!: string | null;
+  // One decorated field per column, e.g.:
+  // @Column() email!: string;
+  // @Column({ nullable: true }) name!: string | null;
 }

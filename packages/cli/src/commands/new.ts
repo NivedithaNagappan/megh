@@ -10,9 +10,26 @@ import { ENV_TYPES_FILE, envTypesFile } from "../utils/env-types";
 export const PACKAGE_MANAGERS = ["npm", "yarn", "pnpm"] as const;
 export type PackageManager = (typeof PACKAGE_MANAGERS)[number];
 
-export const FEATURES = ["openapi", "cors", "typeorm", "knex", "scalar"] as const;
+export const FEATURES = ["openapi", "cors", "orm", "typeorm", "knex", "scalar"] as const;
 export type Feature = (typeof FEATURES)[number];
 const DEFAULT_FEATURES: Feature[] = ["openapi"];
+
+/** Databases MeghORM (the `orm` feature) can connect to. */
+export const DATABASES = ["postgres", "mysql", "sqlite", "mssql"] as const;
+export type DatabaseKind = (typeof DATABASES)[number];
+/** SQLite needs no server, so a project made with `--yes` runs straight away. */
+const DEFAULT_DATABASE: DatabaseKind = "sqlite";
+
+/** Per database: the driver packages, and the `DATABASE_URL` written to `.env`. */
+const DATABASE_SETUP: Record<DatabaseKind, { drivers: string[]; url: string }> = {
+  postgres: { drivers: ["pg"], url: "postgres://postgres:postgres@localhost:5432/{name}" },
+  mysql: { drivers: ["mysql2"], url: "mysql://root:root@localhost:3306/{name}" },
+  sqlite: { drivers: ["better-sqlite3"], url: "sqlite:./database.sqlite" },
+  mssql: {
+    drivers: ["tedious", "tarn"],
+    url: "mssql://sa:YourStrong!Passw0rd@localhost:1433/{name}?trustServerCertificate=true",
+  },
+};
 
 export type NewOptions = {
   cwd?: string;
@@ -22,6 +39,8 @@ export type NewOptions = {
   yes?: boolean;
   pm?: string;
   features?: string[];
+  /** Database for the `orm` feature: postgres, mysql, sqlite or mssql. Implies `orm`. */
+  database?: string;
   /** Skip `<pm> install`. Also enabled by the `MEGH_SKIP_INSTALL=1` environment variable. */
   skipInstall?: boolean;
 };
@@ -34,6 +53,10 @@ const DEP_VERSIONS: Record<string, string> = {
   "@fastify/cors": "^11.0.0",
   typeorm: "^0.3.20",
   pg: "^8.11.0",
+  mysql2: "^3.11.0",
+  "better-sqlite3": "^12.0.0",
+  tedious: "^19.0.0",
+  tarn: "^3.0.2",
   knex: "^3.1.0",
   "@scalar/fastify-api-reference": "^1.0.0",
   typescript: "^5.7.2",
@@ -56,14 +79,25 @@ function validateFeatures(features: string[]): Feature[] {
   return features as Feature[];
 }
 
-async function prompt(opts: NewOptions): Promise<{ pm: PackageManager; features: Feature[] }> {
+type Answers = { pm: PackageManager; features: Feature[]; database?: DatabaseKind };
+
+async function prompt(opts: NewOptions): Promise<Answers> {
   if (opts.pm && !(PACKAGE_MANAGERS as readonly string[]).includes(opts.pm)) {
     throw new CliError(`Unknown package manager "${opts.pm}". Choose from: ${PACKAGE_MANAGERS.join(", ")}.`);
+  }
+  if (opts.database && !(DATABASES as readonly string[]).includes(opts.database)) {
+    throw new CliError(`Unknown database "${opts.database}". Choose from: ${DATABASES.join(", ")}.`);
+  }
+  if (opts.database && opts.minimal) {
+    throw new CliError("--database sets up MeghORM, which needs a full project. Leave out --minimal.");
   }
   const interactive = !opts.yes && process.stdin.isTTY === true && process.stdout.isTTY === true;
   let pm = opts.pm as PackageManager | undefined;
   let features = opts.features ? validateFeatures(opts.features) : undefined;
   if (opts.minimal) features = [];
+  let database = opts.database as DatabaseKind | undefined;
+  // --database implies the ORM.
+  if (database && features && !features.includes("orm")) features = [...features, "orm"];
 
   if (interactive && (!pm || !features)) {
     const { default: inquirer } = await import("inquirer");
@@ -87,6 +121,7 @@ async function prompt(opts: NewOptions): Promise<{ pm: PackageManager; features:
           choices: [
             { name: "OpenAPI / Swagger docs", value: "openapi", checked: true },
             { name: "CORS support", value: "cors" },
+            { name: "MeghORM: models, migrations and a query builder", value: "orm", checked: !!database },
             { name: "TypeORM", value: "typeorm" },
             { name: "Knex", value: "knex" },
             { name: "Scalar UI (replaces Swagger UI)", value: "scalar" },
@@ -94,11 +129,37 @@ async function prompt(opts: NewOptions): Promise<{ pm: PackageManager; features:
         },
       ]));
     }
+    if (features!.includes("orm") && !database) {
+      ({ database } = await inquirer.prompt([
+        {
+          type: "list",
+          name: "database",
+          message: "Database:",
+          choices: [
+            { name: "PostgreSQL", value: "postgres" },
+            { name: "MySQL / MariaDB", value: "mysql" },
+            { name: "SQLite (a file, no server)", value: "sqlite" },
+            { name: "SQL Server", value: "mssql" },
+          ],
+          default: DEFAULT_DATABASE,
+        },
+      ]));
+    }
   }
-  return { pm: pm ?? "npm", features: features ?? DEFAULT_FEATURES };
+  const chosen = features ?? (database ? [...DEFAULT_FEATURES, "orm" as const] : DEFAULT_FEATURES);
+  return {
+    pm: pm ?? "npm",
+    features: chosen,
+    database: chosen.includes("orm") ? (database ?? DEFAULT_DATABASE) : undefined,
+  };
 }
 
-export function packageJson(name: string, features: Feature[], minimal: boolean): string {
+export function packageJson(
+  name: string,
+  features: Feature[],
+  minimal: boolean,
+  database: DatabaseKind = DEFAULT_DATABASE,
+): string {
   const v = cliVersion();
   const deps: Record<string, string> = {
     "@meghjs/core": coreRange(),
@@ -110,6 +171,7 @@ export function packageJson(name: string, features: Feature[], minimal: boolean)
   if (usesData(features)) deps["@meghjs/data"] = `^${v}`;
   if (features.includes("typeorm")) pick("typeorm", "pg");
   if (features.includes("knex")) pick("knex", "pg");
+  if (features.includes("orm")) pick(...DATABASE_SETUP[database].drivers);
   if (features.includes("scalar")) pick("@scalar/fastify-api-reference");
 
   const devDeps: Record<string, string> = {};
@@ -163,6 +225,9 @@ function appSource(features: Feature[]) {
   }
   if (features.includes("cors")) setup.push(`app.useCors({ origin: '*' });`);
   if (imports.length) setup.push(`if (app.isDevelopment()) {\n  app.useOpenApi(OpenApiConfig);\n}`);
+  if (features.includes("orm")) {
+    setup.push(`// Connects from DATABASE_URL in .env; megh migrate uses the same setting.\napp.useMeghORM();`);
+  }
   if (features.includes("typeorm")) {
     setup.push(
       `// TODO: pass your TypeORM DataSourceOptions (or an @AppConfig class)\n` +
@@ -211,7 +276,8 @@ export async function createApplication(name: string, opts: NewOptions = {}): Pr
     }
   }
 
-  const { pm, features } = await prompt(opts);
+  const { pm, features, database } = await prompt(opts);
+  const orm = features.includes("orm") && database ? DATABASE_SETUP[database] : undefined;
 
   console.log();
   console.log(c.bold(c.cyan("  Megh")) + c.dim(` v${cliVersion()}`));
@@ -241,12 +307,20 @@ export async function createApplication(name: string, opts: NewOptions = {}): Pr
     add("vitest.e2e.config.mts", renderStub("project/vitest-e2e.config.stub"));
   }
   add("src/serve.ts", renderStub("project/serve.stub"));
-  add("package.json", packageJson(appName, features, minimal));
+  add("package.json", packageJson(appName, features, minimal, database));
   add("tsconfig.json", renderStub("project/tsconfig.stub"));
   add(ENV_TYPES_FILE, envTypesFile(usesData(features) ? ["@meghjs/data"] : []));
   add("tsconfig.build.json", renderStub("project/tsconfig.build.stub"));
-  add(".gitignore", renderStub("project/gitignore.stub"));
-  add(".env", renderStub("project/env.stub"));
+  let gitignore = renderStub("project/gitignore.stub");
+  let env = renderStub("project/env.stub");
+  if (orm) {
+    const url = orm.url.replace("{name}", kebabCase(appName).replace(/-/g, "_") || "app");
+    env = env.replace(/\n*$/, "\n") + `\n# MeghORM: app.useMeghORM() and megh migrate connect with this.\nDATABASE_URL=${url}\n`;
+    if (database === "sqlite") gitignore = gitignore.replace(/\n*$/, "\n") + "database.sqlite\n";
+    add("src/database/migrations/.gitkeep", "");
+  }
+  add(".gitignore", gitignore);
+  add(".env", env);
   add(
     "README.md",
     renderStub("project/readme.stub", {
@@ -287,6 +361,11 @@ export async function createApplication(name: string, opts: NewOptions = {}): Pr
   console.log(`\n  ${c.dim("Next steps:")}`);
   if (rel(root) !== ".") console.log(c.cyan(`    cd ${rel(root)}`));
   if (skipInstall) console.log(c.cyan(`    ${installCommand(pm)}`));
+  if (orm) {
+    if (database !== "sqlite") console.log(c.dim("    # set DATABASE_URL in .env"));
+    console.log(c.cyan("    npx megh make:migration create_users_table"));
+    console.log(c.cyan("    npx megh migrate"));
+  }
   console.log(c.cyan(`    ${devCommand(pm)}`));
   if (features.includes("openapi") || features.includes("scalar")) {
     console.log(`\n  ${c.dim("API docs:")} http://localhost:4000/docs`);

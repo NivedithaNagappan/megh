@@ -1,7 +1,7 @@
 import { Command, CommanderError, InvalidArgumentError } from "commander";
 import { build } from "./commands/build";
 import { doctor } from "./commands/doctor";
-import { createApplication, FEATURES, PACKAGE_MANAGERS } from "./commands/new";
+import { createApplication, DATABASES, FEATURES, PACKAGE_MANAGERS } from "./commands/new";
 import { routeList } from "./commands/route-list";
 import { serve } from "./commands/serve";
 import { start } from "./commands/start";
@@ -86,6 +86,10 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
     .option("-y, --yes", "Skip prompts and use defaults (npm, openapi)")
     .option("--pm <manager>", `Package manager: ${PACKAGE_MANAGERS.join(", ")}`)
     .option("--features <list>", `Comma-separated features: ${FEATURES.join(", ")}`, parseList)
+    .option(
+      "--database <name>",
+      `Set up MeghORM (the orm feature) for ${DATABASES.join(", ")}. Defaults to sqlite with orm`,
+    )
     .option("--skip-install", "Do not install dependencies (or set MEGH_SKIP_INSTALL=1)")
     .action(async (name: string, o) => {
       await createApplication(name, { cwd: cwd(), ...o });
@@ -138,9 +142,10 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
   const db = (name: string, description: string) =>
     sub(name, description).addHelpText(
       "after",
-      "\nThe Kysely instance is the default (or `db`) export of src/database/connection.ts and\n" +
-        "migrations live in src/database/migrations; set megh.database / megh.migrations in\n" +
-        "package.json to change them. Sources are compiled with SWC first, and .env is loaded.",
+      "\nConnects the way app.useMeghORM() does: from DATABASE_URL (or DB_DIALECT, DB_HOST,\n" +
+        "DB_NAME, ...) in the environment or .env, with optional settings in megh.database in\n" +
+        "package.json. Migrations live in src/database/migrations; set megh.migrations to\n" +
+        "change it. Sources are compiled with SWC first.",
     );
 
   db("migrate", "Run pending migrations").action(() => {
