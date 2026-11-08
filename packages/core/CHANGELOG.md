@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.2](https://github.com/meghjs/megh/compare/v0.5.1...v0.5.2) (2026-11-08)
+
+### Bug Fixes
+
+- **core:** resolve class middleware from @UseMiddleware through DI ([6896d9a](https://github.com/meghjs/megh/commit/6896d9aa9bebf5f334d55fe7bbf631151150f3b8))
+- **orm:** page queries with top/offset-fetch on SQL Server ([e9b308b](https://github.com/meghjs/megh/commit/e9b308b9591c19489f32146cc85638845df206e1))
+
 ## [0.5.1](https://github.com/meghjs/megh/compare/v0.5.0...v0.5.1) (2026-11-08)
 
 ### Bug Fixes
