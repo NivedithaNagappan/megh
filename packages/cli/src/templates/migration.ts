@@ -1,8 +1,9 @@
+import type { Dialect } from "../utils/dialect";
 import type { FieldDef } from "./fields";
 import type { ModelTemplate } from "./template";
 
 /** The schema builder call for one column, e.g. `table.string("name", 100).nullable();`. */
-export function renderColumn(field: FieldDef): string {
+export function renderColumn(field: FieldDef, dialect?: Dialect): string {
   const name = JSON.stringify(field.name);
   let call: string;
   switch (field.type) {
@@ -24,18 +25,22 @@ export function renderColumn(field: FieldDef): string {
     line += `.constrained(${JSON.stringify(field.references.table)})`;
     if (field.references.onDelete === "cascade") line += ".cascadeOnDelete()";
     else if (setNull) line += ".nullOnDelete()";
-    else if (field.references.onDelete === "restrict") line += `.onDelete("restrict")`;
+    // SQL Server has no RESTRICT; NO ACTION also refuses the delete.
+    else if (field.references.onDelete === "restrict") {
+      line += dialect === "mssql" ? `.onDelete("no action")` : `.onDelete("restrict")`;
+    }
   }
   line += ";";
-  if (field.enum) line += ` // ${field.enum.join(" | ")}`;
+  const comments = [field.enum?.join(" | "), field.comment].filter(Boolean);
+  if (comments.length) line += ` // ${comments.join("; ")}`;
   return line;
 }
 
 /** A `defineMigration` file creating the template's table. */
-export function renderCreateMigration(t: ModelTemplate, table = t.table): string {
+export function renderCreateMigration(t: ModelTemplate, table = t.table, dialect?: Dialect): string {
   const lines: string[] = [];
   if (!t.pivot) lines.push("table.id();");
-  for (const field of t.fields) lines.push(renderColumn(field));
+  for (const field of t.fields) lines.push(renderColumn(field, dialect));
   if (t.timestamps) lines.push("table.timestamps();");
   if (t.softDeletes) lines.push("table.softDeletes();");
 

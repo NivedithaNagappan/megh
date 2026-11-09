@@ -59,6 +59,8 @@ export interface FieldDef {
   enum?: string[];
   /** Foreign key target, for `foreignId` columns. */
   references?: { table: string; onDelete?: OnDelete };
+  /** Written next to the column in the migration. */
+  comment?: string;
 }
 
 /** Shorthand types: `price:money` is `decimal(12,2)`. */
