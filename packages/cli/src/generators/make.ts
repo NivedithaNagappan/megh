@@ -46,6 +46,18 @@ function targetDir(projectRoot: string, kind: Kind, dirs: string[], root?: strin
   return path.join(projectRoot, "src", ...folder, ...dirs);
 }
 
+/** Files `make:model` / `make:resource` / `make:factory` write for model `name`. */
+export function generatedFiles(projectRoot: string, name: string) {
+  const n = resolveName(name, "Model");
+  return {
+    model: path.join(targetDir(projectRoot, "model", n.dirs), `${n.fileBase}.model.ts`),
+    dto: path.join(targetDir(projectRoot, "dto", n.dirs), `${n.fileBase}.dto.ts`),
+    service: path.join(targetDir(projectRoot, "service", n.dirs), `${n.fileBase}.service.ts`),
+    controller: path.join(targetDir(projectRoot, "controller", n.dirs), `${n.fileBase}.controller.ts`),
+    factory: path.join(databasePaths(projectRoot).factories, ...n.dirs, `${n.fileBase}.factory.ts`),
+  };
+}
+
 /** A relative module specifier from `fromFile` to `toFile` (without extension), always using `/`. */
 function importPath(fromFile: string, toFile: string): string {
   let rel = path.relative(path.dirname(fromFile), toFile).replace(/\.ts$/, "").split(path.sep).join("/");

@@ -1,0 +1,78 @@
+import { domain } from "../template";
+
+export const education = domain("education", "Education", "Schools and courses: students, teachers, enrollments and grades", [
+  [
+    "teacher",
+    "A teacher or instructor",
+    [
+      "user_id:nullOnDelete",
+      "staff_number:string(32):unique",
+      "person",
+      "email:unique",
+      "phone",
+      "specialization?:string",
+      "hire_date?:date",
+      "is_active",
+    ],
+  ],
+  [
+    "student",
+    "A student",
+    [
+      "user_id:nullOnDelete",
+      "student_number:string(32):unique",
+      "person",
+      "email:unique",
+      "phone",
+      "gender",
+      "date_of_birth",
+      "admission_date?:date",
+      "status:in(active|graduated|suspended|withdrawn)",
+      "address?",
+    ],
+  ],
+  [
+    "course",
+    "A course or class",
+    [
+      "teacher_id:nullOnDelete",
+      "code",
+      "title",
+      "description",
+      "credits:integer:default(3)",
+      "level?:string(32)",
+      "capacity?:integer",
+      "price?",
+      "status:in(draft|published|archived)",
+      "starts_at",
+      "ends_at",
+    ],
+  ],
+  [
+    "enrollment",
+    "A student taking a course",
+    [
+      "student_id:cascade",
+      "course_id:cascade",
+      "enrolled_at:timestamp",
+      "status:in(enrolled|completed|dropped|failed)",
+      "progress:integer:default(0)",
+      "completed_at?:timestamp",
+    ],
+    { unique: [["student_id", "course_id"]] },
+  ],
+  [
+    "grade",
+    "A score for one assessment of an enrollment",
+    [
+      "enrollment_id:cascade",
+      "assessment:string(128)",
+      "score:decimal(6,2)",
+      "max_score:decimal(6,2):default(100)",
+      "letter?:string(4)",
+      "weight?:percent",
+      "graded_at?:timestamp",
+      "remarks?:text",
+    ],
+  ],
+]);

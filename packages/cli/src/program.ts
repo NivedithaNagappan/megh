@@ -20,6 +20,9 @@ import {
   updateModel,
   makeService,
 } from "./generators/make";
+import { listTemplates, makeFromTemplate, scaffoldDomain } from "./generators/scaffold";
+import { AUTH_STRATEGIES, scaffoldAuth, ROLE_MODES, scaffoldRbac } from "./generators/auth";
+import { parseFieldList } from "./templates/fields";
 import { log } from "./utils/log";
 import { cliVersion } from "./utils/stubs";
 
@@ -238,8 +241,19 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
     .option("-t, --table <table>", "Table name (default: plural snake_case name, e.g. blog_posts)")
     .option("--orm", "Generate a TypeORM entity")
     .option("--root <dir>", "Folder under src/ to write to (also -rt)")
-    .action((name: string, o) => {
-      makeModel(name, { cwd: cwd(), ...o });
+    .option("--template [ref]", "Create the table from a template, e.g. ecommerce/product (no value: pick one)")
+    .option("--fields <list>", 'Columns to add or replace, e.g. "title,price:money,status:in(draft|live)"')
+    .option("--factory", "With --template/--fields: also write a factory")
+    .option("--no-deps", "With --template/--fields: don't create the tables foreign keys point to")
+    .option("-y, --yes", "Don't prompt")
+    .addHelpText("after", TEMPLATE_HELP)
+    .action(async (name: string, o) => {
+      if (o.template !== undefined || o.fields !== undefined) {
+        if (o.orm) throw new CliError("--template and --fields build Megh ORM models; leave out --orm.");
+        await makeFromTemplate(name, { cwd: cwd(), mode: "model", ...templateOptions(o) });
+        return;
+      }
+      makeModel(name, { cwd: cwd(), force: o.force, table: o.table, orm: o.orm, root: o.root });
     });
 
   sub("update:model", "Sync a model's columns with its migrations, keeping relations and methods")
@@ -274,7 +288,16 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
         "src/controllers/<name>.controller.ts are written, e.g. for `make:resource user`:\n" +
         "  GET /users?page=&perPage=   POST /users   GET|PUT|DELETE /users/:id",
     )
-    .action((name: string, o) => {
+    .option("--template [ref]", "Create the table from a template, e.g. ecommerce/product (no value: pick one)")
+    .option("--fields <list>", 'Columns to add or replace, e.g. "title,price:money,status:in(draft|live)"')
+    .option("--factory", "With --template/--fields: also write a factory")
+    .option("--no-deps", "With --template/--fields: don't create the tables foreign keys point to")
+    .option("-y, --yes", "Don't prompt")
+    .action(async (name: string, o) => {
+      if (o.template !== undefined || o.fields !== undefined) {
+        await makeFromTemplate(name, { cwd: cwd(), mode: "resource", ...templateOptions(o) });
+        return;
+      }
       makeResource(name, { cwd: cwd(), force: o.force, table: o.table });
     });
 
@@ -315,7 +338,114 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
       makeDto(name, { cwd: cwd(), ...o });
     });
 
+  // ── Templates ───────────────────────────────────────────────────────────
+  sub("scaffold:domain", "Create the tables (and models or resources) of a domain's templates")
+    .alias("sc:domain")
+    .argument("[domain]", "e.g. ecommerce, pos, medical (no value: pick one)")
+    .option("--only <list>", "Only these templates, e.g. product,order,order_item", parseList)
+    .option("--all", "Every template of the domain, without the checklist")
+    .option("--resource", "Generate REST resources (DTOs, service, controller), not just models")
+    .option("--migrations-only", "Only write the migrations")
+    .option("--factory", "Also write a factory for each model")
+    .option("--no-deps", "Don't create the tables foreign keys point to")
+    .option("-f, --force", "Overwrite the generated models' files")
+    .option("-y, --yes", "Don't prompt: take every template (or --only) and their dependencies")
+    .addHelpText("after", TEMPLATE_HELP)
+    .action(async (domain: string | undefined, o) => {
+      await scaffoldDomain(domain, {
+        cwd: cwd(),
+        only: o.only,
+        all: o.all,
+        mode: o.migrationsOnly ? "migration" : o.resource ? "resource" : "model",
+        factory: o.factory,
+        deps: o.deps,
+        force: o.force,
+        interactive: !o.yes,
+      });
+    });
+
+  // ── Auth ────────────────────────────────────────────────────────────────
+  sub("scaffold:auth", "Add sign-up and sign-in (JWT, API keys or both), optionally with roles and permissions")
+    .alias("sc:auth")
+    .option("--strategy <strategy>", `How clients sign in: ${AUTH_STRATEGIES.join(", ")} (default: asked, else jwt)`)
+    .option("--roles <mode>", `Roles per user: ${ROLE_MODES.join(", ")} (default: asked, else none)`)
+    .option("--permissions", "Roles grant permissions")
+    .option("--no-permissions", "Roles without permissions")
+    .option("-f, --force", "Overwrite the generated auth files")
+    .option("-y, --yes", "Don't prompt: use the options given and the defaults")
+    .addHelpText(
+      "after",
+      [
+        "",
+        "Writes the users table (and roles, user_roles or users.role_id, permissions, api_keys",
+        "as chosen) as migrations and models; src/auth/ (password hashing, JWT or API-key helpers,",
+        "AppAuthentication, AppAuthorization, rbac.ts); an AuthService, DTOs and an AuthController",
+        "(POST /auth/register, POST /auth/login, GET /auth/me, /auth/api-keys); a roles seeder;",
+        "and registers them in src/app.ts. An existing users table gets the missing columns.",
+      ].join("\n"),
+    )
+    .action(async (o) => {
+      await scaffoldAuth({
+        cwd: cwd(),
+        strategy: o.strategy,
+        roles: o.roles,
+        permissions: o.permissions,
+        force: o.force,
+        interactive: !o.yes,
+      });
+    });
+
+  sub("scaffold:rbac", "Add roles (one or many per user) and permissions to an app's users")
+    .alias("sc:rbac")
+    .option("--roles <mode>", "Roles per user: single or multiple (default: asked, else multiple)")
+    .option("--permissions", "Roles grant permissions")
+    .option("--no-permissions", "Roles without permissions")
+    .option("-f, --force", "Overwrite the generated files")
+    .option("-y, --yes", "Don't prompt: use the options given and the defaults")
+    .action(async (o) => {
+      await scaffoldRbac({
+        cwd: cwd(),
+        roles: o.roles,
+        permissions: o.permissions,
+        force: o.force,
+        interactive: !o.yes,
+      });
+    });
+
+  sub("template:list", "List the model templates by domain")
+    .alias("templates")
+    .argument("[domain]", "Show one domain, with each template's columns")
+    .option("--json", "Print JSON")
+    .action((domain: string | undefined, o) => {
+      listTemplates({ cwd: cwd(), domain, json: o.json });
+    });
+
   return { program, exitCode: () => exitCode };
+}
+
+const TEMPLATE_HELP = [
+  "",
+  "Templates describe a table with fields from the fields library, e.g.",
+  '  megh make:model Product --template ecommerce/product --fields "barcode?:string(64)"',
+  '  megh make:model Ticket --fields "title,body,status:in(open|closed),user_id:cascade"',
+  "A field is name[?][:type[(args)]][:modifier]...: a preset (title, slug, price, address, ...),",
+  "or a type (string(n), text, integer, money, decimal(p,s), boolean, date, timestamp, json,",
+  "foreign(table), ...) with modifiers nullable, unique, index, default(x), in(a|b), cascade,",
+  "nullOnDelete, restrict. Columns ending in _id are foreign keys. Tables the foreign keys",
+  "point to are created too when no migration creates them. List templates: megh template:list",
+].join("\n");
+
+/** The template options shared by make:model and make:resource. */
+function templateOptions(o: Record<string, any>) {
+  return {
+    template: o.template,
+    fields: o.fields !== undefined ? parseFieldList(o.fields) : undefined,
+    table: o.table,
+    force: o.force,
+    factory: o.factory,
+    deps: o.deps,
+    interactive: !o.yes,
+  };
 }
 
 /**
