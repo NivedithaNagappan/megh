@@ -698,6 +698,17 @@ npx megh migrate --seed         # or: npx megh db:seed
 Relations, timestamps, soft deletes, casts, transactions, migrations, seeding
 and factories are covered in the [MeghORM guide](https://meghjs.github.io/advanced/orm).
 
+Or scaffold whole tables, features and business domains from templates:
+
+```bash
+npx megh sc:auth --strategy jwt --roles multiple --permissions   # sign-up, sign-in, roles
+npx megh sc:domain ecommerce --resource                          # products, orders, payments, ...
+npx megh make:resource Ticket --fields "title,body,status:in(open|closed),user_id:cascade"
+```
+
+See [Scaffold](https://meghjs.github.io/cli/scaffold/) for the templates,
+fields, domains, auth and RBAC.
+
 ---
 
 ### Database

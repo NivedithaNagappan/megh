@@ -699,6 +699,16 @@ npx megh migrate --seed         # অথবা: npx megh db:seed
 Relation, timestamp, soft delete, cast, transaction, migration, seeding এবং
 factory [MeghORM guide](https://meghjs.github.io/advanced/orm)-এ বিস্তারিত আছে।
 
+অথবা template থেকে পুরো table, feature এবং business domain scaffold করুন:
+
+```bash
+npx megh sc:auth --strategy jwt --roles multiple --permissions   # sign-up, sign-in, role
+npx megh sc:domain ecommerce --resource                          # product, order, payment, ...
+npx megh make:resource Ticket --fields "title,body,status:in(open|closed),user_id:cascade"
+```
+
+Template, field, domain, auth এবং RBAC [Scaffold](https://meghjs.github.io/cli/scaffold/)-এ বিস্তারিত আছে।
+
 ---
 
 ### Database

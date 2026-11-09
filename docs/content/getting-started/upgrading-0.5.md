@@ -1,19 +1,53 @@
 ---
-title: Upgrading to 0.5.3
-description: "What changes in Megh 0.5.1 to 0.5.3: seeders and factories, typed OpenAPI responses, SQL Server fixes, useMeghORM, decorator models, the schema builder and Megh's own DI container."
+title: Upgrading to 0.5.4
+description: "What changes in Megh 0.5.1 to 0.5.4: scaffolding from templates, auth and RBAC, documented query parameters, seeders and factories, typed OpenAPI responses, SQL Server fixes, useMeghORM and Megh's own DI container."
 ---
 
-# Upgrading to 0.5.3
+# Upgrading to 0.5.4
 
-0.5.1, 0.5.2 and 0.5.3 need no code changes: apps written for 0.5.0 keep
-working. 0.5.1 brings Megh's own ORM setup and DI container, and deprecates
+0.5.1 to 0.5.4 need no code changes: apps written for 0.5.0 keep working.
+0.5.1 brings Megh's own ORM setup and DI container, and deprecates
 `app.useDatabase()`. 0.5.2 is a bug-fix release. 0.5.3 adds seeders,
-factories and documented responses, and fixes the ORM on SQL Server.
+factories and documented responses, and fixes the ORM on SQL Server. 0.5.4
+adds scaffolding to the CLI and documents `@Query()` parameters.
 
 ```sh
-npm i @meghjs/core@^0.5.3
-npm i -D @meghjs/cli@^0.5.3
+npm i @meghjs/core@^0.5.4
+npm i -D @meghjs/cli@^0.5.4
 ```
+
+## New in 0.5.4
+
+- **Tables and models from templates.** `npx megh make:model Product --template ecommerce/product`
+  (or `make:resource`) writes the create-table migration and the model (or
+  the whole REST resource). Tables its foreign keys point to are created
+  too. `--fields "title,price:money,status:in(draft|live)"` describes a
+  table on the command line, with presets such as `slug`, `price` and
+  `address`. See [Templates and Fields](/cli/scaffold/templates).
+- **Business domains.** `npx megh scaffold:domain ecommerce` (`sc:domain`)
+  scaffolds a domain's tables at once. There are 11 domains: common,
+  e-commerce, POS, medical, construction, marketing, real estate, HR, CRM,
+  education and logistics. Add your own in `.megh/templates/`. See
+  [Domains](/cli/scaffold/domains).
+- **Auth.** `npx megh scaffold:auth` (`sc:auth`) adds sign-up and sign-in
+  with JWTs, API keys or both, and optionally roles and permissions: the
+  tables, password hashing, `AppAuthentication`, `AppAuthorization`, an
+  `AuthController` and a roles seeder, registered in `src/app.ts`. See
+  [Auth](/cli/scaffold/auth).
+- **RBAC.** `npx megh scaffold:rbac` (`sc:rbac`) adds roles (one or many per
+  user) and permissions, checked with `@Authorized({ roles })` and
+  `@Authorized({ permissions })`. See [RBAC](/cli/scaffold/rbac).
+- **`megh template:list`** (`templates`) lists the templates.
+- **SQL Server-safe foreign keys.** On SQL Server, scaffolded migrations
+  avoid the "may cause cycles or multiple cascade paths" error and write
+  `restrict` as `NO ACTION`. See [SQL Server](/cli/scaffold/templates#sql-server).
+
+## Fixes in 0.5.4
+
+- **`@Query()` parameters are documented.** A `@Query()` DTO and
+  `@Query('key')` parameters were missing from the OpenAPI document. Each DTO
+  property and each key is now a query parameter, with its type and
+  constraints. See [Query parameters](/microservices/openapi#query-parameters).
 
 ## New in 0.5.3
 

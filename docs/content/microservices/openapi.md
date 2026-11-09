@@ -201,6 +201,39 @@ findOne(@Param('id') id: string) {
 }
 ```
 
+### Query parameters
+
+`@Query()` parameters are documented automatically, in the order of the
+method's parameters:
+
+```ts
+@Get()
+index(@Query() query: ListUsersQuery, @Query('role') role: string) {
+  return this.userService.paginate(query);
+}
+```
+
+A DTO (`@Query() query: ListUsersQuery`) becomes one query parameter per
+property, with its type and class-validator constraints (`@Min(1)` as
+`minimum: 1`, `@MaxLength(255)` as `maxLength`, …). A property is required
+when it has `@IsNotEmpty()` or `@IsDefined()`, as for body DTOs. A single
+value (`@Query('role') role: string`) becomes one parameter, typed from the
+parameter's type and required unless you pass `{ required: false }`.
+
+This is documentation only: the values are still validated by the DTO. A
+parameter given in `@OpenApi({ query })` takes precedence over the generated
+one of the same name.
+
+To show a date format, add it to the DTO property with `@OpenApiProperty`:
+
+```ts
+@IsOptional()
+@OpenApiProperty({ format: 'date', example: '2026-11-10' })
+@Matches(/^\d{4}-\d{2}-\d{2}$/)
+@IsDateString({ strict: true })
+startDate?: string;
+```
+
 ### Request bodies
 
 A `@Body()` DTO is documented automatically as a required
