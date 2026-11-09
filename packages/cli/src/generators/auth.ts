@@ -11,6 +11,8 @@ import { firstFreeTimestamp, scaffold, type Target } from "./scaffold";
 import { allDomains, findTemplate, type ModelTemplate } from "../templates";
 import { parseFieldSpec, type FieldDef } from "../templates/fields";
 import { renderColumn } from "../templates/migration";
+import { cascadeEdges, limitCascadePaths } from "../templates/cascade";
+import { projectDialect, type Dialect } from "../utils/dialect";
 import {
   renderApiKeys,
   renderAuthController,
@@ -142,8 +144,8 @@ function requiredUserColumns(plan: AuthChoice, users: ModelTemplate): FieldDef[]
 }
 
 /** `schema.table("users", ...)` adding columns to an existing table. They are nullable: the table may have rows. */
-function renderAlterMigration(table: string, fields: FieldDef[]): string {
-  const add = fields.map((f) => `      ${renderColumn({ ...f, nullable: true })}`).join("\n");
+function renderAlterMigration(table: string, fields: FieldDef[], dialect?: Dialect): string {
+  const add = fields.map((f) => `      ${renderColumn({ ...f, nullable: true }, dialect)}`).join("\n");
   return `import { defineMigration } from "@meghjs/core";
 
 export default defineMigration({
@@ -443,7 +445,18 @@ async function generate(projectRoot: string, choice: AuthChoice, opts: AuthOptio
   if (addColumns.length) {
     const stamp = migrationTimestamp(firstFreeTimestamp(migrationsDir, opts.now ?? new Date()));
     const file = path.join(migrationsDir, `${stamp}_add_auth_columns_to_users_table.ts`);
-    writeFileSafe(file, renderAlterMigration("users", addColumns));
+    const dialect = projectDialect(projectRoot);
+    let columns = addColumns;
+    if (dialect === "mssql") {
+      const limited = limitCascadePaths(cascadeEdges(readMigrationSchema(migrationsDir)), [
+        { table: "users", fields: addColumns },
+      ]);
+      columns = limited.fields.get("users")!;
+      for (const d of limited.dropped) {
+        log.info(`  SQL Server: ${d.table}.${d.column} gets no ON DELETE action (${d.reason}).`);
+      }
+    }
+    writeFileSafe(file, renderAlterMigration("users", columns, dialect));
     log.success(`Migration created: ${relPath(projectRoot, file)} (${addColumns.map((f) => f.name).join(", ")})`);
     if (fs.existsSync(generatedFiles(projectRoot, "User").model)) updateModel("User", { cwd: projectRoot });
     else makeModel("User", { cwd: projectRoot });

@@ -146,6 +146,25 @@ Field names are snake_case. `key`, `save`, `fill`, `delete`, `restore` and
 | `nullOnDelete` | Foreign key: set it to NULL (makes it nullable) |
 | `restrict` | Foreign key: refuse to delete the referenced row |
 
+### SQL Server
+
+SQL Server refuses a foreign key whose `ON DELETE` action (`CASCADE` or
+`SET NULL`) would form a cycle, including a table that references itself,
+or a second cascade path between two tables. When the project's database is
+SQL Server (from `megh.database`, `DB_DIALECT` or the `DATABASE_URL` scheme),
+the generated migrations account for the foreign keys already in your
+migrations: `CASCADE` is kept first, and a foreign key that would break the
+rule gets no `ON DELETE` action, with a comment in the migration and a line
+in the output:
+
+```ts
+table.foreignId("parent_id").nullable().constrained("categories"); // no ON DELETE action: SQL Server allows one cascade path between tables
+```
+
+Deleting the referenced row then fails while rows point to it; clear or
+reassign them first. `restrict` is written as `onDelete("no action")`, since
+SQL Server has no `RESTRICT`. Other databases get the actions as given.
+
 Allowed values are written as a comment next to the column; the
 generated DTO doesn't check them. Add `@IsIn([...])` to the DTO to
 validate them.

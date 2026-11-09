@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { pluralize } from "./orm-model";
 
 /**
  * Reads table schemas out of migration files, without running them: the
@@ -22,6 +23,8 @@ export interface MigrationColumn {
   generated: boolean;
   /** Auto-increment / identity / serial (as opposed to a default value). */
   autoIncrement: boolean;
+  /** The foreign key, when the migration declares one on the column. */
+  references?: { table: string; onDelete?: string };
 }
 
 export interface MigrationTable {
@@ -251,7 +254,22 @@ function parseColumn(name: string, typeArg: string | undefined, build: string): 
     primaryKey,
     autoIncrement,
     generated: autoIncrement || /\.(defaultTo|generatedAlwaysAs)\s*\(/.test(build),
+    ...foreignKey(name, build),
   };
+}
+
+/** `.constrained("t")` / `.references("t.id")` and the ON DELETE action in a column's chain. */
+function foreignKey(column: string, chain: string): Pick<MigrationColumn, "references"> {
+  const constrained = chain.match(/\.constrained\s*\(\s*(?:["'`]([^"'`]+)["'`])?/);
+  const references = chain.match(/\.references\s*\(\s*["'`]([^"'`.]+)/);
+  const table = constrained ? (constrained[1] ?? pluralize(column.replace(/_id$/, ""))) : references?.[1];
+  if (!table) return {};
+  const onDelete = /\.cascadeOnDelete\s*\(/.test(chain)
+    ? "cascade"
+    : /\.nullOnDelete\s*\(/.test(chain)
+      ? "set null"
+      : chain.match(/\.onDelete\s*\(\s*["'`]([^"'`]+)/)?.[1].toLowerCase();
+  return { references: onDelete ? { table, onDelete } : { table } };
 }
 
 // ── Megh's schema builder (defineMigration) ──────────────────────────────
@@ -409,5 +427,6 @@ function applyBlueprintCall(table: MigrationTable, method: string, args: string[
     primaryKey,
     autoIncrement,
     generated: autoIncrement || /\.(default|useCurrent)\s*\(/.test(chain),
+    ...foreignKey(columnName, chain),
   });
 }
