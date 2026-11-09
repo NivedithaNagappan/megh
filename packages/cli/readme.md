@@ -43,7 +43,8 @@ npm run start:dev
 | `start` | | `--entry <file>` | Run the compiled app with `NODE_ENV=production` |
 | `doctor` | | | Check Node.js, `@meghjs/core`, `reflect-metadata` and decorator settings |
 | `route:list` | `routes` | `--json`, `--static` | List the app's routes |
-| `make:model` | `m:m` | `-f`, `--orm`, `--root <dir>` | Create a model / TypeORM entity |
+| `make:model` | `m:m` | `-f`, `--orm`, `--root <dir>`, `--template [ref]`, `--fields <list>`, `--factory` | Create a model / TypeORM entity; with `--template` / `--fields`, also its migration |
+| `make:resource` | `m:r` | `-f`, `-t <table>`, `--template [ref]`, `--fields <list>`, `--factory` | Create a model's DTOs, CRUD service and controller |
 | `update:model` | `u:m` | `-t <table>`, `--dto`, `--dry-run`, `--root <dir>` | Sync a model's columns with its migrations, keeping relations and methods |
 | `make:controller` | `m:c` | `-f`, `-r`, `-m <model>`, `--orm`, `--root <dir>`, `--base-path` | Create a controller |
 | `make:service` | `m:s` | `-f`, `-r`, `-m <model>`, `--orm`, `--root <dir>` | Create a service |
@@ -53,6 +54,10 @@ npm run start:dev
 | `make:seeder` | `m:sd` | `-f` | Create a seeder in `src/database/seeders` (`database` for the entry seeder) |
 | `db:seed` | | `-s <name>`, `--force` | Run the seeders in one transaction (also `migrate --seed`) |
 | `make:factory` | `m:f` | `-f` | Create a model factory in `src/database/factories`, with Faker values per column |
+| `scaffold:domain [domain]` | `sc:domain` | `--only <list>`, `--resource`, `--factory`, `--migrations-only`, `--no-deps`, `-y` | Create a business domain's tables and models (or resources) |
+| `scaffold:auth` | `sc:auth` | `--strategy <jwt\|api-key\|both>`, `--roles <none\|single\|multiple>`, `--permissions`, `-f`, `-y` | Add sign-up and sign-in, optionally with roles and permissions |
+| `scaffold:rbac` | `sc:rbac` | `--roles <single\|multiple>`, `--permissions`, `-f`, `-y` | Add roles and permissions to an app's users |
+| `template:list [domain]` | `templates` | `--json` | List the model templates |
 
 `-f` / `--force` overwrites an existing file. `-r` / `--resource` generates a
 full REST skeleton. `--root <dir>` (also `-rt`) writes under `src/<dir>`
@@ -117,6 +122,26 @@ npx megh make:config jwt
 ```
 
 Generates a class extending `MeghConfig`, registered via `@AppConfig`.
+
+## Scaffold
+
+Build tables, models and whole features from templates. A template becomes a
+create-table migration; the model, DTOs, service and controller are generated
+from it.
+
+```sh
+npx megh make:model Product --template ecommerce/product     # migration + model (+ categories, brands)
+npx megh make:resource Ticket --fields "title,body,status:in(open|closed),user_id:cascade"
+npx megh sc:domain ecommerce --resource                       # a whole domain as REST resources
+npx megh sc:auth --strategy both --roles multiple --permissions
+npx megh sc:rbac --roles single --permissions
+npx megh templates ecommerce                                  # list a domain's templates
+```
+
+There are 11 domains (common, ecommerce, pos, medical, construction,
+marketing, real-estate, hr, crm, education, logistics), and your own go in
+`.megh/templates/<domain>.json`. See [Scaffold](https://meghjs.github.io/cli/scaffold/)
+for the field spec, every template, and what `sc:auth` generates.
 
 ## Development Server
 
