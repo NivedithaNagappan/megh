@@ -23,6 +23,7 @@ import { Constructor, loadPackageFromClient } from "../common/helpers";
 import { generateSwaggerSchema } from "../openapi/swagger-schema";
 import { applyResponseExtensions } from "../openapi/responses";
 import { applyRequestBodyExtensions } from "../openapi/request-body";
+import { applyQueryParamExtensions } from "../openapi/query-params";
 import { swaggerUiBranding } from "../openapi/branding";
 import { OpenApiUiOptions } from "../openapi/openapi";
 import { MeghMiddleware } from "../http/middleware";
@@ -260,7 +261,7 @@ export class MeghApplication implements IMeghApplication {
       },
       transformObject: ({ openapiObject }: { openapiObject: any }) => {
         const document = applyResponseExtensions(
-          applyRequestBodyExtensions(openapiObject),
+          applyQueryParamExtensions(applyRequestBodyExtensions(openapiObject)),
           security,
         );
         if (options?.paths)
