@@ -48,6 +48,10 @@ import {
   buildRequestBody,
   REQUEST_BODY_EXTENSION,
 } from "../openapi/request-body";
+import {
+  buildQueryParameters,
+  QUERY_PARAMS_EXTENSION,
+} from "../openapi/query-params";
 import mime from "mime";
 import Stream from "stream";
 import { HTTPMethods, FastifyInstance } from "fastify";
@@ -365,16 +369,6 @@ export class MeghRouter {
         schema = { ...schema, body: bodySchema };
       }
 
-      // ✅ Auto-detect querystring from @Query() DTO if not manually set in @OpenApi
-      if (!swaggerMeta.query && !schema.querystring) {
-        for (const queryMeta of allMeta.query) {
-          if (queryMeta.validatorClass && queryMeta.schema) {
-            schema.querystring = queryMeta.schema;
-            break;
-          }
-        }
-      }
-
       // ✅ Auto-detect body from @Body() DTO if still not set
       if (!swaggerMeta.body && !bodySchema) {
         for (const bodyMeta of allMeta.body) {
@@ -433,6 +427,11 @@ export class MeghRouter {
         ),
         authorized: !!(authClsMeata.authorize || authClsMethodMeata.authorize),
       });
+
+      // @Query() parameters, documented only (Megh validates them itself).
+      const queryParams = buildQueryParameters(allMeta.query as any);
+      if (queryParams.length > 0)
+        routeSchema[QUERY_PARAMS_EXTENSION] = queryParams;
 
       // Resolve DI singletons once at route-registration time, not per request.
       // _resolveAuthorizer picks the named handler when @Authorized("jwt") is used,
