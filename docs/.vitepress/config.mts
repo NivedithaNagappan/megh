@@ -92,6 +92,17 @@ export default defineConfig({
           { text: 'Overview', link: '/cli/basic' },
           { text: 'Generators', link: '/cli/generators' },
           { text: 'Database Commands', link: '/cli/database' },
+          {
+            text: 'Scaffold',
+            collapsed: false,
+            items: [
+              { text: 'Overview', link: '/cli/scaffold/' },
+              { text: 'Templates and Fields', link: '/cli/scaffold/templates' },
+              { text: 'Domains', link: '/cli/scaffold/domains' },
+              { text: 'Auth', link: '/cli/scaffold/auth' },
+              { text: 'RBAC', link: '/cli/scaffold/rbac' },
+            ],
+          },
         ],
       },
       {

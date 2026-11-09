@@ -34,8 +34,14 @@ npm i -g @meghjs/cli
 | `migrate:reset` | | Undo every migration |
 | `migrate:refresh` | | Undo every migration, then run them all again (`--seed` too) |
 | `db:seed` | | Run the seeders (`--seeder <name>` for one) |
+| `scaffold:domain` | `sc:domain` | Create the tables and models (or resources) of a business domain |
+| `scaffold:auth` | `sc:auth` | Add sign-up and sign-in with JWTs and/or API keys, optionally with roles |
+| `scaffold:rbac` | `sc:rbac` | Add roles and permissions to an app's users |
+| `template:list` | `templates` | List the model templates |
 
 Every `make:*` command takes `-f` / `--force` to overwrite an existing file.
+`make:model` and `make:resource` also build the table from a
+[template](/cli/scaffold/templates) with `--template` or `--fields`.
 
 ## Pages
 
@@ -43,6 +49,7 @@ Every `make:*` command takes `-f` / `--force` to overwrite an existing file.
 |---|---|
 | [Generators](/cli/generators) | `make:resource`, `make:controller`, `make:service`, `make:model`, `update:model`, `make:middleware`, `make:config` |
 | [Database Commands](/cli/database) | `make:migration`, `migrate*`, `make:seeder`, `db:seed`, `make:factory` |
+| [Scaffold](/cli/scaffold/) | `--template`, `--fields`, `scaffold:domain`, `scaffold:auth`, `scaffold:rbac`, `template:list` |
 
 ## Application
 

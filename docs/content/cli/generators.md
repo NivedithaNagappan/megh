@@ -125,6 +125,14 @@ document the model. If no migration creates
 the table, you get a model with an `id` and commented examples to fill in. The migrations are read, not run, so no database is needed.
 Relations aren't generated; add them yourself.
 
+To write the migration too, start from a template or a list of fields; see
+[Templates and Fields](/cli/scaffold/templates):
+
+```sh
+npx megh make:model Product --template ecommerce/product
+npx megh make:resource Ticket --fields "title,body,status:in(open|closed),user_id:cascade"
+```
+
 ### Updating a model
 
 After a migration alters the table, bring the model up to date without
