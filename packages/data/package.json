@@ -35,7 +35,10 @@
     "typeorm",
     "knex",
     "database",
-    "typescript"
+    "orm",
+    "sql",
+    "typescript",
+    "fastify"
   ],
   "scripts": {
     "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
@@ -93,6 +96,10 @@
     "type": "git",
     "url": "git+https://github.com/meghjs/megh.git",
     "directory": "packages/data"
+  },
+  "homepage": "https://meghjs.github.io/advanced/database",
+  "bugs": {
+    "url": "https://github.com/meghjs/megh/issues"
   },
   "publishConfig": {
     "access": "public"

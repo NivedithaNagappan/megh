@@ -27,10 +27,18 @@
     "prepublishOnly": "npm run build"
   },
   "keywords": [
-    "cli",
     "megh",
+    "cli",
+    "typescript",
     "backend",
-    "typescript"
+    "generator",
+    "scaffold",
+    "scaffolding",
+    "migrations",
+    "orm",
+    "auth",
+    "rbac",
+    "fastify"
   ],
   "dependencies": {
     "@swc/core": "^1.13.5",
@@ -55,6 +63,10 @@
     "type": "git",
     "url": "git+https://github.com/meghjs/megh.git",
     "directory": "packages/cli"
+  },
+  "homepage": "https://meghjs.github.io/cli/basic",
+  "bugs": {
+    "url": "https://github.com/meghjs/megh/issues"
   },
   "publishConfig": {
     "access": "public"

@@ -24,11 +24,22 @@
     "LICENSE"
   ],
   "keywords": [
-    "restapi",
     "megh",
-    "backend",
+    "framework",
+    "typescript",
+    "nodejs",
     "fastify",
-    "typescript"
+    "backend",
+    "rest",
+    "restapi",
+    "api",
+    "decorators",
+    "dependency-injection",
+    "validation",
+    "openapi",
+    "swagger",
+    "orm",
+    "migrations"
   ],
   "scripts": {
     "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
@@ -182,6 +193,10 @@
     "type": "git",
     "url": "git+https://github.com/meghjs/megh.git",
     "directory": "packages/core"
+  },
+  "homepage": "https://meghjs.github.io",
+  "bugs": {
+    "url": "https://github.com/meghjs/megh/issues"
   },
   "publishConfig": {
     "access": "public"
