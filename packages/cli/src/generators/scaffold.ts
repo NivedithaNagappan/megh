@@ -20,6 +20,8 @@ import {
   type ModelTemplate,
 } from "../templates";
 import { renderCreateMigration } from "../templates/migration";
+import { cascadeEdges, limitCascadePaths } from "../templates/cascade";
+import { projectDialect } from "../utils/dialect";
 
 /**
  * Scaffolding from templates: each template becomes a create-table
@@ -191,6 +193,21 @@ export async function scaffold(projectRoot: string, requested: Target[], opts: S
     }
   }
 
+  // SQL Server allows one cascade path between two tables, and none back to the same table.
+  const dialect = projectDialect(projectRoot);
+  let sqlServerFields: Map<string, FieldDef[]> | undefined;
+  if (dialect === "mssql") {
+    const writing = targets.filter((t) => !schema.has(t.table));
+    const limited = limitCascadePaths(
+      cascadeEdges(schema),
+      writing.map((t) => ({ table: t.table, fields: t.template.fields })),
+    );
+    sqlServerFields = limited.fields;
+    for (const d of limited.dropped) {
+      log.info(`  SQL Server: ${d.table}.${d.column} gets no ON DELETE action (${d.reason}).`);
+    }
+  }
+
   const result: ScaffoldResult = { migrations: [], reused: [], models: [] };
   const start = firstFreeTimestamp(migrationsDir, opts.now ?? new Date());
   let offset = 0;
@@ -204,7 +221,8 @@ export async function scaffold(projectRoot: string, requested: Target[], opts: S
     // One second apart, so they run in dependency order.
     const stamp = migrationTimestamp(new Date(start.getTime() + offset++ * 1000));
     const file = path.join(migrationsDir, `${stamp}_create_${t.table}_table.ts`);
-    writeFileSafe(file, renderCreateMigration(t.template, t.table));
+    const template = { ...t.template, fields: sqlServerFields?.get(t.table) ?? t.template.fields };
+    writeFileSafe(file, renderCreateMigration(template, t.table, dialect));
     log.success(`Migration created: ${rel(projectRoot, file)}`);
     result.migrations.push(file);
   }
