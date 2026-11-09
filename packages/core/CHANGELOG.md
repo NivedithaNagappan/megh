@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.4](https://github.com/meghjs/megh/compare/v0.5.3...v0.5.4) (2026-11-09)
+
+### Bug Fixes
+
+- **openapi:** document @Query() parameters ([30d6a42](https://github.com/meghjs/megh/commit/30d6a42050a02dc823623948620d53f22ed442cf))
+
 ## [0.5.3](https://github.com/meghjs/megh/compare/v0.5.2...v0.5.3) (2026-11-08)
 
 ### Bug Fixes

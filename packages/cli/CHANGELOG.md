@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.4](https://github.com/meghjs/megh/compare/v0.5.3...v0.5.4) (2026-11-09)
+
+### Bug Fixes
+
+* **cli:** generate SQL Server-safe foreign keys ([a5712ac](https://github.com/meghjs/megh/commit/a5712ac1677e7bdcda6b5a2555dbf64d99c032ce))
+
+### Features
+
+* **cli:** scaffold tables, domains, auth and RBAC from templates ([4817b02](https://github.com/meghjs/megh/commit/4817b022189b0bbea1c093f9cddf38655ad106ed))
+
+
 ## [0.5.3](https://github.com/meghjs/megh/compare/v0.5.2...v0.5.3) (2026-11-08)
 
 ### Features
