@@ -116,6 +116,7 @@ export interface IMeghApplication {
   mapGet: <T extends (...args: any[]) => any>(path: string, fn: T) => any;
   mapPost: <T extends (...args: any[]) => any>(path: string, fn: T) => any;
   mapPut: <T extends (...args: any[]) => any>(path: string, fn: T) => any;
+  mapPatch: <T extends (...args: any[]) => any>(path: string, fn: T) => any;
   mapDelete: <T extends (...args: any[]) => any>(path: string, fn: T) => any;
 
   // lifecycle

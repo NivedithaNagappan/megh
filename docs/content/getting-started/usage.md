@@ -44,7 +44,7 @@ error handling.
 ## Using inline routes
 
 For small apps, register handlers directly on the app with `mapGet`, `mapPost`,
-`mapPut` and `mapDelete`:
+`mapPut`, `mapPatch` and `mapDelete`:
 
 ::: code-group
 ```ts [app.ts]
@@ -68,13 +68,20 @@ app.mapPost('/users', (req) => {
 });
 ```
 
-Inline routes return a chainable object for middleware and OpenAPI metadata:
+Inline routes return a chainable object for middleware, authorization and
+OpenAPI metadata:
 
 ```ts
 app.mapGet('/secret', handler)
-  .useMiddleware([ApiKeyMiddleware])
+  .useMiddleware([ApiKeyMiddleware])  // classes (resolved through DI) or instances
+  .authorized()                       // like @Authorized(); .authorized('jwt') picks a handler
   .useOpenApi({ tags: ['internal'] });
 ```
+
+They run the same pipeline as controller routes: middleware, then the
+authentication handler (`request.user`), then `.authorized()`. Return
+`Results.*` to set the status code; thrown errors go through the
+[error handler](/core-concept/error-handling).
 
 ## Returning responses
 
@@ -123,8 +130,7 @@ Error responses have the shape `{ code, status: "Error", message, data? }`.
 Outside development, 5xx responses hide the message and data. See
 [Error Handling](/core-concept/error-handling).
 
-Inline routes skip authentication, `@Authorized` checks and DTO validation.
-Use a controller when you need them.
+Inline routes don't validate DTOs; use a controller when you need that.
 
 ## Running the app
 

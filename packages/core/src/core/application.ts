@@ -650,6 +650,9 @@ export class MeghApplication implements IMeghApplication {
   mapPut<T extends (...args: any[]) => any>(path: string = "", fn: T) {
     return this.router.mapPut(path, fn);
   }
+  mapPatch<T extends (...args: any[]) => any>(path: string = "", fn: T) {
+    return this.router.mapPatch(path, fn);
+  }
   mapDelete<T extends (...args: any[]) => any>(path: string = "", fn: T) {
     return this.router.mapDelete(path, fn);
   }
