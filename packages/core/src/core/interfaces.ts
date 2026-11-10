@@ -16,6 +16,11 @@ import {
 } from "fastify";
 import type { RedisOptions } from "ioredis";
 import type { PluginOptions } from "../plugins/registry";
+import type {
+  ErrorHandlerFunction,
+  ErrorLogger,
+  ExceptionFilterLike,
+} from "../errors";
 
 export type CorsOptions = {
   origin?:
@@ -77,6 +82,14 @@ export interface IMeghApplication {
   /** Register the global authentication handler that populates `request.user`. */
   useAuthentication: (authentication: Constructor<MeghAuthentication>) => this;
   useAuthorization: (authorization: Constructor<any>) => this;
+  /** Register global exception filters, run in order before the default error response. */
+  useExceptionFilters: (
+    filters: ExceptionFilterLike | ExceptionFilterLike[],
+  ) => this;
+  /** Register a function that handles request errors (a catch-all filter). */
+  useErrorHandler: (handler: ErrorHandlerFunction) => this;
+  /** Replace or turn off (`false`) logging of default error responses. */
+  useErrorLogger: (logger: ErrorLogger | false) => this;
   useSerialization: () => this;
   useControllers: (controllers: Constructor[] | AutoControllerOptions) => this;
   useStaticFiles: (options: any) => this;

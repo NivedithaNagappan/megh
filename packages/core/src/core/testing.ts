@@ -13,7 +13,6 @@ import {
   TestAppOptions,
 } from "./interfaces";
 import { InjectOptions } from "fastify";
-import { ValidationErrorException } from "../common/exceptions";
 import { SystemUseError } from "../common/exceptions/system-exception";
 
 export class MeghTest {
@@ -73,17 +72,8 @@ export class MeghTest {
       // In our refactor, _mapControllers calls router.buildController -> which adds routes to app.
       // So fastify app should be ready.
 
-      app.app.setErrorHandler(async (error, req, res) => {
-        // Reuse error handler logic or simplified version
-        if (error instanceof ValidationErrorException) {
-          return res.status(400).send({
-            code: 400,
-            error: "ValidationError",
-            errors: error.message,
-          });
-        }
-        return res.status(500).send(error);
-      });
+      // Same error handling as production, filters included.
+      app.installErrorHandling();
 
       return {
         get: async (url: string, options?: InjectOptions) =>
