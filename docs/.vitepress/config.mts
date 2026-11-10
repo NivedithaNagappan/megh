@@ -48,6 +48,7 @@ export default defineConfig({
           { text: 'Dependency Injection', link: '/core-concept/dependency-injection' },
           { text: 'Middleware', link: '/core-concept/middleware' },
           { text: 'Validation', link: '/core-concept/validation' },
+          { text: 'Error Handling', link: '/core-concept/error-handling' },
           { text: 'Authentication', link: '/core-concept/authentication' },
         ],
       },

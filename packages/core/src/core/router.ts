@@ -32,7 +32,16 @@ import {
   FuncRoute,
   ParamMetaOptions,
 } from "./types";
-import { BadRequestException, ForbiddenException } from "../common/exceptions";
+import {
+  BadRequestException,
+  ForbiddenException,
+  ValidationErrorException,
+} from "../errors/http-exceptions";
+import { getDeclaredFilters } from "../errors/exception-filter";
+import {
+  resolveFilter,
+  ROUTE_FILTERS_CONFIG_KEY,
+} from "../errors/error-handler";
 import { contentDisposition } from "../common/utils/path-utils";
 import { MeghMiddleware } from "../http/middleware";
 import { REQUEST_METADATA_KEY } from "../http/controller";
@@ -156,19 +165,13 @@ function buildRouteSchema(
 }
 
 /**
- * Send a DTO validation failure in the same shape the global error handler
- * uses for 400s.
+ * A DTO validation failure, answered by the error handler as a 400 with the
+ * issues in `errors`.
  */
-function sendValidationError(
-  res: any,
+function validationError(
   errors: { path: string; constraints: Record<string, string> }[],
 ) {
-  return res.code(400).send({
-    code: 400,
-    status: "Error",
-    message: formatValidationMessage(errors),
-    errors,
-  });
+  return new ValidationErrorException(formatValidationMessage(errors), errors);
 }
 
 // ---------------------------------------------------------------------------
@@ -469,11 +472,17 @@ export class MeghRouter {
         typeof m === "function" ? Container.get<MeghMiddleware>(m) : m,
       );
 
+      // @UseFilters on the route, then the controller, resolved once.
+      const _routeFilters = getDeclaredFilters(ctrl.constructor, method).map(
+        resolveFilter,
+      );
+
       this.app.route({
         url: routePath,
         method: methodmetaOptions.method.toUpperCase() as HTTPMethods,
         schema: routeSchema,
         attachValidation: isMultipart,
+        config: { [ROUTE_FILTERS_CONFIG_KEY]: _routeFilters },
         handler: async (req, res) => {
           let reqClone = req as unknown as IRequest;
 
@@ -542,7 +551,7 @@ export class MeghRouter {
                   queryMeta.dataType,
                   args[queryMeta.index],
                 );
-                if (errors) return sendValidationError(res, errors);
+                if (errors) throw validationError(errors);
                 args[queryMeta.index] = value;
               }
               if (queryMeta.required) {
@@ -563,7 +572,7 @@ export class MeghRouter {
                   bodyMeta.dataType,
                   args[bodyMeta.index],
                 );
-                if (errors) return sendValidationError(res, errors);
+                if (errors) throw validationError(errors);
                 args[bodyMeta.index] = value;
               }
             }
@@ -796,18 +805,10 @@ export class MeghRouter {
     path: string = "",
     fn: T,
   ) {
+    // Errors go to the application's error handler.
     this.app[method](path, async (req: any, res: any) => {
-      try {
-        const result = await fn(req, res);
-        if (typeof result === "object" && result !== null) {
-          res.json(result);
-        } else {
-          res.send(result);
-        }
-      } catch (error) {
-        console.error(`Error in ${method} route handler:`, error);
-        res.status(500).send({ error: "Internal Server Error" });
-      }
+      const result = await fn(req, res);
+      return res.send(result);
     });
   }
 

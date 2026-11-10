@@ -17,7 +17,12 @@ import {
   CacheOptions,
   LifecycleHook,
 } from "./interfaces";
-import { BaseHttpException } from "../common/exceptions";
+import {
+  MeghErrorHandler,
+  ErrorLogger,
+  ExceptionFilterLike,
+  ErrorHandlerFunction,
+} from "../errors";
 import { SystemUseError } from "../common/exceptions/system-exception";
 import { Constructor, loadPackageFromClient } from "../common/helpers";
 import { generateSwaggerSchema } from "../openapi/swagger-schema";
@@ -148,6 +153,9 @@ export class MeghApplication implements IMeghApplication {
     };
   private closing: Promise<void> | null = null;
   private pluginNames: string[] = [];
+  private errorHandler = new MeghErrorHandler({
+    isDevelopment: () => this.isDevelopment(),
+  });
 
   private constructor(options?: MeghApplicationOptions) {
     this.app = Fastify({
@@ -363,6 +371,52 @@ export class MeghApplication implements IMeghApplication {
       this.router.setAuthorizeMiddlewareMap(authorization);
     }
     return this;
+  }
+
+  /**
+   * Register global exception filters. They run in order, after any
+   * `@UseFilters` on the route or controller, and before Megh's default
+   * error response.
+   *
+   *   app.useExceptionFilters([EntityNotFoundFilter, ProblemJsonFilter])
+   *
+   * Each entry can be a filter class (resolved through DI), a filter
+   * instance or a function `(error, ctx) => ...`.
+   *
+   * @see ExceptionFilter
+   */
+  useExceptionFilters(filters: ExceptionFilterLike | ExceptionFilterLike[]) {
+    this.assertNotStarted("useExceptionFilters");
+    this.errorHandler.addFilters(Array.isArray(filters) ? filters : [filters]);
+    return this;
+  }
+
+  /**
+   * Register a function that handles request errors. It is a global filter
+   * that sees every error: return a body to send it, return an `Error` to
+   * hand it on, or return nothing to fall back to the default response.
+   *
+   *   app.useErrorHandler((error, { response }) => ({
+   *     ok: false,
+   *     message: response.body.message,
+   *   }))
+   */
+  useErrorHandler(handler: ErrorHandlerFunction) {
+    return this.useExceptionFilters([handler]);
+  }
+
+  /**
+   * Replace how errors answered with the default response are logged, or
+   * pass `false` to stop logging them.
+   */
+  useErrorLogger(logger: ErrorLogger | false) {
+    this.errorHandler.setLogger(logger);
+    return this;
+  }
+
+  /** Install the error and not-found handlers on the Fastify instance. @internal */
+  installErrorHandling() {
+    this.errorHandler.install(this.app);
   }
 
   useSerialization() {
@@ -733,74 +787,7 @@ export class MeghApplication implements IMeghApplication {
       this.scheduler.start();
     }
 
-    this.app.setErrorHandler((error: any, request, reply) => {
-      const isDev = this.isDevelopment();
-      const timestamp = new Date().toISOString();
-      const requestInfo = `${request.method} ${request.url}`;
-
-      // ✅ Handle Fastify AJV validation errors — these come with statusCode 400
-      if ((error as any).statusCode === 400 || (error as any).validation) {
-        console.warn(
-          `[${timestamp}] HTTP 400 ${requestInfo} — ${error.message}`,
-        );
-        return reply.status(400).send({
-          code: 400,
-          status: "Error",
-          message: error.message,
-          errors: (error as any).validation ?? undefined,
-        });
-      }
-
-      if (error instanceof BaseHttpException) {
-        const code = error.code || 500;
-        console.warn(
-          `[${timestamp}] HTTP ${code} ${requestInfo} — ${error.message}`,
-        );
-        // 4xx messages are written for the client; 5xx ones describe server
-        // internals and are only shown in development.
-        const expose = isDev || code < 500;
-        return reply
-          .status(code)
-          .type("application/json")
-          .serializer((payload: any) => JSON.stringify(payload))
-          .send({
-            code,
-            status: "Error",
-            message: expose ? error.message : "Internal Server Error",
-            ...(expose && { data: error.payload }),
-          });
-      }
-
-      // Unexpected errors
-      console.error(`\n❌ UNHANDLED ERROR @ ${timestamp}`);
-      console.error(`   ${requestInfo}`);
-      console.error(`   ${error.name}: ${error.message}`);
-      if (error.stack) {
-        console.error(
-          `   Stack:\n${error.stack
-            .split("\n")
-            .slice(1)
-            .map((l: any) => `      ${l.trim()}`)
-            .join("\n")}`,
-        );
-      }
-      if (isDev) {
-        console.error("   Params:", JSON.stringify(request.params));
-        console.error("   Query: ", JSON.stringify(request.query));
-        console.error("   Body:  ", JSON.stringify(request.body));
-      }
-      console.error("");
-
-      return reply.status(500).send({
-        code: 500,
-        status: "Error",
-        message: isDev ? error.message : "Internal Server Error",
-        ...(isDev && {
-          error: error.name,
-          stack: error.stack?.split("\n").slice(0, 5),
-        }),
-      });
-    });
+    this.installErrorHandling();
 
     await this.app.ready();
 

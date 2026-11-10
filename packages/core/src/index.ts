@@ -48,11 +48,13 @@ export * from "./storage";
 export * from "./realtime";
 export * from "./observability";
 
+// ─── Errors ─────────────────────────────────────────────────────────────────
+export * from "./errors";
+
 // ─── Common ──────────────────────────────────────────────────────────────────
 export * from "./common/decorators";
 export * from "./common/helpers";
 export * from "./common/container";
-export * from "./common/exceptions";
 
 // ─── Convenience aliases ─────────────────────────────────────────────────────
 export const GetSchema = sw.generateSwaggerSchema;
