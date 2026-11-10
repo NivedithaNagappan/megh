@@ -16,6 +16,7 @@ import {
   GlobalOptions,
   CacheOptions,
   LifecycleHook,
+  RunOptions,
 } from "./interfaces";
 import {
   MeghErrorHandler,
@@ -33,6 +34,7 @@ import { swaggerUiBranding } from "../openapi/branding";
 import { OpenApiUiOptions } from "../openapi/openapi";
 import { MeghMiddleware } from "../http/middleware";
 import { MeghScheduler } from "../scheduler";
+import { isScheduledTask } from "../scheduler/schedule-registry";
 import { isApiController } from "../common/container";
 import { AutoControllerOptions, IResponse, TestApplication } from "./types";
 
@@ -42,6 +44,7 @@ import { MeghConfig } from "../config/config";
 import { MeghAuthentication } from "../security/authentication";
 import { registerPlugins } from "../plugins/registry";
 import { internalLogger } from "../observability/internal-logger";
+import { resolveSourceDir } from "../common/utils/path-utils";
 // ---------------------------------------------------------------------------
 // Lazy loaders for optional peer dependencies
 // ---------------------------------------------------------------------------
@@ -152,7 +155,9 @@ export class MeghApplication implements IMeghApplication {
       close: [],
     };
   private closing: Promise<void> | null = null;
+  private signalHandler: ((signal: NodeJS.Signals) => void) | null = null;
   private pluginNames: string[] = [];
+  private usesCache = false;
   private errorHandler = new MeghErrorHandler({
     isDevelopment: () => this.isDevelopment(),
   });
@@ -204,6 +209,7 @@ export class MeghApplication implements IMeghApplication {
 
   useCache(options?: CacheOptions) {
     CacheManager.configure(options);
+    this.usesCache = true;
 
     if (!Container.has(CacheManager)) {
       Container.set(CacheManager, new CacheManager());
@@ -566,8 +572,7 @@ export class MeghApplication implements IMeghApplication {
       process.env.TS_NODE_DEV ||
       process.env.TS_NODE_PROJECT ||
       (process as any)[Symbol.for("ts-node.register.instance")];
-    const controllerDir = path.join(process.cwd(), this.registerControllerPath);
-    return isTsNode ? controllerDir : controllerDir.replace("src", "dist");
+    return resolveSourceDir(dir ?? this.registerControllerPath, !!isTsNode);
   }
 
   private async autoControllers(controllersPath?: string) {
@@ -689,9 +694,21 @@ export class MeghApplication implements IMeghApplication {
   }
 
   private async _close() {
+    if (this.signalHandler) {
+      process.removeListener("SIGTERM", this.signalHandler);
+      process.removeListener("SIGINT", this.signalHandler);
+      this.signalHandler = null;
+    }
     await this.app.close();
     this.scheduler.stopAll();
     await this._closeWorkers();
+    if (this.usesCache) {
+      try {
+        await CacheManager.close();
+      } catch (err) {
+        console.error("[Megh] Closing the cache failed:", err);
+      }
+    }
     for (const hook of [...this.lifecycleHooks.close].reverse()) {
       try {
         await hook();
@@ -722,9 +739,10 @@ export class MeghApplication implements IMeghApplication {
       (process as any)[Symbol.for("ts-node.register.instance")];
     const nodePath = require("path");
     const nodeFs = require("fs");
-    const { isScheduledTask } = require("../schedule-registry");
-    const dir = nodePath.join(process.cwd(), this.registerSchedulerPath);
-    const resolvedDir = isTsNode ? dir : dir.replace("src", "dist");
+    const resolvedDir = resolveSourceDir(
+      this.registerSchedulerPath,
+      !!isTsNode,
+    );
     try {
       const files = nodeFs.readdirSync(resolvedDir, {
         recursive: true,
@@ -757,7 +775,21 @@ export class MeghApplication implements IMeghApplication {
     }
   }
 
-  async run(port: number = 4000, fn?: CallableFunction): Promise<void> {
+  /**
+   * Start the server.
+   *
+   *   await app.run(3000)
+   *   await app.run(3000, { host: "127.0.0.1" })
+   *
+   * The host defaults to the `HOST` environment variable, else `0.0.0.0`
+   * so the app is reachable inside containers.
+   */
+  async run(
+    port: number = 4000,
+    options?: RunOptions | CallableFunction,
+  ): Promise<void> {
+    const fn = typeof options === "function" ? options : options?.onListen;
+    const runOptions: RunOptions = typeof options === "object" ? options : {};
     if (this.alreadyRun) throw new SystemUseError("App already running");
     this.alreadyRun = true;
 
@@ -810,15 +842,32 @@ export class MeghApplication implements IMeghApplication {
       }
     }
 
-    const gracefulStop = async () => {
-      await this.close();
-      process.exit(0);
+    const timeout = runOptions.shutdownTimeout ?? 10_000;
+    const gracefulStop = async (signal: NodeJS.Signals) => {
+      const log = internalLogger("app");
+      log.info({ signal }, "Shutting down");
+      // A hung close (open keep-alive sockets, a stuck hook) must not keep
+      // the process alive forever.
+      const timer = setTimeout(() => {
+        log.error({ timeout }, "Shutdown timed out; exiting");
+        process.exit(1);
+      }, timeout);
+      timer.unref();
+      try {
+        await this.close();
+        process.exit(0);
+      } catch (err) {
+        log.error({ err }, "Shutdown failed");
+        process.exit(1);
+      }
     };
+    this.signalHandler = gracefulStop;
     process.once("SIGTERM", gracefulStop);
     process.once("SIGINT", gracefulStop);
 
-    await this.app.listen({ port });
-    console.log(`Application running on http://127.0.0.1:${port}`);
+    const host = runOptions.host ?? process.env.HOST ?? "0.0.0.0";
+    const address = await this.app.listen({ port, host });
+    console.log(`Application running on ${address}`);
     await this.runHooks(this.lifecycleHooks.ready);
     if (fn) fn();
   }

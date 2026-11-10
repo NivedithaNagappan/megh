@@ -67,6 +67,19 @@ export type CacheOptions = {
   redisOptions?: RedisOptions;
 };
 
+/** Options for `app.run(port, options)`. */
+export type RunOptions = {
+  /** Interface to listen on. Defaults to `process.env.HOST`, else `0.0.0.0`. */
+  host?: string;
+  /** Called once the server is listening. */
+  onListen?: CallableFunction;
+  /**
+   * Milliseconds to wait for a graceful shutdown on SIGTERM/SIGINT before
+   * the process exits with code 1. Defaults to 10000.
+   */
+  shutdownTimeout?: number;
+};
+
 /** A function run at a stage of the application lifecycle. */
 export type LifecycleHook = () => void | Promise<void>;
 
@@ -116,7 +129,10 @@ export interface IMeghApplication {
   close: () => Promise<void>;
 
   // run
-  run: (port?: number, fn?: CallableFunction) => Promise<void>;
+  run: (
+    port?: number,
+    options?: RunOptions | CallableFunction,
+  ) => Promise<void>;
 }
 
 export type TestResponse =

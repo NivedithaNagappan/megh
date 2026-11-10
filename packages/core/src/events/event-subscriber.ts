@@ -3,6 +3,7 @@ import type { Socket, Server } from "socket.io";
 import { SocketContextService } from "./socket-dispatcher";
 import { SocketIoServer } from "../realtime/websocket";
 import "reflect-metadata";
+import { internalLogger } from "../observability/internal-logger";
 
 const PRIVATE_META_KEY = "megh:private";
 
@@ -74,15 +75,33 @@ export class EventSubscriberRegistry {
             isPrivateListener && channelResolver
               ? channelResolver(socket)
               : event;
-          console.log("Channel", channel);
+          internalLogger("events").debug(
+            {
+              channel,
+              listener: `${instance.constructor?.name}.${methodName}`,
+            },
+            "Socket listener registered",
+          );
           socket.on(channel, (payload: any) => {
-            this.socketContext.run(socket, async () => {
-              if (isPrivateListener) {
-                const user = socket.data.user;
-                if (!user) return; // unauthorized
-                // optionally add more validation here
-              }
-              await instance[methodName](payload, socket.data);
+            // A failing listener must not become an unhandled rejection,
+            // which would take the whole process down.
+            Promise.resolve(
+              this.socketContext.run(socket, async () => {
+                if (isPrivateListener) {
+                  const user = socket.data.user;
+                  if (!user) return; // unauthorized
+                }
+                await instance[methodName](payload, socket.data);
+              }),
+            ).catch((err: unknown) => {
+              internalLogger("events").error(
+                {
+                  err,
+                  channel,
+                  listener: `${instance.constructor?.name}.${methodName}`,
+                },
+                "Socket listener failed",
+              );
             });
           });
         }

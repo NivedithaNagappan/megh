@@ -14,7 +14,14 @@ import {
   SystemUseError,
 } from "../common/exceptions/system-exception";
 
-dotenv.config({ path: path.join(process.cwd(), ".env"), quiet: true });
+// Load `.env` into process.env on import, so module-level code can read it.
+// Set MEGH_DOTENV=false to skip this and manage the environment yourself.
+if (process.env.MEGH_DOTENV !== "false") {
+  dotenv.config({ path: path.join(process.cwd(), ".env"), quiet: true });
+}
+
+/** Parsed `.env` files by path. Read once; see `Environment.reload()`. */
+const fileCache = new Map<string, Record<string, string> | null>();
 /**
  * @class Environment
  * @description A service class to manage access to environment variables.
@@ -32,18 +39,27 @@ export class Environment {
    * @returns A dictionary of merged environment variables.
    */
   private parseEnvFile(filePath: string): any {
-    try {
-      const isExis = existsSync(filePath);
-      if (!isExis) {
-        return { ...process.env };
+    if (!fileCache.has(filePath)) {
+      try {
+        fileCache.set(
+          filePath,
+          existsSync(filePath)
+            ? dotenv.parse(fs.readFileSync(filePath, "utf8"))
+            : {},
+        );
+      } catch (error) {
+        console.error(`Error parsing .env file: ${error}`);
+        fileCache.set(filePath, null);
       }
-      const fileContent = fs.readFileSync(filePath, "utf8");
-      const parsedEnv = dotenv.parse(fileContent);
-      return { ...parsedEnv, ...process.env };
-    } catch (error) {
-      console.error(`Error parsing .env file: ${error}`);
-      return {};
     }
+    const parsed = fileCache.get(filePath);
+    // process.env is read on every call, so runtime changes still show.
+    return parsed === null ? {} : { ...parsed, ...process.env };
+  }
+
+  /** Forget the cached `.env` contents so the next read loads the file again. */
+  static reload(): void {
+    fileCache.clear();
   }
 
   /**
