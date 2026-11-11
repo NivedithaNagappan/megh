@@ -79,7 +79,39 @@ app.mapGet('/secret', handler)
 ## Returning responses
 
 Returning an object or array sends JSON; returning a string sends it as-is.
-To send an error status, throw an `HttpExceptions` error:
+
+Set the status code with `@HttpCode`, or return a result that carries one:
+
+```ts
+import { Post, Get, HttpCode, Results, HttpResponse } from '@meghjs/core';
+
+@Post('/')
+@HttpCode(201)
+create(@Body() dto: CreateUserDto) {
+  return this.users.create(dto);          // 201 with the user as JSON
+}
+
+@Get('/:id')
+async findOne(@Param('id') id: number) {
+  const user = await this.users.find(id);
+  return user ? Results.Ok(user)          // 200 { data: user }
+              : Results.NotFound('nope'); // 404 { code, status, message }
+}
+```
+
+| Result | Status | Body |
+|--------|--------|------|
+| `Results.Ok(x)` | 200 | `{ data: x }` |
+| `Results.Created(x)` | 201 | `{ data: x }` |
+| `Results.NoContent()` | 204 | empty |
+| `Results.NotFound(msg)` | 404 | `{ code, status, message }` |
+| `Results.OkStream(stream, { contentType, filename })` | 200 | the stream |
+| `HttpResponse.Created(x)` | 201 | `{ message, data }` |
+| `HttpResponse.NoContent()` | 204 | empty |
+
+A returned result's status wins over `@HttpCode`.
+
+To send an error status, throw an HTTP exception:
 
 ```ts
 import { HttpExceptions } from '@meghjs/core';
@@ -88,13 +120,8 @@ throw HttpExceptions.notFound('User not found');
 ```
 
 Error responses have the shape `{ code, status: "Error", message, data? }`.
-Outside development, 5xx responses hide the message and data.
-
-::: info
-In 0.3.0, `Results.Created`, `Results.NoContent`, `HttpResponse.Created`
-and `@HttpCode` do not change the status code yet; the response is 200. See
-[Known issues](/getting-started/upgrading#known-issues-in-0-3-0).
-:::
+Outside development, 5xx responses hide the message and data. See
+[Error Handling](/core-concept/error-handling).
 
 Inline routes skip authentication, `@Authorized` checks and DTO validation.
 Use a controller when you need them.
@@ -106,7 +133,18 @@ Use a controller when you need them.
 ```ts
 app.run();      // :4000
 app.run(3000);  // :3000
+app.run(3000, { host: '127.0.0.1' });
 ```
+
+The host defaults to the `HOST` environment variable, else `0.0.0.0`, so
+the app is reachable inside a container. Pass `127.0.0.1` to accept local
+connections only.
+
+| Option | Default | |
+|--------|---------|---|
+| `host` | `HOST` or `0.0.0.0` | Interface to listen on |
+| `onListen` | | Called once the server is listening |
+| `shutdownTimeout` | `10000` | Milliseconds to wait for a clean shutdown before exiting with code 1 |
 
 Read the port from the environment to make it configurable:
 
@@ -150,8 +188,8 @@ failing `onClose` hook is logged and the others still run.
 
 `await app.close()` shuts the app down yourself, for example at the end of a
 test. It stops the HTTP server (waiting for in-flight requests), the
-scheduler and queue workers, then runs the `onClose` hooks. Calling it twice
-is safe.
+scheduler, queue workers and the cache, then runs the `onClose` hooks.
+Calling it twice is safe.
 
 ## Development and production
 
@@ -160,8 +198,12 @@ is safe.
 and logs are written as JSON. Set `NODE_ENV=development` locally to get
 detailed errors, pretty logs and any docs you gate behind `isDevelopment()`.
 
-`run()` binds to localhost. On `SIGTERM` or `SIGINT` it calls `app.close()`
-before exiting.
+On `SIGTERM` or `SIGINT`, `run()` calls `app.close()` and exits with code 0.
+If shutdown fails, or takes longer than `shutdownTimeout`, it exits with
+code 1.
+
+Megh loads `.env` into `process.env` when it is first imported. Set
+`MEGH_DOTENV=false` to skip that and manage the environment yourself.
 
 ## Next steps
 

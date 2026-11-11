@@ -107,3 +107,16 @@ export function contentDisposition(filename: string): string {
   );
   return `attachment; filename="${ascii}"; filename*=UTF-8''${encoded}`;
 }
+
+/**
+ * Absolute directory for a project-relative source path such as
+ * `src/controllers`. Outside ts-node the compiled output is read instead, so
+ * a leading `src` segment becomes `dist`. Only that segment changes: a `src`
+ * elsewhere in the absolute path (`/home/me/src/app`) is left alone.
+ */
+export function resolveSourceDir(dir: string, isTsNode: boolean): string {
+  if (isTsNode || path.isAbsolute(dir)) return path.resolve(process.cwd(), dir);
+  const segments = path.normalize(dir).split(path.sep);
+  if (segments[0] === "src") segments[0] = "dist";
+  return path.join(process.cwd(), ...segments);
+}
