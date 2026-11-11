@@ -23,6 +23,7 @@ export default defineConfig({
       {
         text: 'v0.5.4',
         items: [
+          { text: 'Upcoming changes', link: '/getting-started/upgrading-next' },
           { text: 'Upgrading to 0.5.4', link: '/getting-started/upgrading-0.5' },
           { text: 'Moving from Avleon', link: '/getting-started/upgrading-megh' },
           { text: 'Upgrading to 0.4', link: '/getting-started/upgrading-0.4' },
@@ -110,6 +111,7 @@ export default defineConfig({
         text: 'Upgrade Guides',
         collapsed: true,
         items: [
+          { text: 'Upcoming changes', link: '/getting-started/upgrading-next' },
           { text: 'Upgrading to 0.5.4', link: '/getting-started/upgrading-0.5' },
           { text: 'Moving from Avleon', link: '/getting-started/upgrading-megh' },
           { text: 'Upgrading to 0.4', link: '/getting-started/upgrading-0.4' },

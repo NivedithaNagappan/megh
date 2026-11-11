@@ -124,10 +124,20 @@ decorator on a method — decorators apply bottom-up.
 Each request passes through these stages:
 
 1. Global middlewares (`useMiddlewares`)
-2. Authentication (sets `request.user`)
-3. Class `@Authorized`, then method `@Authorized`
-4. Class `@UseMiddleware`, then method `@UseMiddleware`
+2. Class `@UseMiddleware`, then method `@UseMiddleware`
+3. Authentication (sets `request.user`)
+4. Class `@Authorized`, then method `@Authorized`
 5. Parameter and DTO validation
 6. The route handler
 
-See [Authentication](/core-concept/authentication) for steps 2 and 3.
+Middleware runs before authentication, so it can reject a request early (an
+API key check, an IP allowlist) but cannot read `request.user`. Put checks
+that need the user in an authorization handler. Inline routes follow the
+same order.
+
+::: warning Changed after 0.5.4
+`@UseMiddleware` used to run after `@Authorized`. See
+[Upcoming changes](/getting-started/upgrading-next).
+:::
+
+See [Authentication](/core-concept/authentication) for steps 3 and 4.

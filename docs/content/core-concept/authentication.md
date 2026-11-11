@@ -123,6 +123,6 @@ handler that is not registered makes `app.run()` fail at boot.
 
 ## Order of checks
 
-Global middlewares run first, then authentication, then the class and method
-`@Authorized` checks, then `@UseMiddleware`, then validation. See
+Middleware runs first (global, then `@UseMiddleware`), then authentication,
+then the class and method `@Authorized` checks, then validation. See
 [Middleware](/core-concept/middleware#pipeline-order).
