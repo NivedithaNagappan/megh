@@ -215,5 +215,5 @@ Megh loads `.env` into `process.env` when it is first imported. Set
 
 - [Controller](/core-concept/controller) — routes, parameters, REST resources
 - [Middleware](/core-concept/middleware) — request pipeline
-- [Database](/advanced/database) — TypeORM and Knex
+- [MeghORM](/advanced/orm) — models, queries, relations and migrations
 - [OpenAPI](/microservices/openapi) — API documentation

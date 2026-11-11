@@ -30,7 +30,8 @@ yarn dlx @meghjs/cli new myapi
 :::
 
 The CLI asks which package manager to use and which features to include —
-OpenAPI docs, CORS, TypeORM, Knex and Scalar UI — then scaffolds the project and
+OpenAPI docs, CORS, MeghORM and Scalar UI (TypeORM and Knex are also
+offered) — then scaffolds the project and
 installs its dependencies.
 
 ```sh
@@ -148,8 +149,8 @@ imports, and you get a clear install hint the moment a feature needs one:
 | OpenAPI with Swagger UI | `@fastify/swagger`, `@fastify/swagger-ui` |
 | OpenAPI with Scalar | `@fastify/swagger`, `@scalar/fastify-api-reference` |
 | Models and migrations (`useMeghORM`) | a driver: `pg`, `mysql2`, `better-sqlite3`, or `tedious` + `tarn` |
-| TypeORM | `typeorm` + a driver (`pg`, `mysql2`, `sqlite3`, `better-sqlite3`, `mssql`) |
-| Knex | `knex` + a driver |
+| TypeORM (alternative to MeghORM) | `@meghjs/data`, `typeorm` + a driver (`pg`, `mysql2`, `sqlite3`, `better-sqlite3`, `mssql`) |
+| Knex (alternative to MeghORM) | `@meghjs/data`, `knex` + a driver |
 | Queues | `bullmq`, `ioredis` (not needed with the `memory`/`sync` drivers) |
 | Redis cache | `ioredis` |
 | Websockets | `socket.io`, `fastify-socket.io` |

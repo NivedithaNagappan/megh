@@ -18,7 +18,7 @@ npm i -g @meghjs/cli
 | `new` | | Create a new application |
 | `serve` | | Start the dev server with watch + rebuild |
 | `build` | | Compile using `tsconfig.build.json` |
-| `make:model` | `m:m` | Create an ORM model (columns from its migrations) or TypeORM entity |
+| `make:model` | `m:m` | Create a MeghORM model (columns from its migrations), or a TypeORM entity with `--orm` |
 | `update:model` | `u:m` | Sync an existing model's columns with its migrations |
 | `make:resource` | `m:r` | Create a REST resource for a model: DTOs, CRUD service and controller |
 | `make:controller` | `m:c` | Create a controller |

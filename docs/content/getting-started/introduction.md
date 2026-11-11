@@ -15,7 +15,7 @@ for building REST APIs with minimal boilerplate. It gives you:
 - Automatic OpenAPI documentation with Swagger UI or Scalar
 - [MeghORM](/advanced/orm): type-safe decorator models, a query builder,
   migrations with a schema builder, seeders and factories
-- TypeORM and Knex integrations with one pagination shape
+- Optional TypeORM and Knex integrations through `@meghjs/data`
 - Events, BullMQ queues, task scheduling and caching
 - Socket.IO integration
 - Structured logging and test utilities

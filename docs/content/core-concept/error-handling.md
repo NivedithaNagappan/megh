@@ -115,15 +115,15 @@ A filter is a class with a `catch(error, ctx)` method, following the same
 rules. `@Catch(...)` limits it to some error classes (subclasses included),
 and its constructor can take services from the container.
 
-```ts [src/filters/entity-not-found.filter.ts]
-import { Catch, ExceptionFilter, NotFoundException } from '@meghjs/core';
-import { EntityNotFoundError } from 'typeorm';
+```ts [src/filters/out-of-stock.filter.ts]
+import { Catch, ConflictException, ExceptionFilter } from '@meghjs/core';
+import { OutOfStockError } from '../errors/out-of-stock.error';
 
-// Map a database error to a 404, then let later filters format it.
-@Catch(EntityNotFoundError)
-export class EntityNotFoundFilter implements ExceptionFilter<EntityNotFoundError> {
-  catch() {
-    return new NotFoundException('Resource not found');
+// Map a domain error to a 409, then let later filters format it.
+@Catch(OutOfStockError)
+export class OutOfStockFilter implements ExceptionFilter<OutOfStockError> {
+  catch(error: OutOfStockError) {
+    return new ConflictException(error.message);
   }
 }
 ```
@@ -147,7 +147,7 @@ export class ProblemJsonFilter implements ExceptionFilter {
 ```
 
 ```ts [src/app.ts]
-app.useExceptionFilters([EntityNotFoundFilter, ProblemJsonFilter]);
+app.useExceptionFilters([OutOfStockFilter, ProblemJsonFilter]);
 ```
 
 Global filters run in registration order. `ctx.response` is already
