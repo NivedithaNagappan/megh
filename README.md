@@ -1391,12 +1391,13 @@ This monorepo holds the source for every Megh package and the docs site, so a ch
 | `packages/cli/`  | [`@meghjs/cli`](https://www.npmjs.com/package/@meghjs/cli)   | This repository (Lerna)                                               |
 | `packages/data/` | [`@meghjs/data`](https://www.npmjs.com/package/@meghjs/data) | This repository (Lerna)                                               |
 | `docs/`          | https://meghjs.github.io (VitePress)                         | [meghjs/meghjs.github.io](https://github.com/meghjs/meghjs.github.io) |
+| `benchmarks/`    | HTTP throughput against Fastify, Express and NestJS          | n/a                                                                   |
 | `resources/`     | Logos and favicons                                           | n/a                                                                   |
 | `scripts/`       | `mirror.sh`, which syncs `docs/` to its standalone repo      | n/a                                                                   |
 
 `1.0-CHECKLIST.md` tracks the work for the 1.0 release; the current roadmap is in [Roadmap to 1.0.0](#roadmap-to-100) below.
 
-`packages/*` are npm workspaces managed by [Lerna](https://lerna.js.org): one root lockfile, and `packages/cli` resolves `@meghjs/core` to the local source. Every package in `packages/` is published to npm unless its `package.json` has `"private": true`. A new internal library only needs a folder under `packages/` with a scoped name (`@meghjs/...`) and `"publishConfig": { "access": "public" }`. `docs/` is not a workspace and keeps its own lockfile.
+`packages/*` are npm workspaces managed by [Lerna](https://lerna.js.org): one root lockfile, and `packages/cli` resolves `@meghjs/core` to the local source. Every package in `packages/` is published to npm unless its `package.json` has `"private": true`. A new internal library only needs a folder under `packages/` with a scoped name (`@meghjs/...`) and `"publishConfig": { "access": "public" }`. `docs/` is not a workspace and keeps its own lockfile. Neither is `benchmarks/`, which installs a packed build of `packages/core` (see [benchmarks/README.md](benchmarks/README.md)).
 
 ---
 
