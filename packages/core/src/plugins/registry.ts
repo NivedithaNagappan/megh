@@ -104,6 +104,7 @@ function createContext(
     onInit: (hook) => void app.onInit(hook),
     onReady: (hook) => void app.onReady(hook),
     onClose: (hook) => void app.onClose(hook),
+    addHealthCheck: (name, check) => void app.addHealthCheck(name, check),
   };
 }
 

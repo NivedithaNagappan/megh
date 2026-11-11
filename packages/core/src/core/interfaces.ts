@@ -16,6 +16,8 @@ import {
 } from "fastify";
 import type { RedisOptions } from "ioredis";
 import type { PluginOptions } from "../plugins/registry";
+import type { RequestIdOptions } from "../observability/request-context";
+import type { HealthCheck, HealthOptions } from "../observability/health";
 import type {
   ErrorHandlerFunction,
   ErrorLogger,
@@ -55,6 +57,12 @@ export type GlobalOptions = {
 
 export type MeghApplicationOptions = PluginOptions & {
   server?: FastifyServerOptions;
+  /**
+   * Request IDs: read from `x-request-id` when the client sends a safe one,
+   * generated otherwise, echoed on the response and added to every log line.
+   * `false` turns this off. `server.genReqId` overrides the generator.
+   */
+  requestId?: RequestIdOptions;
 };
 
 export type AutoControllerOptions = {
@@ -103,6 +111,10 @@ export interface IMeghApplication {
   useErrorHandler: (handler: ErrorHandlerFunction) => this;
   /** Replace or turn off (`false`) logging of default error responses. */
   useErrorLogger: (logger: ErrorLogger | false) => this;
+  /** Serve `GET /health` and `GET /ready`. */
+  useHealth: (options?: HealthOptions) => this;
+  /** Add a readiness check reported by `GET /ready`. */
+  addHealthCheck: (name: string, check: HealthCheck) => this;
   useSerialization: () => this;
   useControllers: (controllers: Constructor[] | AutoControllerOptions) => this;
   useStaticFiles: (options: any) => this;
