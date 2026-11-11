@@ -40,11 +40,22 @@ import { AutoControllerOptions, IResponse, TestApplication } from "./types";
 
 import type { RedisOptions } from "ioredis";
 import { CacheManager } from "../observability/cache";
+import {
+  HealthCheck,
+  HealthOptions,
+  HealthRegistry,
+  SKIP_GLOBAL_MIDDLEWARE,
+} from "../observability/health";
 import { MeghConfig } from "../config/config";
 import { MeghAuthentication } from "../security/authentication";
 import { registerPlugins } from "../plugins/registry";
 import { internalLogger } from "../observability/internal-logger";
 import { resolveSourceDir } from "../common/utils/path-utils";
+import {
+  DEFAULT_REQUEST_ID_HEADER,
+  createRequestIdGenerator,
+  installRequestContext,
+} from "../observability/request-context";
 // ---------------------------------------------------------------------------
 // Lazy loaders for optional peer dependencies
 // ---------------------------------------------------------------------------
@@ -158,12 +169,21 @@ export class MeghApplication implements IMeghApplication {
   private signalHandler: ((signal: NodeJS.Signals) => void) | null = null;
   private pluginNames: string[] = [];
   private usesCache = false;
+  private health = new HealthRegistry();
   private errorHandler = new MeghErrorHandler({
     isDevelopment: () => this.isDevelopment(),
   });
 
   private constructor(options?: MeghApplicationOptions) {
+    const requestId = options?.requestId ?? {};
+    const requestIdHeader =
+      (requestId && requestId.header) || DEFAULT_REQUEST_ID_HEADER;
     this.app = Fastify({
+      ...(requestId && {
+        // genReqId decides; Fastify's own header lookup would trust any value.
+        requestIdHeader: false,
+        genReqId: createRequestIdGenerator(requestIdHeader, requestId.generate),
+      }),
       ...options?.server,
       ajv: {
         customOptions: {
@@ -173,6 +193,7 @@ export class MeghApplication implements IMeghApplication {
       },
     }) as FastifyInstance;
     this.router = new MeghRouter(this.app);
+    if (requestId) installRequestContext(this.app, requestIdHeader);
 
     this.pluginNames = registerPlugins(this, options);
     if (this.pluginNames.length) {
@@ -327,6 +348,9 @@ export class MeghApplication implements IMeghApplication {
     middlewares.forEach((m) => {
       const cls = Container.get<MeghMiddleware>(m);
       this.app.addHook("preHandler", async (req, res) => {
+        // Health probes must answer even when global middleware would reject
+        // the request (an API key check, an IP allowlist).
+        if ((req.routeOptions?.config as any)?.[SKIP_GLOBAL_MIDDLEWARE]) return;
         await cls.invoke(req as any, res as IResponse);
       });
     });
@@ -423,6 +447,31 @@ export class MeghApplication implements IMeghApplication {
   /** Install the error and not-found handlers on the Fastify instance. @internal */
   installErrorHandling() {
     this.errorHandler.install(this.app);
+  }
+
+  /**
+   * Serve health routes: `GET /health` (liveness, always 200) and
+   * `GET /ready` (readiness: runs every health check, 503 if one fails).
+   * Plugins register their own checks, such as Megh ORM's `database`.
+   *
+   *   app.useHealth({ checks: { redis: () => redis.ping() } })
+   */
+  useHealth(options: HealthOptions = {}) {
+    this.assertNotStarted("useHealth");
+    for (const [name, check] of Object.entries(options.checks ?? {})) {
+      this.health.add(name, check);
+    }
+    this.health.install(this.app, options, () => this.isDevelopment());
+    return this;
+  }
+
+  /**
+   * Add a readiness check, reported by `GET /ready` once `useHealth()` is on.
+   * It passes unless it throws, rejects or returns `false`.
+   */
+  addHealthCheck(name: string, check: HealthCheck) {
+    this.health.add(name, check);
+    return this;
   }
 
   useSerialization() {

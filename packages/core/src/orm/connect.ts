@@ -240,12 +240,17 @@ export function createDatabase(options: ResolvedDatabaseOptions): Kysely<any> {
 }
 
 /** Run a trivial query, so a wrong host or password fails at startup with a clear message. */
+/** Run `select 1`; rejects when the database can't be reached. */
+export async function pingDatabase(db: Kysely<any>): Promise<void> {
+  await kysely().sql`select 1`.execute(db);
+}
+
 export async function verifyConnection(
   db: Kysely<any>,
   options: ResolvedDatabaseOptions,
 ): Promise<void> {
   try {
-    await kysely().sql`select 1`.execute(db);
+    await pingDatabase(db);
   } catch (err: any) {
     throw new DatabaseConfigError(
       `Could not connect to ${describeConnection(options)}: ${err?.message ?? err}`,

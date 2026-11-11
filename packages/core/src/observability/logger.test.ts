@@ -39,13 +39,19 @@ describe("LoggerService constructor", () => {
   it("should initialize logger with default level 'info' when LOG_LEVEL is not set", () => {
     delete process.env.LOG_LEVEL;
     new LoggerService();
-    expect(mockPino).toHaveBeenCalledWith({ level: "info" });
+    expect(mockPino).toHaveBeenCalledWith({
+      level: "info",
+      mixin: expect.any(Function),
+    });
   });
 
   it("should initialize logger with LOG_LEVEL from environment", () => {
     process.env.LOG_LEVEL = "debug";
     new LoggerService();
-    expect(mockPino).toHaveBeenCalledWith({ level: "debug" });
+    expect(mockPino).toHaveBeenCalledWith({
+      level: "debug",
+      mixin: expect.any(Function),
+    });
   });
 
   it("should share one pino instance across LoggerService instances", () => {
@@ -60,12 +66,14 @@ describe("buildLoggerOptions", () => {
   it("should emit plain JSON options outside development", () => {
     expect(buildLoggerOptions({}, { NODE_ENV: "production" })).toEqual({
       level: "info",
+      mixin: expect.any(Function),
     });
   });
 
   it("should use pino-pretty when pretty is enabled", () => {
     expect(buildLoggerOptions({ pretty: true, level: "warn" }, {})).toEqual({
       level: "warn",
+      mixin: expect.any(Function),
       transport: prettyTransport,
     });
   });
@@ -73,6 +81,6 @@ describe("buildLoggerOptions", () => {
   it("should prefer config.level over LOG_LEVEL", () => {
     expect(
       buildLoggerOptions({ level: "error" }, { LOG_LEVEL: "debug" }),
-    ).toEqual({ level: "error" });
+    ).toEqual({ level: "error", mixin: expect.any(Function) });
   });
 });

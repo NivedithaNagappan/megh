@@ -74,6 +74,7 @@ export default defineConfig({
           { text: 'Caching', link: '/advanced/caching' },
           { text: 'File Uploads', link: '/advanced/file-uploads' },
           { text: 'Logging', link: '/advanced/logging' },
+          { text: 'Health Checks', link: '/advanced/health' },
         ],
       },
       {

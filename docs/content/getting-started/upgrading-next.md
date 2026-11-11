@@ -38,6 +38,10 @@ apps need no code changes, but check the items marked **Breaking**.
   `.authorized()`, and they send `Results` with their status.
 - `app.run(port, { host, onListen, shutdownTimeout })`.
 - `MEGH_DOTENV=false` skips loading `.env` on import.
+- [Health checks](/advanced/health): `app.useHealth()` serves `/health` and
+  `/ready`; Megh ORM registers a `database` check.
+- [Request IDs](/advanced/logging#request-ids): an `x-request-id` on every
+  response, `reqId` on every log line, and `getRequestId()`.
 
 ## Fixes
 

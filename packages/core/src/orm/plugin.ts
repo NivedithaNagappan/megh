@@ -16,7 +16,7 @@ import {
   resolveDatabaseOptions,
   type DatabaseOptions,
 } from "./config";
-import { createDatabase, verifyConnection } from "./connect";
+import { createDatabase, pingDatabase, verifyConnection } from "./connect";
 import { setConnection } from "./connection";
 import { setNamingStrategy } from "./naming";
 
@@ -51,6 +51,7 @@ export const ormPlugin = definePlugin({
           ctx.logger.info(`Connected to ${describeConnection(resolved)}`);
         });
         ctx.onClose(() => db.destroy());
+        ctx.addHealthCheck("database", () => pingDatabase(db));
         return ctx.app;
       },
     );
@@ -64,6 +65,7 @@ export const ormPlugin = definePlugin({
       }
       setConnection(db);
       ctx.onClose(() => db.destroy());
+      ctx.addHealthCheck("database", () => pingDatabase(db));
       return ctx.app;
     });
   },
