@@ -35,8 +35,8 @@ Use `--table <name>` when the table name isn't the plural snake_case name, and
 `-f` to overwrite existing DTO, service and controller files. Nested names
 work too: `megh m:r admin/user` serves `/admin/users`.
 
-If the model is a TypeORM entity, the service uses its repository and no DTOs
-are generated.
+If the model is a [TypeORM](/advanced/database) entity instead, the service
+uses its repository and no DTOs are generated.
 
 Register the controller in your app:
 
@@ -60,8 +60,8 @@ npx megh m:c user -m user -r
 
 With `-m`, the controller is generated like [`make:resource`](#resource): the model's
 DTOs, service and model (from its migration) are created if missing, and the
-controller delegates to the service. Add `--orm` to back that service with a
-TypeORM repository instead.
+controller delegates to the service, which queries the [MeghORM](/advanced/orm)
+model. To use a [TypeORM](/advanced/database) repository instead, add `--orm`.
 
 Use `-rt <dir>` to place the file under a different directory, and `--base-path`
 to emit `@ApiController` without a route prefix.
@@ -79,7 +79,7 @@ migration if it doesn't exist yet):
 npx megh make:service user -m user -r
 ```
 
-Add `--orm` for one backed by a TypeORM repository:
+To use a [TypeORM](/advanced/database) repository instead, add `--orm`:
 
 ```sh
 npx megh make:service user -m user -r --orm
@@ -92,7 +92,7 @@ npx megh make:service user -m user -r --orm
 npx megh make:model user
 npx megh make:model user --table app_users   # table name other than "users"
 
-# TypeORM entity
+# TypeORM entity (with @meghjs/data)
 npx megh m:m user --orm
 ```
 
