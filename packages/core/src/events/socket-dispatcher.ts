@@ -8,8 +8,8 @@ import { sleep } from "../common/helpers";
 export class SocketContextService {
   private readonly storage = new AsyncLocalStorage<{ socket: Socket }>();
 
-  run(socket: Socket, fn: () => void | Promise<void>) {
-    this.storage.run({ socket }, fn);
+  run(socket: Socket, fn: () => void | Promise<void>): void | Promise<void> {
+    return this.storage.run({ socket }, fn);
   }
 
   getSocket(): Socket | undefined {

@@ -45,6 +45,8 @@ import {
 import { contentDisposition } from "../common/utils/path-utils";
 import { MeghMiddleware } from "../http/middleware";
 import { REQUEST_METADATA_KEY } from "../http/controller";
+import { HTTP_CODE_META_KEY } from "../http/route-methods";
+import { HTTP_STATUS_KEY, HttpResult, OkStream } from "../http/results";
 import { OpenApiOptions } from "../openapi/openapi";
 import {
   AUTHORIZED_EXTENSION,
@@ -174,13 +176,32 @@ function validationError(
   return new ValidationErrorException(formatValidationMessage(errors), errors);
 }
 
+/**
+ * Methods `@All` routes answer. Fastify has no `ALL` method; HEAD comes
+ * with GET automatically.
+ */
+const ALL_METHODS: HTTPMethods[] = [
+  "GET",
+  "POST",
+  "PUT",
+  "PATCH",
+  "DELETE",
+  "OPTIONS",
+];
+
+function toFastifyMethod(method: string): HTTPMethods | HTTPMethods[] {
+  const upper = method.toUpperCase();
+  return upper === "ALL" ? ALL_METHODS : (upper as HTTPMethods);
+}
+
 // ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
 
 export class MeghRouter {
   private routeSet = new Set<string>();
-  private metaCache = new Map<string, MethodParamMeta>();
+  // Keyed on the prototype itself: two controllers can share a class name.
+  private metaCache = new WeakMap<object, Map<string, MethodParamMeta>>();
   private middlewares: Map<string, MeghMiddleware> = new Map();
   private rMap = new Map<string, FuncRoute>();
   private app: FastifyInstance;
@@ -241,10 +262,13 @@ export class MeghRouter {
   }
 
   private _processMeta(prototype: any, method: string): MethodParamMeta {
-    const cacheKey = `${prototype.constructor.name}_${method}`;
-    if (this.metaCache.has(cacheKey)) {
-      return this.metaCache.get(cacheKey)!;
+    let perClass = this.metaCache.get(prototype);
+    if (!perClass) {
+      perClass = new Map();
+      this.metaCache.set(prototype, perClass);
     }
+    const cached = perClass.get(method);
+    if (cached) return cached;
 
     const meta: MethodParamMeta = {
       request:
@@ -292,7 +316,7 @@ export class MeghRouter {
       (b: any) => b.validatorClass,
     );
 
-    this.metaCache.set(cacheKey, meta);
+    perClass.set(method, meta);
     return meta;
   }
 
@@ -472,6 +496,13 @@ export class MeghRouter {
         typeof m === "function" ? Container.get<MeghMiddleware>(m) : m,
       );
 
+      // @HttpCode on the route; a returned result's own status wins.
+      const _httpCode: number | undefined = Reflect.getMetadata(
+        HTTP_CODE_META_KEY,
+        prototype,
+        method,
+      );
+
       // @UseFilters on the route, then the controller, resolved once.
       const _routeFilters = getDeclaredFilters(ctrl.constructor, method).map(
         resolveFilter,
@@ -479,7 +510,7 @@ export class MeghRouter {
 
       this.app.route({
         url: routePath,
-        method: methodmetaOptions.method.toUpperCase() as HTTPMethods,
+        method: toFastifyMethod(methodmetaOptions.method),
         schema: routeSchema,
         attachValidation: isMultipart,
         config: { [ROUTE_FILTERS_CONFIG_KEY]: _routeFilters },
@@ -580,6 +611,33 @@ export class MeghRouter {
 
           const result = await prototype[method].apply(ctrl, args);
 
+          if (result instanceof HttpResult) {
+            res.code(result.statusCode);
+            for (const [name, value] of Object.entries(result.headers)) {
+              res.header(name, value);
+            }
+            if (result instanceof OkStream) {
+              const { contentType, filename } = result.options;
+              res.header(
+                "Content-Type",
+                contentType ||
+                  (filename && mime.getType(filename)) ||
+                  "application/octet-stream",
+              );
+              if (filename) {
+                res.header("Content-Disposition", contentDisposition(filename));
+              }
+            }
+            const body = result.body;
+            return body === undefined ? res.send() : res.send(body);
+          }
+
+          const status =
+            (result !== null && typeof result === "object"
+              ? (result as any)[HTTP_STATUS_KEY]
+              : undefined) ?? _httpCode;
+          if (status !== undefined) res.code(status);
+
           if (result && result.download) {
             const { stream, filename } = result;
             if (!stream || typeof stream.pipe !== "function") {
@@ -672,13 +730,20 @@ export class MeghRouter {
     }
 
     if (!(meta as any)._needsFiles) return args;
+    return this._mapFiles(req, meta, args);
+  }
 
+  /** Save the uploaded files and fill the `@UploadFile(s)` arguments. */
+  private async _mapFiles(
+    req: IRequest,
+    meta: MethodParamMeta,
+    args: any[],
+  ): Promise<any[]> {
     if (
-      (meta as any)._needsFiles &&
       req.headers["content-type"]?.startsWith("multipart/form-data") &&
       (req as any).saveRequestFiles
     ) {
-      const files = (req as any).saveRequestFiles();
+      const files = await (req as any).saveRequestFiles();
 
       if (!files || files.length === 0) {
         if (meta.files && meta.files.length > 0) {
@@ -821,7 +886,7 @@ export class MeghRouter {
       const routeSchema = buildRouteSchema(value.schema || {});
 
       this.app.route({
-        method: m.toUpperCase() as HTTPMethods,
+        method: toFastifyMethod(m),
         url: r,
         schema: routeSchema,
         preHandler: value.middlewares ?? [],
