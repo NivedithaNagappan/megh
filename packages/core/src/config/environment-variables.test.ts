@@ -21,6 +21,7 @@ describe("Environment", () => {
 
   beforeEach(() => {
     vi.resetModules();
+    Environment.reload();
     mockedFs.existsSync.mockClear();
     mockedFs.readFileSync.mockClear();
     process.env.TEST_KEY = "override";
@@ -83,5 +84,21 @@ describe("Environment", () => {
     });
     const env = new Environment();
     expect(env.getAll()).toEqual({});
+  });
+
+  it("reads the .env file once, but process.env on every call", () => {
+    mockedFs.existsSync.mockReturnValue(true);
+    mockedFs.readFileSync.mockReturnValue(envContent);
+    const env = new Environment();
+    expect(env.get("ANOTHER_KEY")).toBe("abc");
+    expect(env.get("TEST_KEY")).toBe("override");
+    process.env.TEST_KEY = "changed";
+    expect(env.get("TEST_KEY")).toBe("changed");
+    env.getAll();
+    expect(mockedFs.readFileSync).toHaveBeenCalledTimes(1);
+
+    Environment.reload();
+    env.get("ANOTHER_KEY");
+    expect(mockedFs.readFileSync).toHaveBeenCalledTimes(2);
   });
 });

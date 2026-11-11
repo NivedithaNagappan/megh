@@ -54,6 +54,42 @@ const log = LoggerService.child({ module: 'billing' });
 log.info('invoice sent');
 ```
 
+## Request IDs
+
+Every request gets an ID. Megh reuses the incoming `x-request-id` header
+when it is short and log-safe (letters, digits, `_ . : -`, at most 128
+characters), so an ID set by a proxy or the calling service carries
+through; otherwise it generates a UUID. The ID is sent back in the
+`x-request-id` response header.
+
+Log lines written while a request is handled get a `reqId` field, from
+`LoggerService` and from Megh's own logs alike:
+
+```json
+{"level":30,"reqId":"7f9c…","msg":"charging card"}
+```
+
+Read the ID anywhere in the request's call chain with `getRequestId()`,
+for example to pass it to another service:
+
+```ts
+import { getRequestId } from '@meghjs/core';
+
+await fetch(url, { headers: { 'x-request-id': getRequestId() ?? '' } });
+```
+
+Change the header or the generator, or turn request IDs off, when you
+create the app:
+
+```ts
+MeghApplication.getApp({
+  requestId: { header: 'x-correlation-id', generate: () => nanoid() },
+});
+MeghApplication.getApp({ requestId: false });
+```
+
+`server.genReqId` in the Fastify options overrides Megh's generator.
+
 ## Fastify request logs
 
 Megh does not pass this logger to Fastify. To route Fastify's request logs

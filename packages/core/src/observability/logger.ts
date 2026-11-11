@@ -1,5 +1,6 @@
 import pino from "pino";
 import { AppService } from "../common/decorators";
+import { getRequestId } from "./request-context";
 
 export interface LoggerConfig {
   /** Log level. Defaults to `LOG_LEVEL`, then `"info"`. */
@@ -22,6 +23,12 @@ function isPinoPrettyInstalled(): boolean {
   }
 }
 
+/** Adds `reqId` to every log line written while a request is handled. */
+function requestIdMixin(): Record<string, unknown> {
+  const reqId = getRequestId();
+  return reqId ? { reqId } : {};
+}
+
 /**
  * The pino options Megh uses: structured JSON everywhere, except in
  * development (`NODE_ENV === "development"`) when pino-pretty is installed.
@@ -35,10 +42,11 @@ export function buildLoggerOptions(
     config.pretty ??
     (env.NODE_ENV === "development" && isPinoPrettyInstalled());
 
-  if (!pretty) return { level };
+  if (!pretty) return { level, mixin: requestIdMixin };
 
   return {
     level,
+    mixin: requestIdMixin,
     transport: {
       target: "pino-pretty",
       options: {

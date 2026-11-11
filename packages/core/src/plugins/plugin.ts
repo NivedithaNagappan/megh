@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type pino from "pino";
 import type { MeghApplication } from "../core/application";
 import type { LifecycleHook } from "../core/interfaces";
+import type { HealthCheck } from "../observability/health";
 import type { ContainerApi } from "../di";
 import { SystemUseError } from "../common/exceptions/system-exception";
 
@@ -27,6 +28,8 @@ export interface PluginContext {
   onReady(hook: LifecycleHook): void;
   /** Same as `app.onClose`: run on shutdown, in reverse registration order. */
   onClose(hook: LifecycleHook): void;
+  /** Same as `app.addHealthCheck`: a readiness check reported by `GET /ready`. */
+  addHealthCheck(name: string, check: HealthCheck): void;
 }
 
 export interface MeghPlugin {

@@ -45,6 +45,8 @@ import {
 import { contentDisposition } from "../common/utils/path-utils";
 import { MeghMiddleware } from "../http/middleware";
 import { REQUEST_METADATA_KEY } from "../http/controller";
+import { HTTP_CODE_META_KEY } from "../http/route-methods";
+import { HTTP_STATUS_KEY, HttpResult, OkStream } from "../http/results";
 import { OpenApiOptions } from "../openapi/openapi";
 import {
   AUTHORIZED_EXTENSION,
@@ -174,13 +176,111 @@ function validationError(
   return new ValidationErrorException(formatValidationMessage(errors), errors);
 }
 
+/**
+ * Methods `@All` routes answer. Fastify has no `ALL` method; HEAD comes
+ * with GET automatically.
+ */
+const ALL_METHODS: HTTPMethods[] = [
+  "GET",
+  "POST",
+  "PUT",
+  "PATCH",
+  "DELETE",
+  "OPTIONS",
+];
+
+function toFastifyMethod(method: string): HTTPMethods | HTTPMethods[] {
+  const upper = method.toUpperCase();
+  return upper === "ALL" ? ALL_METHODS : (upper as HTTPMethods);
+}
+
+/**
+ * Send what a route returned: an `HttpResult` with its status and headers,
+ * a body marked by `withStatus`, a download or stream, or a plain value.
+ * `httpCode` comes from `@HttpCode` and loses to the result's own status.
+ */
+function sendResult(res: any, result: any, httpCode?: number) {
+  if (result instanceof HttpResult) {
+    res.code(result.statusCode);
+    for (const [name, value] of Object.entries(result.headers)) {
+      res.header(name, value);
+    }
+    if (result instanceof OkStream) {
+      const { contentType, filename } = result.options;
+      res.header(
+        "Content-Type",
+        contentType ||
+          (filename && mime.getType(filename)) ||
+          "application/octet-stream",
+      );
+      if (filename) {
+        res.header("Content-Disposition", contentDisposition(filename));
+      }
+    }
+    const body = result.body;
+    return body === undefined ? res.send() : res.send(body);
+  }
+
+  const status =
+    (result !== null && typeof result === "object"
+      ? (result as any)[HTTP_STATUS_KEY]
+      : undefined) ?? httpCode;
+  if (status !== undefined) res.code(status);
+
+  if (result && result.download) {
+    const { stream, filename } = result;
+    if (!stream || typeof stream.pipe !== "function") {
+      return res.code(500).send({
+        code: 500,
+        error: "INTERNAL_ERROR",
+        message: "Invalid stream object",
+      });
+    }
+    const contentType =
+      result.contentType ||
+      mime.getType(filename) ||
+      "application/octet-stream";
+    res.header("Content-Type", contentType);
+    res.header("Content-Disposition", contentDisposition(filename));
+    stream.on("error", (err: any) => {
+      console.error("Stream error:", err);
+      if (!res.sent) {
+        res.code(500).send({
+          code: 500,
+          error: "StreamError",
+          message: "Error while streaming file.",
+        });
+      }
+    });
+    return res.send(stream);
+  }
+
+  if (result && result.pipe) {
+    result.on("error", (err: any) => {
+      console.error("Stream error:", err);
+      if (!res.sent) {
+        res.code(500).send({
+          code: 500,
+          error: "StreamError",
+          message: "Error while streaming file.",
+        });
+      }
+    });
+    res.header("Content-Type", "application/octet-stream");
+    return res.send(result);
+  }
+
+  return res.send(result);
+}
+
 // ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
 
 export class MeghRouter {
   private routeSet = new Set<string>();
-  private metaCache = new Map<string, MethodParamMeta>();
+  // Keyed on the prototype itself: two controllers can share a class name.
+  private metaCache = new WeakMap<object, Map<string, MethodParamMeta>>();
   private middlewares: Map<string, MeghMiddleware> = new Map();
   private rMap = new Map<string, FuncRoute>();
   private app: FastifyInstance;
@@ -241,10 +341,13 @@ export class MeghRouter {
   }
 
   private _processMeta(prototype: any, method: string): MethodParamMeta {
-    const cacheKey = `${prototype.constructor.name}_${method}`;
-    if (this.metaCache.has(cacheKey)) {
-      return this.metaCache.get(cacheKey)!;
+    let perClass = this.metaCache.get(prototype);
+    if (!perClass) {
+      perClass = new Map();
+      this.metaCache.set(prototype, perClass);
     }
+    const cached = perClass.get(method);
+    if (cached) return cached;
 
     const meta: MethodParamMeta = {
       request:
@@ -292,7 +395,7 @@ export class MeghRouter {
       (b: any) => b.validatorClass,
     );
 
-    this.metaCache.set(cacheKey, meta);
+    perClass.set(method, meta);
     return meta;
   }
 
@@ -472,6 +575,13 @@ export class MeghRouter {
         typeof m === "function" ? Container.get<MeghMiddleware>(m) : m,
       );
 
+      // @HttpCode on the route; a returned result's own status wins.
+      const _httpCode: number | undefined = Reflect.getMetadata(
+        HTTP_CODE_META_KEY,
+        prototype,
+        method,
+      );
+
       // @UseFilters on the route, then the controller, resolved once.
       const _routeFilters = getDeclaredFilters(ctrl.constructor, method).map(
         resolveFilter,
@@ -479,12 +589,23 @@ export class MeghRouter {
 
       this.app.route({
         url: routePath,
-        method: methodmetaOptions.method.toUpperCase() as HTTPMethods,
+        method: toFastifyMethod(methodmetaOptions.method),
         schema: routeSchema,
         attachValidation: isMultipart,
         config: { [ROUTE_FILTERS_CONFIG_KEY]: _routeFilters },
         handler: async (req, res) => {
           let reqClone = req as unknown as IRequest;
+
+          // Order: middleware (controller, then route) → authentication →
+          // @Authorized (controller, then route) → validation → handler.
+          // Global middleware already ran as a preHandler hook.
+          if (_resolvedMw.length > 0) {
+            for (const mInst of _resolvedMw) {
+              reqClone = ((await mInst.invoke(reqClone, res)) ??
+                reqClone) as IRequest;
+              if (res.sent) return;
+            }
+          }
 
           if (_authnInst) {
             const user = await _authnInst.authenticate(reqClone);
@@ -514,13 +635,6 @@ export class MeghRouter {
             );
             if (res.sent) return;
             if (allowed === false) throw new ForbiddenException("Forbidden");
-          }
-
-          if (_resolvedMw.length > 0) {
-            for (const mInst of _resolvedMw) {
-              reqClone = (await mInst.invoke(reqClone, res)) as IRequest;
-              if (res.sent) return;
-            }
           }
 
           const _argsResult = this._mapArgs(reqClone, allMeta);
@@ -580,50 +694,7 @@ export class MeghRouter {
 
           const result = await prototype[method].apply(ctrl, args);
 
-          if (result && result.download) {
-            const { stream, filename } = result;
-            if (!stream || typeof stream.pipe !== "function") {
-              return res.code(500).send({
-                code: 500,
-                error: "INTERNAL_ERROR",
-                message: "Invalid stream object",
-              });
-            }
-            const contentType =
-              result.contentType ||
-              mime.getType(filename) ||
-              "application/octet-stream";
-            res.header("Content-Type", contentType);
-            res.header("Content-Disposition", contentDisposition(filename));
-            stream.on("error", (err: any) => {
-              console.error("Stream error:", err);
-              if (!res.sent) {
-                res.code(500).send({
-                  code: 500,
-                  error: "StreamError",
-                  message: "Error while streaming file.",
-                });
-              }
-            });
-            return res.send(stream);
-          }
-
-          if (result && result.pipe) {
-            result.on("error", (err: any) => {
-              console.error("Stream error:", err);
-              if (!res.sent) {
-                res.code(500).send({
-                  code: 500,
-                  error: "StreamError",
-                  message: "Error while streaming file.",
-                });
-              }
-            });
-            res.header("Content-Type", "application/octet-stream");
-            return res.send(result);
-          }
-
-          return res.send(result);
+          return sendResult(res, result, _httpCode);
         },
       });
     }
@@ -672,13 +743,20 @@ export class MeghRouter {
     }
 
     if (!(meta as any)._needsFiles) return args;
+    return this._mapFiles(req, meta, args);
+  }
 
+  /** Save the uploaded files and fill the `@UploadFile(s)` arguments. */
+  private async _mapFiles(
+    req: IRequest,
+    meta: MethodParamMeta,
+    args: any[],
+  ): Promise<any[]> {
     if (
-      (meta as any)._needsFiles &&
       req.headers["content-type"]?.startsWith("multipart/form-data") &&
       (req as any).saveRequestFiles
     ) {
-      const files = (req as any).saveRequestFiles();
+      const files = await (req as any).saveRequestFiles();
 
       if (!files || files.length === 0) {
         if (meta.files && meta.files.length > 0) {
@@ -758,25 +836,35 @@ export class MeghRouter {
       middlewares: [],
       schema: {},
     });
+    const entry = () => this.rMap.get(routeKey)!;
 
     const route = {
-      useMiddleware: <M extends MeghMiddleware>(
-        middlewares: Constructor<MeghMiddleware>[],
+      /** Run middleware (classes or instances) before the handler. */
+      useMiddleware: (
+        middlewares:
+          | MeghMiddleware
+          | Constructor<MeghMiddleware>
+          | (MeghMiddleware | Constructor<MeghMiddleware>)[],
       ) => {
-        const midds = Array.isArray(middlewares) ? middlewares : [middlewares];
-        const ms: any[] = (midds as unknown as any[]).map((mclass) => {
-          const cls = Container.get<MeghMiddleware>(mclass);
-          this.middlewares.set(mclass.name, cls);
-          return cls.invoke;
-        });
-        const r = this.rMap.get(routeKey);
-        if (r) r.middlewares = ms;
+        const list = Array.isArray(middlewares) ? middlewares : [middlewares];
+        entry().middlewares.push(...list);
+        return route;
+      },
+
+      /**
+       * Require authorization, like `@Authorized()` on a controller route.
+       * Pass a name to pick a handler from `useAuthorization({ ... })`.
+       */
+      authorized: (
+        options?: string | { name?: string; [key: string]: unknown },
+      ) => {
+        entry().authorize =
+          typeof options === "string" ? { name: options } : (options ?? {});
         return route;
       },
 
       useOpenApi: (options: OpenApiOptions) => {
-        const r = this.rMap.get(routeKey);
-        if (r) r.schema = options;
+        entry().schema = options;
         return route;
       },
     };
@@ -794,6 +882,10 @@ export class MeghRouter {
 
   mapPut<T extends (...args: any[]) => any>(path: string = "", fn: T) {
     return this._routeHandler(path, "PUT", fn);
+  }
+
+  mapPatch<T extends (...args: any[]) => any>(path: string = "", fn: T) {
+    return this._routeHandler(path, "PATCH", fn);
   }
 
   mapDelete<T extends (...args: any[]) => any>(path: string = "", fn: T) {
@@ -816,17 +908,58 @@ export class MeghRouter {
     this.rMap.forEach((value, key) => {
       const colonIdx = key.indexOf(":");
       const m = key.slice(0, colonIdx);
-      const r = key.slice(colonIdx + 1); // ✅ handles paths containing ":"
+      const r = key.slice(colonIdx + 1); // handles paths containing ":"
 
-      const routeSchema = buildRouteSchema(value.schema || {});
+      const routeSchema = buildRouteSchema(value.schema || {}, undefined, {
+        authorized: !!value.authorize,
+      });
+
+      // Resolved once, like controller routes.
+      const middlewares: MeghMiddleware[] = value.middlewares.map((m: any) =>
+        typeof m === "function" ? Container.get<MeghMiddleware>(m) : m,
+      );
+      const authn = this.authenticationHandler
+        ? (Container.get(this.authenticationHandler) as any)
+        : null;
+      const authzCls = value.authorize
+        ? this._resolveAuthorizer(value.authorize)
+        : undefined;
+      const authz = authzCls ? (Container.get(authzCls) as any) : null;
+      if (value.authorize && !authz) {
+        console.warn(
+          `[Megh] ${m} ${r} uses .authorized() but no authorization handler is registered; ` +
+            "every request will be denied (403). Call app.useAuthorization(YourAuthorization).",
+        );
+      }
 
       this.app.route({
-        method: m.toUpperCase() as HTTPMethods,
+        method: toFastifyMethod(m),
         url: r,
         schema: routeSchema,
-        preHandler: value.middlewares ?? [],
+        // Same order as controller routes: middleware → authentication →
+        // authorization → handler.
         handler: async (req, res) => {
-          return value.handler(req, res);
+          let request = req as unknown as IRequest;
+          for (const mw of middlewares) {
+            request = ((await mw.invoke(request, res)) ?? request) as IRequest;
+            if (res.sent) return;
+          }
+          if (authn) {
+            const user = await authn.authenticate(request);
+            if (res.sent) return;
+            if (user !== null && user !== undefined) {
+              (request as any).user = user;
+            }
+          }
+          if (value.authorize) {
+            if (!authz) throw new ForbiddenException("Forbidden");
+            const allowed = await authz.authorize(request, value.authorize);
+            if (res.sent) return;
+            if (allowed === false) throw new ForbiddenException("Forbidden");
+          }
+          const result = await value.handler(request, res);
+          if (res.sent) return;
+          return sendResult(res, result);
         },
       });
     });

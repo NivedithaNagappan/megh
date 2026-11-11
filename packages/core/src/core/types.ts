@@ -114,8 +114,11 @@ export interface IRoute {
 
 export type FuncRoute = {
   handler: Function;
+  /** Middleware classes or instances, resolved when routes are mapped. */
   middlewares: any[];
   schema: any;
+  /** Set by `.authorized()`: the `@Authorized` options for this route. */
+  authorize?: { name?: string; [key: string]: unknown };
 };
 
 export type StaticFileOptions = {

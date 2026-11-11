@@ -16,6 +16,8 @@ import {
 } from "fastify";
 import type { RedisOptions } from "ioredis";
 import type { PluginOptions } from "../plugins/registry";
+import type { RequestIdOptions } from "../observability/request-context";
+import type { HealthCheck, HealthOptions } from "../observability/health";
 import type {
   ErrorHandlerFunction,
   ErrorLogger,
@@ -55,6 +57,12 @@ export type GlobalOptions = {
 
 export type MeghApplicationOptions = PluginOptions & {
   server?: FastifyServerOptions;
+  /**
+   * Request IDs: read from `x-request-id` when the client sends a safe one,
+   * generated otherwise, echoed on the response and added to every log line.
+   * `false` turns this off. `server.genReqId` overrides the generator.
+   */
+  requestId?: RequestIdOptions;
 };
 
 export type AutoControllerOptions = {
@@ -65,6 +73,19 @@ export type AutoControllerOptions = {
 export type CacheOptions = {
   provider: "memory" | "redis";
   redisOptions?: RedisOptions;
+};
+
+/** Options for `app.run(port, options)`. */
+export type RunOptions = {
+  /** Interface to listen on. Defaults to `process.env.HOST`, else `0.0.0.0`. */
+  host?: string;
+  /** Called once the server is listening. */
+  onListen?: CallableFunction;
+  /**
+   * Milliseconds to wait for a graceful shutdown on SIGTERM/SIGINT before
+   * the process exits with code 1. Defaults to 10000.
+   */
+  shutdownTimeout?: number;
 };
 
 /** A function run at a stage of the application lifecycle. */
@@ -90,6 +111,10 @@ export interface IMeghApplication {
   useErrorHandler: (handler: ErrorHandlerFunction) => this;
   /** Replace or turn off (`false`) logging of default error responses. */
   useErrorLogger: (logger: ErrorLogger | false) => this;
+  /** Serve `GET /health` and `GET /ready`. */
+  useHealth: (options?: HealthOptions) => this;
+  /** Add a readiness check reported by `GET /ready`. */
+  addHealthCheck: (name: string, check: HealthCheck) => this;
   useSerialization: () => this;
   useControllers: (controllers: Constructor[] | AutoControllerOptions) => this;
   useStaticFiles: (options: any) => this;
@@ -103,6 +128,7 @@ export interface IMeghApplication {
   mapGet: <T extends (...args: any[]) => any>(path: string, fn: T) => any;
   mapPost: <T extends (...args: any[]) => any>(path: string, fn: T) => any;
   mapPut: <T extends (...args: any[]) => any>(path: string, fn: T) => any;
+  mapPatch: <T extends (...args: any[]) => any>(path: string, fn: T) => any;
   mapDelete: <T extends (...args: any[]) => any>(path: string, fn: T) => any;
 
   // lifecycle
@@ -116,7 +142,10 @@ export interface IMeghApplication {
   close: () => Promise<void>;
 
   // run
-  run: (port?: number, fn?: CallableFunction) => Promise<void>;
+  run: (
+    port?: number,
+    options?: RunOptions | CallableFunction,
+  ) => Promise<void>;
 }
 
 export type TestResponse =

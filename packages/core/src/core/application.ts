@@ -16,6 +16,7 @@ import {
   GlobalOptions,
   CacheOptions,
   LifecycleHook,
+  RunOptions,
 } from "./interfaces";
 import {
   MeghErrorHandler,
@@ -33,15 +34,28 @@ import { swaggerUiBranding } from "../openapi/branding";
 import { OpenApiUiOptions } from "../openapi/openapi";
 import { MeghMiddleware } from "../http/middleware";
 import { MeghScheduler } from "../scheduler";
+import { isScheduledTask } from "../scheduler/schedule-registry";
 import { isApiController } from "../common/container";
 import { AutoControllerOptions, IResponse, TestApplication } from "./types";
 
 import type { RedisOptions } from "ioredis";
 import { CacheManager } from "../observability/cache";
+import {
+  HealthCheck,
+  HealthOptions,
+  HealthRegistry,
+  SKIP_GLOBAL_MIDDLEWARE,
+} from "../observability/health";
 import { MeghConfig } from "../config/config";
 import { MeghAuthentication } from "../security/authentication";
 import { registerPlugins } from "../plugins/registry";
 import { internalLogger } from "../observability/internal-logger";
+import { resolveSourceDir } from "../common/utils/path-utils";
+import {
+  DEFAULT_REQUEST_ID_HEADER,
+  createRequestIdGenerator,
+  installRequestContext,
+} from "../observability/request-context";
 // ---------------------------------------------------------------------------
 // Lazy loaders for optional peer dependencies
 // ---------------------------------------------------------------------------
@@ -152,13 +166,24 @@ export class MeghApplication implements IMeghApplication {
       close: [],
     };
   private closing: Promise<void> | null = null;
+  private signalHandler: ((signal: NodeJS.Signals) => void) | null = null;
   private pluginNames: string[] = [];
+  private usesCache = false;
+  private health = new HealthRegistry();
   private errorHandler = new MeghErrorHandler({
     isDevelopment: () => this.isDevelopment(),
   });
 
   private constructor(options?: MeghApplicationOptions) {
+    const requestId = options?.requestId ?? {};
+    const requestIdHeader =
+      (requestId && requestId.header) || DEFAULT_REQUEST_ID_HEADER;
     this.app = Fastify({
+      ...(requestId && {
+        // genReqId decides; Fastify's own header lookup would trust any value.
+        requestIdHeader: false,
+        genReqId: createRequestIdGenerator(requestIdHeader, requestId.generate),
+      }),
       ...options?.server,
       ajv: {
         customOptions: {
@@ -168,6 +193,7 @@ export class MeghApplication implements IMeghApplication {
       },
     }) as FastifyInstance;
     this.router = new MeghRouter(this.app);
+    if (requestId) installRequestContext(this.app, requestIdHeader);
 
     this.pluginNames = registerPlugins(this, options);
     if (this.pluginNames.length) {
@@ -204,6 +230,7 @@ export class MeghApplication implements IMeghApplication {
 
   useCache(options?: CacheOptions) {
     CacheManager.configure(options);
+    this.usesCache = true;
 
     if (!Container.has(CacheManager)) {
       Container.set(CacheManager, new CacheManager());
@@ -321,6 +348,9 @@ export class MeghApplication implements IMeghApplication {
     middlewares.forEach((m) => {
       const cls = Container.get<MeghMiddleware>(m);
       this.app.addHook("preHandler", async (req, res) => {
+        // Health probes must answer even when global middleware would reject
+        // the request (an API key check, an IP allowlist).
+        if ((req.routeOptions?.config as any)?.[SKIP_GLOBAL_MIDDLEWARE]) return;
         await cls.invoke(req as any, res as IResponse);
       });
     });
@@ -417,6 +447,31 @@ export class MeghApplication implements IMeghApplication {
   /** Install the error and not-found handlers on the Fastify instance. @internal */
   installErrorHandling() {
     this.errorHandler.install(this.app);
+  }
+
+  /**
+   * Serve health routes: `GET /health` (liveness, always 200) and
+   * `GET /ready` (readiness: runs every health check, 503 if one fails).
+   * Plugins register their own checks, such as Megh ORM's `database`.
+   *
+   *   app.useHealth({ checks: { redis: () => redis.ping() } })
+   */
+  useHealth(options: HealthOptions = {}) {
+    this.assertNotStarted("useHealth");
+    for (const [name, check] of Object.entries(options.checks ?? {})) {
+      this.health.add(name, check);
+    }
+    this.health.install(this.app, options, () => this.isDevelopment());
+    return this;
+  }
+
+  /**
+   * Add a readiness check, reported by `GET /ready` once `useHealth()` is on.
+   * It passes unless it throws, rejects or returns `false`.
+   */
+  addHealthCheck(name: string, check: HealthCheck) {
+    this.health.add(name, check);
+    return this;
   }
 
   useSerialization() {
@@ -566,8 +621,7 @@ export class MeghApplication implements IMeghApplication {
       process.env.TS_NODE_DEV ||
       process.env.TS_NODE_PROJECT ||
       (process as any)[Symbol.for("ts-node.register.instance")];
-    const controllerDir = path.join(process.cwd(), this.registerControllerPath);
-    return isTsNode ? controllerDir : controllerDir.replace("src", "dist");
+    return resolveSourceDir(dir ?? this.registerControllerPath, !!isTsNode);
   }
 
   private async autoControllers(controllersPath?: string) {
@@ -645,6 +699,9 @@ export class MeghApplication implements IMeghApplication {
   mapPut<T extends (...args: any[]) => any>(path: string = "", fn: T) {
     return this.router.mapPut(path, fn);
   }
+  mapPatch<T extends (...args: any[]) => any>(path: string = "", fn: T) {
+    return this.router.mapPatch(path, fn);
+  }
   mapDelete<T extends (...args: any[]) => any>(path: string = "", fn: T) {
     return this.router.mapDelete(path, fn);
   }
@@ -689,9 +746,21 @@ export class MeghApplication implements IMeghApplication {
   }
 
   private async _close() {
+    if (this.signalHandler) {
+      process.removeListener("SIGTERM", this.signalHandler);
+      process.removeListener("SIGINT", this.signalHandler);
+      this.signalHandler = null;
+    }
     await this.app.close();
     this.scheduler.stopAll();
     await this._closeWorkers();
+    if (this.usesCache) {
+      try {
+        await CacheManager.close();
+      } catch (err) {
+        console.error("[Megh] Closing the cache failed:", err);
+      }
+    }
     for (const hook of [...this.lifecycleHooks.close].reverse()) {
       try {
         await hook();
@@ -722,9 +791,10 @@ export class MeghApplication implements IMeghApplication {
       (process as any)[Symbol.for("ts-node.register.instance")];
     const nodePath = require("path");
     const nodeFs = require("fs");
-    const { isScheduledTask } = require("../schedule-registry");
-    const dir = nodePath.join(process.cwd(), this.registerSchedulerPath);
-    const resolvedDir = isTsNode ? dir : dir.replace("src", "dist");
+    const resolvedDir = resolveSourceDir(
+      this.registerSchedulerPath,
+      !!isTsNode,
+    );
     try {
       const files = nodeFs.readdirSync(resolvedDir, {
         recursive: true,
@@ -757,7 +827,21 @@ export class MeghApplication implements IMeghApplication {
     }
   }
 
-  async run(port: number = 4000, fn?: CallableFunction): Promise<void> {
+  /**
+   * Start the server.
+   *
+   *   await app.run(3000)
+   *   await app.run(3000, { host: "127.0.0.1" })
+   *
+   * The host defaults to the `HOST` environment variable, else `0.0.0.0`
+   * so the app is reachable inside containers.
+   */
+  async run(
+    port: number = 4000,
+    options?: RunOptions | CallableFunction,
+  ): Promise<void> {
+    const fn = typeof options === "function" ? options : options?.onListen;
+    const runOptions: RunOptions = typeof options === "object" ? options : {};
     if (this.alreadyRun) throw new SystemUseError("App already running");
     this.alreadyRun = true;
 
@@ -810,15 +894,32 @@ export class MeghApplication implements IMeghApplication {
       }
     }
 
-    const gracefulStop = async () => {
-      await this.close();
-      process.exit(0);
+    const timeout = runOptions.shutdownTimeout ?? 10_000;
+    const gracefulStop = async (signal: NodeJS.Signals) => {
+      const log = internalLogger("app");
+      log.info({ signal }, "Shutting down");
+      // A hung close (open keep-alive sockets, a stuck hook) must not keep
+      // the process alive forever.
+      const timer = setTimeout(() => {
+        log.error({ timeout }, "Shutdown timed out; exiting");
+        process.exit(1);
+      }, timeout);
+      timer.unref();
+      try {
+        await this.close();
+        process.exit(0);
+      } catch (err) {
+        log.error({ err }, "Shutdown failed");
+        process.exit(1);
+      }
     };
+    this.signalHandler = gracefulStop;
     process.once("SIGTERM", gracefulStop);
     process.once("SIGINT", gracefulStop);
 
-    await this.app.listen({ port });
-    console.log(`Application running on http://127.0.0.1:${port}`);
+    const host = runOptions.host ?? process.env.HOST ?? "0.0.0.0";
+    const address = await this.app.listen({ port, host });
+    console.log(`Application running on ${address}`);
     await this.runHooks(this.lifecycleHooks.ready);
     if (fn) fn();
   }
