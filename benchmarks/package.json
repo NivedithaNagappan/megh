@@ -1,0 +1,29 @@
+{
+  "name": "megh-benchmarks",
+  "private": true,
+  "description": "HTTP throughput of Megh against Fastify, Express and NestJS",
+  "scripts": {
+    "setup": "node setup.js",
+    "build": "tsc -p tsconfig.json",
+    "bench": "npm run build && node run.js"
+  },
+  "dependencies": {
+    "@meghjs/core": "file:./.megh/meghjs-core.tgz",
+    "@nestjs/common": "12.4.2",
+    "@nestjs/core": "12.4.2",
+    "@nestjs/platform-express": "12.4.2",
+    "@nestjs/platform-fastify": "12.4.2",
+    "class-transformer": "0.5.1",
+    "class-validator": "0.15.1",
+    "express": "5.3.0",
+    "fastify": "5.12.8",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/node": "26.6.6",
+    "autocannon": "9.0.0",
+    "typescript": "7.0.2"
+  }
+}
