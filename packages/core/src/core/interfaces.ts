@@ -63,6 +63,22 @@ export type MeghApplicationOptions = PluginOptions & {
    * `false` turns this off. `server.genReqId` overrides the generator.
    */
   requestId?: RequestIdOptions;
+  /** Features that may change or be removed in a minor release. */
+  experimental?: ExperimentalOptions;
+};
+
+export type ExperimentalOptions = {
+  /**
+   * Validate `@Body()` and `@Query()` DTOs with a validator compiled once per
+   * class instead of calling class-transformer and class-validator on every
+   * request. Errors and the handler's value are the same; DTOs the compiled
+   * path can't reproduce exactly (nested DTOs, `@Type`, `@Transform`, async
+   * constraints) keep using class-validator.
+   *
+   * Defaults to the `MEGH_COMPILED_VALIDATION` environment variable
+   * (`true` or `1`), otherwise `false`.
+   */
+  compiledValidation?: boolean;
 };
 
 export type AutoControllerOptions = {

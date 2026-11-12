@@ -83,7 +83,8 @@
     "kysely": ">=0.27.0",
     "pino-pretty": "^13.0.0",
     "sharp": ">=0.33.0",
-    "socket.io": ">=4.0.0"
+    "socket.io": ">=4.0.0",
+    "validator": ">=13.0.0"
   },
   "peerDependenciesMeta": {
     "@faker-js/faker": {
@@ -142,6 +143,9 @@
     },
     "socket.io": {
       "optional": true
+    },
+    "validator": {
+      "optional": true
     }
   },
   "devDependencies": {
@@ -182,6 +186,7 @@
     "tedious": "^20.3.8",
     "typescript": "^5.7.2",
     "unplugin-swc": "^2.0.0",
+    "validator": "^13.15.35",
     "vitest": "^4.1.12"
   },
   "lint-staged": {

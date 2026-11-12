@@ -16,6 +16,9 @@ export * from "./core/testing";
 // ─── HTTP ────────────────────────────────────────────────────────────────────
 export * from "./http";
 
+// ─── Validation (class-validator / class-transformer compatible) ─────────────
+export * from "./validator";
+
 // ─── OpenAPI ─────────────────────────────────────────────────────────────────
 export * from "./openapi";
 
