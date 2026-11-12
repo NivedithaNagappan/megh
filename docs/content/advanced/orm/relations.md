@@ -31,7 +31,17 @@ until the relation is loaded, so declare it with `?`. A field typed with a
 model, or an array of models, is a relation rather than a column:
 `create()` and `where()` leave it out, and `with('posts')` type-checks and
 returns `Post[]`. The related class is passed as a function, so models can
-refer to each other in any order.
+refer to each other in any order, even from files that import each other.
+
+::: warning Circular imports in ES module builds
+Keep the `| null` on `@HasOne` and `@BelongsTo` fields, or use the
+`HasOne<Profile>` / `BelongsTo<User>` types. A field typed with the bare model
+(`author?: User`) makes TypeScript's decorator metadata read `User` while its
+file is still loading. When two models import each other, an app compiled to
+ES modules then fails on startup with
+`ReferenceError: Cannot access 'User' before initialization`. CommonJS builds
+are not affected, and `Post[]` fields are always fine.
+:::
 
 Each decorator also has a field type of the same name (`posts?: HasMany<Post>`,
 `author?: BelongsTo<User>`), which works the same way. Many-to-many keeps
