@@ -65,7 +65,7 @@ current working directory.
 |----------|--------|
 | `NODE_ENV` | Anything other than `development` (including unset) is production |
 | `HOST` | Interface `run()` listens on. Default `0.0.0.0` |
-| `PORT` | Read by the scaffolded `serve.ts`. `app.run()` itself does not read it |
+| `PORT` | Port `run()` listens on when you don't pass one. Default `4000` |
 | `LOG_LEVEL` | Log level. Default `info` |
 | `MEGH_DOTENV` | `false` stops Megh loading `.env` |
 | `DATABASE_URL`, `DB_*` | MeghORM connection |
@@ -80,29 +80,17 @@ In production mode (`app.isDevelopment()` is `false`):
 - Anything you put behind `if (app.isDevelopment())`, such as the OpenAPI
   docs in the scaffold, is off.
 
-::: warning A `.env` with `NODE_ENV=development`
-The scaffolded `.env` sets `NODE_ENV=development`. Values already in the
-environment win over `.env`, so `megh start` (which sets `NODE_ENV`) is safe.
-`node dist/serve.js` with that `.env` in the working directory is **not**: the
-app runs in development mode and sends stack traces to clients. Don't ship
-`.env` to production; set real environment variables instead.
+::: warning Keep `NODE_ENV=development` out of a deployed `.env`
+Values already in the environment win over `.env`. If a `.env` in the working
+directory sets `NODE_ENV=development` and nothing else sets `NODE_ENV`, the app
+runs in development mode and sends error details to clients. Projects created
+with 0.6.0 or later leave `NODE_ENV` out of `.env`; older projects should
+remove it. Don't ship `.env` to production; set real environment variables
+instead.
 :::
 
-`app.run()` listens on port `4000` unless you pass one. Read `PORT` yourself,
-as the scaffold does:
-
-```ts [src/serve.ts]
-import { Environment, inject } from '@meghjs/core';
-import app from './app';
-
-async function serve() {
-  const env = inject(Environment);
-  const port = Number(env.get('PORT')) || 4000;
-  await app.run(port);
-}
-
-serve();
-```
+`app.run()` listens on `PORT`, else `4000`, unless you pass a port. A port
+passed to `run()` wins. An invalid `PORT` stops startup with an error.
 
 See [Configuration](/core-concept/configuration) for typed config classes.
 

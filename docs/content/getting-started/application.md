@@ -113,11 +113,12 @@ app.useGlobal({
 
 ## Running the app
 
-`run(port?, options?)` starts the app. The port defaults to `4000`:
+`run(port?, options?)` starts the app. The port defaults to the `PORT`
+environment variable, else `4000`:
 
 ```ts
-app.run();      // :4000
-app.run(3000);  // :3000
+app.run();      // PORT, else :4000
+app.run(3000);  // :3000, whatever PORT says
 app.run(3000, { host: '127.0.0.1', shutdownTimeout: 20_000 });
 ```
 

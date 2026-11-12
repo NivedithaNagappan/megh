@@ -54,7 +54,7 @@ const app = Megh.createApplication();
 
 app.mapGet('/', () => 'Welcome to Megh.');
 
-app.run(); // by default run on :4000
+app.run(); // PORT from the environment, else :4000
 ```
 :::
 
@@ -134,10 +134,11 @@ Inline routes don't validate DTOs; use a controller when you need that.
 
 ## Running the app
 
-`run` takes an optional port, defaulting to `4000`:
+`run` takes an optional port. Without one it uses the `PORT` environment
+variable, else `4000`:
 
 ```ts
-app.run();      // :4000
+app.run();      // PORT, else :4000
 app.run(3000);  // :3000
 app.run(3000, { host: '127.0.0.1' });
 ```

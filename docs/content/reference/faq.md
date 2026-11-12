@@ -157,8 +157,8 @@ PORT=4001 npm run start:dev
 ```
 
 Find the process with `lsof -i :4000` (macOS, Linux) or
-`netstat -ano | findstr :4000` (Windows). `app.run()` uses `4000` unless you
-pass a port; the scaffolded `serve.ts` reads `PORT`.
+`netstat -ano | findstr :4000` (Windows). `app.run()` uses `PORT`, else
+`4000`, unless you pass a port.
 
 ### `.env` isn't loaded
 

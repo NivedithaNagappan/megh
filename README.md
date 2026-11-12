@@ -1236,7 +1236,7 @@ dispatches jobs without Redis.
 - Set `NODE_ENV=production`. Unset also counts as production, but be explicit.
   Production mode hides 5xx details, writes JSON logs, and makes
   `app.isDevelopment()` false.
-- `app.run(port)` defaults to port 4000 and listens on `HOST` or `0.0.0.0`
+- `app.run(port)` defaults to `PORT`, else 4000, and listens on `HOST` or `0.0.0.0`
   (`app.run(port, { host })` to change it). It handles `SIGTERM`/`SIGINT` by
   stopping the scheduler, closing registered workers and the cache, and gives
   up after `shutdownTimeout`.
@@ -1287,129 +1287,15 @@ These are regressions or gaps in 0.3.0 that are expected to be fixed in a patch 
 
 ## Roadmap to 1.0.0
 
-1.0.0 is the first release with a stable API: after it, breaking changes wait
-for 2.0. These lists track what has landed and what still blocks 1.0.0.
+1.0.0 is the first release with a stable API. Until then, minor releases
+(0.6, 0.7, …) can contain breaking changes, each with an upgrade guide.
 
-### Done
+Work left for 1.0.0 is tracked as issues in the
+[`1.0.0` milestone](https://github.com/meghjs/megh/milestone/1), with an
+overview in [`1.0-CHECKLIST.md`](https://github.com/meghjs/megh/blob/main/1.0-CHECKLIST.md).
+What's left is mainly core correctness fixes, security headers, rate limiting
+and compression, a global route prefix, tests, and trimming the public API.
 
-**Security**
-
-- [x] `@Authorized` is deny-by-default, and an authorizer returning `false` gives 403
-- [x] Handlers receive the validated DTO; unknown properties are rejected (mass-assignment protection)
-- [x] File storage confines every read, write and delete to `baseDir`, including sibling-prefix and symlink escapes
-- [x] Uploads get random names, don't overwrite, and are checked against an extension allowlist and a size limit
-- [x] Path traversal in `UploadFileFromRequest` closed
-- [x] `Content-Disposition` header injection closed
-- [x] Credentials are no longer logged, and production hides 5xx details and requires `NODE_ENV=development` for dev mode
-- [x] Concurrent requests no longer share `FileStorage` transform settings
-
-**Correctness**
-
-- [x] Built-in `Validator` accepts `0` and enforces `min` / `max` / `exact` / `optional`
-- [x] Missing decorator metadata (tsx, esbuild, SWC) no longer crashes; `@Body({ type })` supplies the type
-- [x] TypeORM query operators work at runtime
-- [x] `MeghRepository.transaction()` runs inside the transaction, and `@InjectRepository` works after `useTypeORM()`
-- [x] Collection fixes: `paginate`, `min`, `findAsync`
-- [x] One pagination shape across Collection, TypeORM and Knex
-- [x] Events keyed by class, exactly-once `once` listeners, `delay` honoured when queued, failed jobs kept
-- [x] Scheduler decorators no longer leak into parent classes
-- [x] In-memory cache enforces TTL; Redis tag sets expire
-- [x] JSON logs in production; framework logs go through `LoggerService`
-- [x] OpenAPI component schemas generated without instantiating classes
-
-**Features**
-
-- [x] Producer-only queues (`worker: false`) and workers that no longer start on import
-- [x] In-memory `memory` and `sync` queue drivers for tests
-- [x] `Results.Created` / `NoContent` / `OkStream` and `@HttpCode` APIs (not yet applied; see below)
-
-**Packaging and tooling**
-
-- [x] CommonJS-only build with an `exports` map and `sideEffects`
-- [x] Integrations moved to optional peer dependencies
-- [x] Replace typedi with Megh's own container behind `MeghContainer`
-- [x] MIT license file matches `package.json`
-- [x] Build without rimraf, ESLint/Jest configs fixed, husky 9, coverage off by default
-- [x] CI on Node 22 and 24 (typecheck, lint, test, build) and a tag-based publish workflow
-- [x] Request-pipeline integration tests
-
-**Docs**
-
-- [x] README and docs site rewritten for the current API, with an upgrade guide
-- [x] New pages: authentication, file uploads, caching, logging
-- [x] Docs site moved to VitePress, with template links removed and typos fixed
-
-### Left for 1.0.0
-
-**Regressions from 0.3.0** (see [Known Issues](#known-issues-in-030))
-
-- [x] `@UseMiddleware(SomeClass)` crashes boot (fixed in 0.5.2)
-- [ ] `@Repository` / `@Queue` classes without a constructor break under DI
-- [ ] Apply status codes from `Results`, `HttpResponse.Created` and `@HttpCode`
-- [ ] Put `@Body()` / `@Query()` DTO schemas back into the OpenAPI document
-- [ ] Upload policy violations should return 400 / 413, not 500
-
-**Core correctness**
-
-- [ ] `useScheduler({ path })` crashes `run()` (wrong `require` path)
-- [ ] `@UploadFile` / `@UploadFiles` don't await `saveRequestFiles()`
-- [ ] `@All()` crashes at registration
-- [ ] Respect `error.statusCode` (401, 413, 415, 429, …) for non-HTTP-exception errors
-- [ ] One consistent middleware order; resolve `@UseMiddleware` through DI
-- [ ] Route metadata cache is keyed on `constructor.name`, so same-named classes collide
-- [ ] Controller discovery: `_resolveControllerDir` ignores its argument and rewrites the first `src` in the path; repeated `useControllers` calls overwrite each other
-- [ ] Functional routes: add `mapPatch`, and run authentication, DI and the standard error shape
-- [ ] `run()` `host` option (default `0.0.0.0` in containers)
-- [ ] Graceful shutdown: `app.close()` and close TypeORM, Knex, Redis and Socket.IO with a drain timeout instead of `process.exit(0)`
-- [ ] `PartialType` / `OmitType` / `PickType` don't carry class-validator rules correctly
-- [ ] Scalar `spec.content` returns the plugin module instead of the spec
-- [ ] `Environment` re-reads `.env` on every `get()`, and `dotenv` loads on import
-- [ ] Socket handler errors become unhandled rejections
-- [ ] `@MeghWorker` `autoStart` is not wired to app boot
-- [ ] `class-validator` / `class-transformer` are loaded at import time despite being optional peers
-
-**Missing features**
-
-- [ ] Security headers (helmet) and rate limiting as `use*` options
-- [ ] Health and readiness endpoints
-- [ ] Request IDs in logs, and the logger wired into Fastify
-- [ ] Redirects and response headers from handlers
-- [ ] Pluggable error handler / exception filters
-- [x] Lifecycle hooks (`onInit`, `onReady`, `onClose`, `app.close()`)
-- [ ] Config schema validation at boot
-- [ ] Global route prefix and API versioning
-- [ ] Compression
-- [ ] Socket.IO handshake authentication and per-channel authorization
-
-**API cleanup** (a 1.0 surface is a promise)
-
-- [x] Finish or remove the no-ops `useHttps()`, `useSerialization()` and `mapFeatures()`
-- [x] Move TypeORM and Knex to the `@meghjs/data` plugin, and remove deprecated `useDatasource()`
-- [x] Remove the `MeghSocketIo` stubs and unused adapter types
-- [ ] Remove `KnexHooks` / `KnexHooksFactory`, `DuplicateRouteException`, `mapRoute()` and `registerMiddleware()`
-- [x] Stop exporting `mock-db` from the public index, and build without Jest types
-- [x] Replace remaining `console.log` calls with the logger
-
-**Tests**
-
-- [ ] `application.ts`: `run()`, shutdown, controller auto-discovery, `useScheduler({ path })`
-- [ ] Events, scheduler, workers, Redis cache, `testing.ts`, `map-types.ts`, config
-- [ ] Fix hollow tests and `MeghTest` (`from()` race, global container mutation)
-- [ ] Coverage thresholds
-
-**CLI** (`@meghjs/cli`, rewrite in progress)
-
-- [ ] Finish the commander-based rewrite: `--help` / `--version`, consistent flags and naming, refuse to overwrite existing projects
-- [ ] Generated code compiles against `@meghjs/core`
-- [ ] CLI tests (snapshots for every `make:*` command)
-- [ ] Release with versions matched to core
-
-**Docs and release**
-
-- [ ] Pages for configuration, scheduler, testing, dependency injection, responses, deployment and security hardening
-- [ ] API reference and FAQ
-- [ ] Contributor guide: project structure, and the exports that CLI-generated code relies on
-- [ ] Changelog and a versioning policy across core, CLI and docs
 
 ---
 
@@ -1471,7 +1357,7 @@ The docs site still deploys from its standalone repository. `npm run mirror` pus
 
 ## Releases and versioning
 
-- **Semver.** Patch releases fix bugs. Minor releases add backwards-compatible features. Breaking changes wait for the next major release and are deprecated (with a warning) for at least one minor release first, unless the change fixes a security issue.
+- **Semver.** Before 1.0, a minor release (`0.5` → `0.6`) can contain breaking changes and a patch release can't. From 1.0, breaking changes wait for a major release and are deprecated in a minor release first. See the [versioning policy](https://meghjs.github.io/reference/versioning).
 - **Release order.** `core` and `cli` are released together with the same version. Update the version in `docs` afterwards.
 
 ---
