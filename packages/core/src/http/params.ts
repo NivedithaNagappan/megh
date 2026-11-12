@@ -13,6 +13,7 @@ import {
   REQUEST_USER_META_KEY,
 } from "../common/container";
 import { getDataType, isClassValidatorClass } from "../common/helpers";
+import { isMeghValidatorClass } from "../validator/metadata";
 
 type ParameterOptions = {
   required?: boolean;
@@ -121,7 +122,9 @@ function createParamDecorator(
       const parameterTypes: unknown[] =
         Reflect.getMetadata("design:paramtypes", target, propertyKey) || [];
       const paramDataType = options.type ?? parameterTypes[parameterIndex];
-      const validatorClass = isClassValidatorClass(paramDataType as any);
+      const validatorClass =
+        isClassValidatorClass(paramDataType as any) ||
+        isMeghValidatorClass(paramDataType);
       existingParams.push({
         index: parameterIndex,
         key: typeof key === "string" ? key : "all",

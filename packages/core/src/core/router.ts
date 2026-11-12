@@ -39,6 +39,13 @@ import {
 } from "../errors/http-exceptions";
 import { getDeclaredFilters } from "../errors/exception-filter";
 import {
+  compileValidator,
+  CompiledValidator,
+} from "../common/utils/compiled-validation";
+import { isMeghValidatorClass } from "../validator/metadata";
+import { validateDto } from "../validator/compiler";
+import { assertMeghOnly } from "../validator/compat";
+import {
   resolveFilter,
   ROUTE_FILTERS_CONFIG_KEY,
 } from "../errors/error-handler";
@@ -288,8 +295,14 @@ export class MeghRouter {
   private authorizeMiddlewareMap = new Map<string, Constructor<any>>();
   private authenticationHandler?: Constructor<any>;
 
-  constructor(app: FastifyInstance) {
+  private compiledValidation: boolean;
+
+  constructor(
+    app: FastifyInstance,
+    options: { compiledValidation?: boolean } = {},
+  ) {
     this.app = app;
+    this.compiledValidation = !!options.compiledValidation;
   }
 
   /**
@@ -587,6 +600,23 @@ export class MeghRouter {
         resolveFilter,
       );
 
+      // DTOs with Megh's decorators use Megh's validator. class-validator
+      // DTOs use class-validator, or (experimental flag) a validator compiled
+      // from its metadata; see common/utils/compiled-validation.ts.
+      // `undefined` = transformAndValidate.
+      const _compile = (meta: any): CompiledValidator | undefined => {
+        if (!meta.validatorClass) return undefined;
+        if (isMeghValidatorClass(meta.dataType)) {
+          assertMeghOnly(meta.dataType);
+          return (value) => validateDto(meta.dataType, value);
+        }
+        return this.compiledValidation
+          ? compileValidator(meta.dataType)
+          : undefined;
+      };
+      const _queryValidators = allMeta.query.map(_compile);
+      const _bodyValidators = allMeta.body.map(_compile);
+
       this.app.route({
         url: routePath,
         method: toFastifyMethod(methodmetaOptions.method),
@@ -661,10 +691,12 @@ export class MeghRouter {
             for (let i = 0; i < allMeta.query.length; i++) {
               const queryMeta = allMeta.query[i];
               if (queryMeta.validatorClass) {
-                const { value, errors } = await transformAndValidate(
-                  queryMeta.dataType,
-                  args[queryMeta.index],
-                );
+                const { value, errors } =
+                  _queryValidators[i]?.(args[queryMeta.index]) ??
+                  (await transformAndValidate(
+                    queryMeta.dataType,
+                    args[queryMeta.index],
+                  ));
                 if (errors) throw validationError(errors);
                 args[queryMeta.index] = value;
               }
@@ -682,10 +714,12 @@ export class MeghRouter {
             for (let i = 0; i < allMeta.body.length; i++) {
               const bodyMeta = allMeta.body[i];
               if (bodyMeta.validatorClass) {
-                const { value, errors } = await transformAndValidate(
-                  bodyMeta.dataType,
-                  args[bodyMeta.index],
-                );
+                const { value, errors } =
+                  _bodyValidators[i]?.(args[bodyMeta.index]) ??
+                  (await transformAndValidate(
+                    bodyMeta.dataType,
+                    args[bodyMeta.index],
+                  ));
                 if (errors) throw validationError(errors);
                 args[bodyMeta.index] = value;
               }

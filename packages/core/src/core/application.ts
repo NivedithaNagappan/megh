@@ -192,7 +192,11 @@ export class MeghApplication implements IMeghApplication {
         },
       },
     }) as FastifyInstance;
-    this.router = new MeghRouter(this.app);
+    this.router = new MeghRouter(this.app, {
+      compiledValidation:
+        options?.experimental?.compiledValidation ??
+        /^(1|true)$/i.test(process.env.MEGH_COMPILED_VALIDATION ?? ""),
+    });
     if (requestId) installRequestContext(this.app, requestIdHeader);
 
     this.pluginNames = registerPlugins(this, options);
