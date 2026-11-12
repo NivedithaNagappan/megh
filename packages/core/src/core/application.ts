@@ -814,16 +814,18 @@ export class MeghApplication implements IMeghApplication {
    *   await app.run(3000)
    *   await app.run(3000, { host: "127.0.0.1" })
    *
-   * The host defaults to the `HOST` environment variable, else `0.0.0.0`
-   * so the app is reachable inside containers.
+   * The port defaults to the `PORT` environment variable, else `4000`. The
+   * host defaults to the `HOST` environment variable, else `0.0.0.0` so the
+   * app is reachable inside containers.
    */
   async run(
-    port: number = 4000,
+    port?: number,
     options?: RunOptions | CallableFunction,
   ): Promise<void> {
     const fn = typeof options === "function" ? options : options?.onListen;
     const runOptions: RunOptions = typeof options === "object" ? options : {};
     if (this.alreadyRun) throw new SystemUseError("App already running");
+    const listenPort = port ?? portFromEnv();
     this.alreadyRun = true;
 
     if (this.hasSwagger) {
@@ -895,7 +897,7 @@ export class MeghApplication implements IMeghApplication {
     process.once("SIGINT", gracefulStop);
 
     const host = runOptions.host ?? process.env.HOST ?? "0.0.0.0";
-    const address = await this.app.listen({ port, host });
+    const address = await this.app.listen({ port: listenPort, host });
     internalLogger("app").info(
       { address },
       `Application running on ${address}`,
@@ -903,6 +905,19 @@ export class MeghApplication implements IMeghApplication {
     await this.runHooks(this.lifecycleHooks.ready);
     if (fn) fn();
   }
+}
+
+/** The port from the `PORT` environment variable, else 4000. */
+function portFromEnv(): number {
+  const raw = process.env.PORT?.trim();
+  if (!raw) return 4000;
+  const port = Number(raw);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    throw new SystemUseError(
+      `Invalid PORT "${process.env.PORT}": expected a whole number from 0 to 65535.`,
+    );
+  }
+  return port;
 }
 
 /** The security scheme and requirement for `useOpenApi({ auth })`. */

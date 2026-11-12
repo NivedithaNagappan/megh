@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import net from "node:net";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MeghApplication } from "./application";
 import { LoggerService } from "../observability/logger";
@@ -122,5 +123,57 @@ describe("application lifecycle", () => {
 
     await vi.waitFor(() => expect(exit).toHaveBeenCalledWith(0));
     expect(closed).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("run() port", () => {
+  const savedPort = process.env.PORT;
+  const apps: MeghApplication[] = [];
+
+  afterEach(async () => {
+    await Promise.all(apps.splice(0).map((app) => app.close()));
+    if (savedPort === undefined) delete process.env.PORT;
+    else process.env.PORT = savedPort;
+  });
+
+  const freePort = () =>
+    new Promise<number>((resolve, reject) => {
+      const srv = net.createServer();
+      srv.once("error", reject);
+      srv.listen(0, () => {
+        const { port } = srv.address() as net.AddressInfo;
+        srv.close(() => resolve(port));
+      });
+    });
+  const boundPort = (app: MeghApplication) =>
+    (app.app.server.address() as net.AddressInfo).port;
+
+  it("listens on PORT when no port is passed", async () => {
+    const port = await freePort();
+    process.env.PORT = String(port);
+    const app = createApp();
+    apps.push(app);
+
+    await app.run(undefined, { host: "127.0.0.1" });
+
+    expect(boundPort(app)).toBe(port);
+  });
+
+  it("prefers an explicit port over PORT", async () => {
+    process.env.PORT = String(await freePort());
+    const app = createApp();
+    apps.push(app);
+
+    await app.run(0, { host: "127.0.0.1" });
+
+    expect(boundPort(app)).not.toBe(Number(process.env.PORT));
+  });
+
+  it("rejects an invalid PORT before starting", async () => {
+    process.env.PORT = "abc";
+    const app = createApp();
+
+    await expect(app.run()).rejects.toThrow("Invalid PORT \"abc\"");
+    expect(app.app.server.listening).toBe(false);
   });
 });
