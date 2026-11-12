@@ -15,7 +15,6 @@ Megh loads `.env` from the current working directory (`process.cwd()`) into
 read `process.env` straight away.
 
 ```sh [.env]
-NODE_ENV=development
 PORT=4000
 MAIL_HOST=smtp.example.com
 MAIL_PORT=587
@@ -100,7 +99,8 @@ import app from './app';
 
 async function serve() {
   const env = inject(Environment);
-  await app.run(Number(env.get('PORT')) || 4000);
+  if (env.get('MAINTENANCE') === 'true') return;
+  await app.run();
 }
 
 serve();

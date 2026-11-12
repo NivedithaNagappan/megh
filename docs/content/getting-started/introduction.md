@@ -122,7 +122,7 @@ breaking changes, each with an upgrade guide. See the
 [versioning policy](/reference/versioning) and
 [upcoming changes](/getting-started/upgrading-next).
 
-> **On 0.5.0 to 0.5.4?** See [Upgrading to 0.5.5](/getting-started/upgrading-0.5).
+> **On 0.5.x?** See [Upgrading to 0.6](/getting-started/upgrading-0.6).
 
 > **Coming from Avleon?** Avleon is now Megh. See
 > [Moving from Avleon to Megh](/getting-started/upgrading-megh). On 0.3 or
