@@ -214,7 +214,7 @@ index(@Query() query: ListUsersQuery, @Query('role') role: string) {
 ```
 
 A DTO (`@Query() query: ListUsersQuery`) becomes one query parameter per
-property, with its type and class-validator constraints (`@Min(1)` as
+property, with its type and validation constraints (`@Min(1)` as
 `minimum: 1`, `@MaxLength(255)` as `maxLength`, …). A property is required
 when it has `@IsNotEmpty()` or `@IsDefined()`, as for body DTOs. A single
 value (`@Query('role') role: string`) becomes one parameter, typed from the
@@ -310,7 +310,8 @@ export class UserController {
 
 A model is documented from its column decorators: each column's type,
 nullability and length, and nothing else, so the schema follows the model as
-it changes. A DTO is documented from its class-validator decorators, as
+it changes. A DTO is documented from its validation decorators (Megh's or
+class-validator's), as
 request bodies are. `@ApiResponse` on the controller class applies to every
 route in it.
 

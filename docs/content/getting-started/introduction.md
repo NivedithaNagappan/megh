@@ -10,7 +10,8 @@ for building REST APIs with minimal boilerplate. It gives you:
 
 - Decorator-based controllers and routes
 - Dependency injection
-- Request validation with class-validator DTOs
+- Request validation with DTOs: class-validator-compatible decorators,
+  compiled once per DTO
 - Authentication and deny-by-default authorization
 - Automatic OpenAPI documentation with Swagger UI or Scalar
 - [MeghORM](/advanced/orm): type-safe decorator models, a query builder,
