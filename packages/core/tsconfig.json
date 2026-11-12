@@ -19,6 +19,7 @@
     // Type checking
     "strict": true,
     "strictPropertyInitialization": false,
+    "noUnusedLocals": true,
     "skipLibCheck": true,
 
     // Node 22 built-ins. Tests import their APIs from vitest.

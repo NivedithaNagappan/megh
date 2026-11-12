@@ -6,6 +6,7 @@ import { MultipartFile } from "../http/multipart";
 import { AppService } from "../common/decorators";
 import { SystemUseError } from "../common/exceptions/system-exception";
 import { SavedMultipartFile } from "@fastify/multipart";
+import { internalLogger } from "../observability/internal-logger";
 import {
   InternalErrorException,
   NotFoundException,
@@ -17,6 +18,8 @@ import {
   randomFilename,
   resolveWithin,
 } from "../common/utils/path-utils";
+
+const log = internalLogger("storage");
 
 export interface TransformOptions {
   resize?: { width: number; height: number };
@@ -205,7 +208,7 @@ export class FileStorage implements FileStorageInterface {
     try {
       fs.unlinkSync(fullPath);
     } catch (error) {
-      console.error("File removal error:", error);
+      log.error({ err: error }, "File removal error");
       throw new SystemUseError("Failed to remove file");
     }
   }
@@ -312,7 +315,7 @@ export class FileStorage implements FileStorageInterface {
       if (err?.code === "EEXIST") {
         throw new SystemUseError(`File ${filename} already exists`);
       }
-      console.error(`Failed to save file ${originalFilename}:`, err);
+      log.error({ err, file: originalFilename }, "Failed to save file");
       throw new SystemUseError(`Failed to upload file ${originalFilename}`);
     } finally {
       if (savedFile.filepath && !f.file) {
@@ -380,7 +383,7 @@ export class FileStorage implements FileStorageInterface {
       await pipeline(fileStream, limiter, sharpPipeline, out);
     } catch (error: any) {
       if (error instanceof SystemUseError) throw error;
-      console.error("Image processing failed:", error);
+      log.error({ err: error }, "Image processing failed");
       throw new InternalErrorException("Image processing failed");
     }
   }
@@ -480,7 +483,7 @@ export class FileStorage implements FileStorageInterface {
         fs.unlinkSync(filepath);
       }
     } catch (error) {
-      console.error("Failed to remove temp file:", error);
+      log.error({ err: error }, "Failed to remove temp file");
     }
   }
 

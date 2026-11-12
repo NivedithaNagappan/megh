@@ -19,7 +19,6 @@ export const AUTHORIZATION_META_KEY = Symbol("idatasource:authorization");
 
 const controllerRegistry = new Set<Function>();
 const serviceRegistry = new Set<Function>();
-const optionsRegistry = new Map<string, any>();
 
 export function registerController(controller: Function) {
   controllerRegistry.add(controller);

@@ -397,9 +397,6 @@ export function generateClassSchema(
   return buildClassSchema(classType, options, new Set());
 }
 
-/** @deprecated Use {@link generateClassSchema}; this is an alias. */
-export const CreateSwaggerObjectSchema = generateClassSchema;
-
 /**
  * Replace every `#/components/schemas/X` `$ref` in `schema` whose class was
  * seen by {@link generateClassSchema} with that class's inline schema.

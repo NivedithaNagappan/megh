@@ -32,6 +32,7 @@
  * payload holds an object the plain-copy rules don't cover.
  */
 import { Constructor } from "./common-utils";
+import { internalLogger } from "../../observability/internal-logger";
 import { getTransformerStorage } from "../../openapi/schema-properties";
 import { replaceMessageSpecialTokens } from "../../validator/messages";
 import type {
@@ -98,9 +99,9 @@ export function compileValidator<T extends object>(
   } catch (error) {
     if (!warnedUnavailable) {
       warnedUnavailable = true;
-      console.warn(
-        "[Megh] compiled validation is unavailable, using class-validator:",
-        (error as Error)?.message ?? error,
+      internalLogger("validation").warn(
+        { err: error },
+        "Compiled validation is unavailable, using class-validator",
       );
     }
     compiled = null;

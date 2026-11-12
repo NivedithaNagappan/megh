@@ -4,7 +4,7 @@
  * @email xtrinsic96@gmail.com
  * @url https://github.com/xtareq
  */
-import Fastify, { FastifyInstance, HTTPMethods } from "fastify";
+import Fastify, { FastifyInstance } from "fastify";
 import path from "path";
 import fs from "fs";
 import { MeghRouter } from "./router";
@@ -25,7 +25,7 @@ import {
   ErrorHandlerFunction,
 } from "../errors";
 import { SystemUseError } from "../common/exceptions/system-exception";
-import { Constructor, loadPackageFromClient } from "../common/helpers";
+import { Constructor } from "../common/helpers";
 import { generateSwaggerSchema } from "../openapi/swagger-schema";
 import { applyResponseExtensions } from "../openapi/responses";
 import { applyRequestBodyExtensions } from "../openapi/request-body";
@@ -36,9 +36,8 @@ import { MeghMiddleware } from "../http/middleware";
 import { MeghScheduler } from "../scheduler";
 import { isScheduledTask } from "../scheduler/schedule-registry";
 import { isApiController } from "../common/container";
-import { AutoControllerOptions, IResponse, TestApplication } from "./types";
+import { AutoControllerOptions, IResponse } from "./types";
 
-import type { RedisOptions } from "ioredis";
 import { CacheManager } from "../observability/cache";
 import {
   HealthCheck,
@@ -148,12 +147,10 @@ export class MeghApplication implements IMeghApplication {
   private alreadyRun = false;
   private hasSwagger = false;
   private globalSwaggerOptions: OpenApiUiOptions | undefined;
-  private isMapFeatures = false;
   private registerControllerAuto = false;
   private registerControllerPath = "src/controllers";
   private controllers: any[] = [];
   private _hasWebsocket = false;
-  private io: any;
   private scheduler: MeghScheduler = new MeghScheduler();
   private schedulerTasks: any[] = [];
   private registerSchedulerAuto = false;
@@ -478,10 +475,6 @@ export class MeghApplication implements IMeghApplication {
     return this;
   }
 
-  useSerialization() {
-    return this;
-  }
-
   /**
    * Register scheduled task classes.
    *
@@ -521,10 +514,6 @@ export class MeghApplication implements IMeghApplication {
 
   useStaticFiles(options?: any) {
     this.app.register(requireStatic(), options); // ✅ lazy
-    return this;
-  }
-
-  useHttps(options?: any) {
     return this;
   }
 
@@ -584,16 +573,11 @@ export class MeghApplication implements IMeghApplication {
         try {
           await w?.close?.();
         } catch (err) {
-          console.error("[Megh] Failed to close worker:", err);
+          internalLogger("queue").error({ err }, "Failed to close worker");
         }
       }),
     );
     this._workers = [];
-  }
-
-  mapFeatures() {
-    this.isMapFeatures = true;
-    return this;
   }
 
   /**
@@ -657,15 +641,10 @@ export class MeghApplication implements IMeghApplication {
         }
       }
     } catch (e) {
-      console.warn("Could not auto-register controllers from " + conDir, e);
-    }
-  }
-
-  private _mapFeatures() {
-    try {
-      Container.get("features");
-    } catch {
-      // features token not registered — safe to ignore
+      internalLogger("app").warn(
+        { err: e, dir: conDir },
+        "Could not auto-register controllers",
+      );
     }
   }
 
@@ -674,8 +653,6 @@ export class MeghApplication implements IMeghApplication {
     try {
       const { SocketContextService } = require("../events/socket-dispatcher");
       const { EventSubscriberRegistry } = require("../events/event-subscriber");
-      const { SocketIoServer } = require("../realtime/websocket");
-
       const contextService = Container.get(SocketContextService) as any;
       const subscriberRegistry = Container.get(EventSubscriberRegistry) as any;
 
@@ -688,7 +665,7 @@ export class MeghApplication implements IMeghApplication {
         });
       };
     } catch (e) {
-      console.warn("[Megh] Socket handler error:", e);
+      internalLogger("realtime").warn({ err: e }, "Socket handler error");
     }
   }
 
@@ -762,14 +739,14 @@ export class MeghApplication implements IMeghApplication {
       try {
         await CacheManager.close();
       } catch (err) {
-        console.error("[Megh] Closing the cache failed:", err);
+        internalLogger("app").error({ err }, "Closing the cache failed");
       }
     }
     for (const hook of [...this.lifecycleHooks.close].reverse()) {
       try {
         await hook();
       } catch (err) {
-        console.error("[Megh] onClose hook failed:", err);
+        internalLogger("app").error({ err }, "onClose hook failed");
       }
     }
   }
@@ -824,9 +801,9 @@ export class MeghApplication implements IMeghApplication {
         }
       }
     } catch (e) {
-      console.warn(
-        "[Megh] Could not auto-register tasks from " + resolvedDir,
-        e,
+      internalLogger("scheduler").warn(
+        { err: e, dir: resolvedDir },
+        "Could not auto-register tasks",
       );
     }
   }
@@ -854,10 +831,6 @@ export class MeghApplication implements IMeghApplication {
     }
 
     await this.runHooks(this.lifecycleHooks.init);
-
-    if (this.isMapFeatures) {
-      this._mapFeatures();
-    }
 
     if (this.registerControllerAuto) {
       await this.autoControllers();
@@ -894,7 +867,7 @@ export class MeghApplication implements IMeghApplication {
         // @ts-ignore
         await this.app.io.on("connection", this.handleSocket.bind(this));
       } catch (e) {
-        console.warn("[Megh] WebSocket setup error:", e);
+        internalLogger("realtime").warn({ err: e }, "WebSocket setup error");
       }
     }
 
@@ -923,7 +896,10 @@ export class MeghApplication implements IMeghApplication {
 
     const host = runOptions.host ?? process.env.HOST ?? "0.0.0.0";
     const address = await this.app.listen({ port, host });
-    console.log(`Application running on ${address}`);
+    internalLogger("app").info(
+      { address },
+      `Application running on ${address}`,
+    );
     await this.runHooks(this.lifecycleHooks.ready);
     if (fn) fn();
   }

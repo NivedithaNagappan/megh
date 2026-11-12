@@ -4,15 +4,9 @@
  * @email xtrinsic96@gmail.com
  * @url https://github.com/xtareq
  */
-import {
-  FastifyRequest,
-  FastifyReply,
-  InjectOptions,
-  LightMyRequestResponse,
-} from "fastify";
+import { FastifyRequest, FastifyReply } from "fastify";
 import { MultipartFile } from "../http/multipart";
 import { OpenApiUiOptions } from "../openapi/openapi";
-import { Constructor } from "../common/helpers";
 import type {
   IMeghApplication,
   MeghApplicationOptions,

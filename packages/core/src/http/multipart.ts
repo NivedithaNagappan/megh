@@ -5,11 +5,7 @@
  * @url https://github.com/xtareq
  */
 
-import {
-  MultipartFile as FsM,
-  MultipartValue,
-  SavedMultipartFile,
-} from "@fastify/multipart";
+import { MultipartFile as FsM, SavedMultipartFile } from "@fastify/multipart";
 import { IRequest } from "../core/types";
 import fs from "fs";
 import path from "path";

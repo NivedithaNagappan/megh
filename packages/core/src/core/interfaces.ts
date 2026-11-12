@@ -131,14 +131,10 @@ export interface IMeghApplication {
   useHealth: (options?: HealthOptions) => this;
   /** Add a readiness check reported by `GET /ready`. */
   addHealthCheck: (name: string, check: HealthCheck) => this;
-  useSerialization: () => this;
   useControllers: (controllers: Constructor[] | AutoControllerOptions) => this;
   useStaticFiles: (options: any) => this;
-  useHttps: (options?: any) => this;
   useGlobal: (options: GlobalOptions) => this;
   useSocketIo: (options?: any) => this;
-
-  mapFeatures: () => this;
 
   // all map
   mapGet: <T extends (...args: any[]) => any>(path: string, fn: T) => any;

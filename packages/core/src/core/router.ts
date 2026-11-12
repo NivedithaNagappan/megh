@@ -14,6 +14,7 @@ import {
   formatValidationMessage,
 } from "../common/helpers";
 import { Container } from "../di";
+import { internalLogger } from "../observability/internal-logger";
 import {
   CONTROLLER_META_KEY,
   ROUTE_META_KEY,
@@ -26,12 +27,7 @@ import {
   REQUEST_BODY_FILE_KEY,
   REQUEST_BODY_FILES_KEY,
 } from "../common/container";
-import {
-  MethodParamMeta,
-  IRequest,
-  FuncRoute,
-  ParamMetaOptions,
-} from "./types";
+import { MethodParamMeta, IRequest, FuncRoute } from "./types";
 import {
   BadRequestException,
   ForbiddenException,
@@ -71,8 +67,9 @@ import {
   QUERY_PARAMS_EXTENSION,
 } from "../openapi/query-params";
 import mime from "mime";
-import Stream from "stream";
 import { HTTPMethods, FastifyInstance } from "fastify";
+
+const log = internalLogger("router");
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -250,7 +247,7 @@ function sendResult(res: any, result: any, httpCode?: number) {
     res.header("Content-Type", contentType);
     res.header("Content-Disposition", contentDisposition(filename));
     stream.on("error", (err: any) => {
-      console.error("Stream error:", err);
+      log.error({ err }, "Stream error");
       if (!res.sent) {
         res.code(500).send({
           code: 500,
@@ -264,7 +261,7 @@ function sendResult(res: any, result: any, httpCode?: number) {
 
   if (result && result.pipe) {
     result.on("error", (err: any) => {
-      console.error("Stream error:", err);
+      log.error({ err }, "Stream error");
       if (!res.sent) {
         res.code(500).send({
           code: 500,
@@ -285,10 +282,8 @@ function sendResult(res: any, result: any, httpCode?: number) {
 // ---------------------------------------------------------------------------
 
 export class MeghRouter {
-  private routeSet = new Set<string>();
   // Keyed on the prototype itself: two controllers can share a class name.
   private metaCache = new WeakMap<object, Map<string, MethodParamMeta>>();
-  private middlewares: Map<string, MeghMiddleware> = new Map();
   private rMap = new Map<string, FuncRoute>();
   private app: FastifyInstance;
   private authorizeMiddleware?: Constructor<any>;
@@ -347,10 +342,6 @@ export class MeghRouter {
       return named;
     }
     return this.authorizeMiddleware;
-  }
-
-  registerMiddleware(name: string, instance: MeghMiddleware) {
-    this.middlewares.set(name, instance);
   }
 
   private _processMeta(prototype: any, method: string): MethodParamMeta {
@@ -449,11 +440,6 @@ export class MeghRouter {
         method: methodMeta.method.toLowerCase(),
         path: formatUrl(controllerMeta.path + methodMeta.path),
       };
-      const routeKey = `${methodmetaOptions.method}:${methodmetaOptions.path}`;
-      if (!this.routeSet.has(routeKey)) {
-        this.routeSet.add(routeKey);
-      }
-
       const classMiddlewares = this.executeMiddlewares(ctrl, method);
       // `@OpenApi()` on the method, over the route decorator's `openapi` option.
       const swaggerMeta = {
@@ -572,8 +558,8 @@ export class MeghRouter {
         (authClsMeata.authorize && !_clsAuthInst) ||
         (authClsMethodMeata.authorize && !_mthdAuthInst);
       if (_authMissing) {
-        console.warn(
-          `[Megh] ${methodmetaOptions.method.toUpperCase()} ${routePath} uses @Authorized ` +
+        log.warn(
+          `${methodmetaOptions.method.toUpperCase()} ${routePath} uses @Authorized ` +
             "but no authorization handler is registered; every request will be denied (403). " +
             "Call app.useAuthorization(YourAuthorization).",
         );
@@ -926,18 +912,6 @@ export class MeghRouter {
     return this._routeHandler(path, "DELETE", fn);
   }
 
-  async mapRoute<T extends (...args: any[]) => any>(
-    method: "get" | "post" | "put" | "delete",
-    path: string = "",
-    fn: T,
-  ) {
-    // Errors go to the application's error handler.
-    this.app[method](path, async (req: any, res: any) => {
-      const result = await fn(req, res);
-      return res.send(result);
-    });
-  }
-
   processFunctionalRoutes() {
     this.rMap.forEach((value, key) => {
       const colonIdx = key.indexOf(":");
@@ -960,8 +934,8 @@ export class MeghRouter {
         : undefined;
       const authz = authzCls ? (Container.get(authzCls) as any) : null;
       if (value.authorize && !authz) {
-        console.warn(
-          `[Megh] ${m} ${r} uses .authorized() but no authorization handler is registered; ` +
+        log.warn(
+          `${m} ${r} uses .authorized() but no authorization handler is registered; ` +
             "every request will be denied (403). Call app.useAuthorization(YourAuthorization).",
         );
       }

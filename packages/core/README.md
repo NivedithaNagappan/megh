@@ -1363,12 +1363,12 @@ for 2.0. These lists track what has landed and what still blocks 1.0.0.
 
 **API cleanup** (a 1.0 surface is a promise)
 
-- [ ] Finish or remove the no-ops `useHttps()`, `useSerialization()` and `mapFeatures()`
+- [x] Finish or remove the no-ops `useHttps()`, `useSerialization()` and `mapFeatures()`
 - [x] Move TypeORM and Knex to the `@meghjs/data` plugin, and remove deprecated `useDatasource()`
-- [ ] Remove the `MeghSocketIo` stubs and unused adapter types
+- [x] Remove the `MeghSocketIo` stubs and unused adapter types
 - [ ] Remove `KnexHooks` / `KnexHooksFactory`, `DuplicateRouteException`, `mapRoute()` and `registerMiddleware()`
 - [x] Stop exporting `mock-db` from the public index, and build without Jest types
-- [ ] Replace remaining `console.log` calls with the logger
+- [x] Replace remaining `console.log` calls with the logger
 
 **Tests**
 

@@ -1,7 +1,6 @@
 import { Container, Injectable } from "../di";
-import type { Socket, Server } from "socket.io";
+import type { Socket } from "socket.io";
 import { SocketContextService } from "./socket-dispatcher";
-import { SocketIoServer } from "../realtime/websocket";
 import "reflect-metadata";
 import { internalLogger } from "../observability/internal-logger";
 

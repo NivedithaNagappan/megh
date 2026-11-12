@@ -61,7 +61,6 @@ export * from "./common/container";
 
 // ─── Convenience aliases ─────────────────────────────────────────────────────
 export const GetSchema = sw.generateSwaggerSchema;
-export const GetObjectSchema = sw.CreateSwaggerObjectSchema;
 export const OpenApiOk = (args1: any) => {
   return sw.OpenApiResponse(200, args1, "Success");
 };

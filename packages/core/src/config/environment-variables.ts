@@ -9,10 +9,8 @@ import dotenv from "dotenv";
 import path from "path";
 import fs, { existsSync } from "fs";
 import { Injectable } from "../di";
-import {
-  EnvironmentVariableNotFound,
-  SystemUseError,
-} from "../common/exceptions/system-exception";
+import { internalLogger } from "../observability/internal-logger";
+import { EnvironmentVariableNotFound } from "../common/exceptions/system-exception";
 
 // Load `.env` into process.env on import, so module-level code can read it.
 // Set MEGH_DOTENV=false to skip this and manage the environment yourself.
@@ -48,7 +46,10 @@ export class Environment {
             : {},
         );
       } catch (error) {
-        console.error(`Error parsing .env file: ${error}`);
+        internalLogger("config").error(
+          { err: error, file: filePath },
+          "Error parsing .env file",
+        );
         fileCache.set(filePath, null);
       }
     }
