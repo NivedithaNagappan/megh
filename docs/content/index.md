@@ -21,7 +21,7 @@ hero:
 
 features:
   - title: Decorator-based routing
-    details: Controllers, route methods and parameter decorators, with DTOs validated and whitelisted by class-validator.
+    details: Controllers, route methods and parameter decorators, with DTOs validated and whitelisted by compiled, class-validator-compatible decorators.
   - title: Secure by default
     details: Deny-by-default authorization, confined file storage and production-safe error responses.
   - title: Batteries included

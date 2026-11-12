@@ -102,7 +102,8 @@ yarn tsc --init
 :::
 
 Since 0.3, `class-validator` and `class-transformer` are peer dependencies. The
-package loads them at import time, so install them in every project.
+package loads them at import time, so install them in every project, even if
+your DTOs use Megh's own [validation decorators](/core-concept/validation).
 
 Ensure `experimentalDecorators` and `emitDecoratorMetadata` are enabled in
 tsconfig.json — Megh's decorators do not work without them.
@@ -148,6 +149,7 @@ imports, and you get a clear install hint the moment a feature needs one:
 | Static files (`useStaticFiles`) | `@fastify/static` |
 | OpenAPI with Swagger UI | `@fastify/swagger`, `@fastify/swagger-ui` |
 | OpenAPI with Scalar | `@fastify/swagger`, `@scalar/fastify-api-reference` |
+| `@IsUUID`, `@IsUrl`, `@IsEmail(options)` | `validator` |
 | Models and migrations (`useMeghORM`) | a driver: `pg`, `mysql2`, `better-sqlite3`, or `tedious` + `tarn` |
 | TypeORM (alternative to MeghORM) | `@meghjs/data`, `typeorm` + a driver (`pg`, `mysql2`, `sqlite3`, `better-sqlite3`, `mssql`) |
 | Knex (alternative to MeghORM) | `@meghjs/data`, `knex` + a driver |

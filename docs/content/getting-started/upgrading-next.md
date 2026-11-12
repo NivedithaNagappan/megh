@@ -31,6 +31,15 @@ apps need no code changes, but check the items marked **Breaking**.
 
 ## New
 
+- [Validation decorators](/core-concept/validation) in `@meghjs/core`:
+  `IsString`, `MinLength`, `ValidateNested`, `Type`, `Transform` and more,
+  with class-validator's names, options and messages. Each DTO is compiled
+  once, so validating a request is several times faster. Switching a DTO is a
+  change of import; class-validator DTOs keep working. Also `validateDto()`.
+- `experimental.compiledValidation` (or `MEGH_COMPILED_VALIDATION=1`)
+  speeds up class-validator DTOs with the same results.
+- `validator` is an optional peer dependency, needed only for `@IsUUID`,
+  `@IsUrl` and `@IsEmail` with options.
 - [Error handling](/core-concept/error-handling): exception filters,
   `@Catch`, `@UseFilters`, `app.useErrorHandler()`, `app.useErrorLogger()`
   and more HTTP exception classes.
