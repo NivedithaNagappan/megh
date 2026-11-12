@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.6.0](https://github.com/meghjs/megh/compare/v0.5.5...v0.6.0) (2026-11-12)
+
+### Bug Fixes
+
+* **cli:** keep NODE_ENV out of the scaffolded .env ([3294d86](https://github.com/meghjs/megh/commit/3294d86c7e50a93f241de7e9e5354243fb4f61c4)), closes [#103](https://github.com/meghjs/megh/issues/103)
+
+
 ## [0.5.5](https://github.com/meghjs/megh/compare/v0.5.4...v0.5.5) (2026-11-12)
 
 **Note:** Version bump only for package @meghjs/cli

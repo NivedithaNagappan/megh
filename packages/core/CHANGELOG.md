@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.6.0](https://github.com/meghjs/megh/compare/v0.5.5...v0.6.0) (2026-11-12)
+
+- feat(core)!: default run() to the PORT environment variable ([3261312](https://github.com/meghjs/megh/commit/3261312d2670baa079ee106973af73c98dbd8a07)), closes [#102](https://github.com/meghjs/megh/issues/102)
+- feat(core)!: remove no-op and unused public APIs ([646187a](https://github.com/meghjs/megh/commit/646187a4f381bd090e042562b8101d7f254ea453)), closes [#86](https://github.com/meghjs/megh/issues/86) [#87](https://github.com/meghjs/megh/issues/87) [#88](https://github.com/meghjs/megh/issues/88) [#89](https://github.com/meghjs/megh/issues/89) [#90](https://github.com/meghjs/megh/issues/90) [#91](https://github.com/meghjs/megh/issues/91) [#92](https://github.com/meghjs/megh/issues/92) [#93](https://github.com/meghjs/megh/issues/93)
+
+### BREAKING CHANGES
+
+- apps that call app.run() without a port and have PORT
+  set to something other than 4000 now listen on PORT. Pass the port
+  explicitly to keep the old behaviour.
+- useHttps(), useSerialization(), mapFeatures(),
+  MeghSocketIo, DuplicateRouteException, MeghRouter.mapRoute(),
+  MeghRouter.registerMiddleware(), CreateSwaggerObjectSchema and
+  GetObjectSchema are removed. They did nothing or duplicated another
+  API. Use generateClassSchema in place of the schema aliases. The
+  startup line is now a pino log entry instead of console.log.
+
 ## [0.5.5](https://github.com/meghjs/megh/compare/v0.5.4...v0.5.5) (2026-11-12)
 
 - feat(core)!: one pipeline order, and complete inline routes ([e4aa8fa](https://github.com/meghjs/megh/commit/e4aa8fa0f664869232392a61b1498ba97444b285))
