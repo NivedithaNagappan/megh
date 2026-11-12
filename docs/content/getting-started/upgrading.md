@@ -130,8 +130,8 @@ These are expected to be fixed in a patch release:
 |-------|------------|
 | `@UseMiddleware(SomeClass)` crashes `app.run()` | Fixed in 0.5.2. On older versions, pass an instance: `@UseMiddleware(new SomeClass())` |
 | `@Repository` and `@Queue` classes without a constructor break under DI | Add `constructor() { super(); }` |
-| `Results.Created`/`NoContent`/`NotFound`, `HttpResponse.Created` and `@HttpCode` respond with 200 | Fixed after 0.5.4. On older versions, throw `HttpExceptions` for error statuses |
+| `Results.Created`/`NoContent`/`NotFound`, `HttpResponse.Created` and `@HttpCode` respond with 200 | Fixed in 0.5.5. On older versions, throw `HttpExceptions` for error statuses |
 | `@Body()`/`@Query()` DTOs are missing from the OpenAPI document | Describe them with `@OpenApi({ requestBody, query })` |
-| `@All()` crashes `app.run()` | Fixed after 0.5.4. On older versions, register each method separately |
+| `@All()` crashes `app.run()` | Fixed in 0.5.5. On older versions, register each method separately |
 | Upload policy violations return 500 instead of 400/413 | None |
-| `app.run()` has no `host` option and binds to localhost | Fixed after 0.5.4: `app.run(port, { host })`, defaulting to `HOST` or `0.0.0.0` |
+| `app.run()` has no `host` option and binds to localhost | Fixed in 0.5.5: `app.run(port, { host })`, defaulting to `HOST` or `0.0.0.0` |

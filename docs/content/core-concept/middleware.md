@@ -135,9 +135,9 @@ API key check, an IP allowlist) but cannot read `request.user`. Put checks
 that need the user in an authorization handler. Inline routes follow the
 same order.
 
-::: warning Changed after 0.5.4
+::: warning Changed in 0.5.5
 `@UseMiddleware` used to run after `@Authorized`. See
-[Upcoming changes](/getting-started/upgrading-next).
+[Upgrading to 0.5.5](/getting-started/upgrading-0.5#breaking-in-0-5-5).
 :::
 
 See [Authentication](/core-concept/authentication) for steps 3 and 4.

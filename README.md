@@ -71,7 +71,9 @@ Documentation: **https://meghjs.github.io**
 - 🎯 **Decorator-based routing** — define controllers and routes with TypeScript decorators
 - 💉 **Dependency injection** — `MeghContainer`, `@Injectable` and `Token`, on Megh's own container (no third-party DI library)
 - 📄 **OpenAPI / Swagger** — automatic docs with Swagger UI or [Scalar](https://scalar.com)
-- ✅ **Validation** — request DTOs validated and whitelisted via [class-validator](https://github.com/typestack/class-validator)
+- ✅ **Validation** — request DTOs validated and whitelisted, with Megh's own compiled decorators or [class-validator](https://github.com/typestack/class-validator)
+- 🚨 **Error handling** — HTTP exceptions and pluggable exception filters
+- ❤️ **Health checks & request IDs** — `/health` and `/ready` probes, an `x-request-id` on every response and log line
 - 🔑 **Authentication** — pluggable handler that populates `request.user`
 - 🔒 **Authorization** — deny-by-default `@Authorized` routes
 - 📁 **File uploads** — multipart support with safe, confined storage
@@ -302,6 +304,11 @@ Error responses have the shape `{ code, status: "Error", message, data? }`.
 Outside development, 5xx responses hide the message and data and return
 `"Internal Server Error"`.
 
+To change how errors are turned into responses, register exception filters
+with `@Catch`, `@UseFilters` or `app.useExceptionFilters()`, or replace the
+handler with `app.useErrorHandler()`. See
+[Error Handling](https://meghjs.github.io/core-concept/error-handling).
+
 ---
 
 ### Middleware
@@ -342,11 +349,15 @@ class UserController {
 Requests pass through these stages in order:
 
 1. Global middlewares (`useMiddlewares`)
-2. Authentication
-3. Class `@Authorized`, then method `@Authorized`
-4. Class `@UseMiddleware`, then method `@UseMiddleware`
-5. Parameter validation
+2. Class `@UseMiddleware`, then method `@UseMiddleware`
+3. Authentication (sets `request.user`)
+4. Class `@Authorized`, then method `@Authorized`
+5. Parameter and DTO validation
 6. Handler
+
+Middleware runs before authentication, so it can reject a request early but
+cannot read `request.user`. Inline routes follow the same order. (Before
+0.5.5, `@UseMiddleware` ran after `@Authorized`.)
 
 ---
 
@@ -452,10 +463,15 @@ under that name makes `app.run()` fail.
 
 ### Validation
 
-Validation is powered by `class-validator`. Decorate your DTOs and Megh validates `@Body()` and `@Query()` automatically:
+Decorate your DTOs and Megh validates `@Body()` and `@Query()` automatically.
+The decorators come from `@meghjs/core`, with the same names, options and
+messages as `class-validator`, and each DTO is compiled once into a single
+function, so validation is several times faster. DTOs written with
+`class-validator` keep working; switching is a change of import. See
+[Validation](https://meghjs.github.io/core-concept/validation).
 
 ```typescript
-import { IsString, IsNotEmpty, IsEmail, IsInt, Min, Max, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsEmail, IsInt, Min, Max, IsOptional } from '@meghjs/core';
 
 class CreateUserDto {
   @IsString()
@@ -1208,8 +1224,12 @@ dispatches jobs without Redis.
 - Set `NODE_ENV=production`. Unset also counts as production, but be explicit.
   Production mode hides 5xx details, writes JSON logs, and makes
   `app.isDevelopment()` false.
-- `app.run(port)` defaults to port 4000. It handles `SIGTERM`/`SIGINT` by
-  stopping the scheduler and closing registered workers before exiting.
+- `app.run(port)` defaults to port 4000 and listens on `HOST` or `0.0.0.0`
+  (`app.run(port, { host })` to change it). It handles `SIGTERM`/`SIGINT` by
+  stopping the scheduler, closing registered workers and the cache, and gives
+  up after `shutdownTimeout`.
+- Add `app.useHealth()` for `/health` and `/ready` probes. See
+  [Health Checks](https://meghjs.github.io/advanced/health).
 - Register an authorizer if you use `@Authorized`; without one those routes
   return 403.
 
@@ -1243,13 +1263,13 @@ These are regressions or gaps in 0.3.0 that are expected to be fixed in a patch 
   under dependency injection.** Add `constructor() { super(); }`.
 - **Status codes from `Results.Created`, `Results.NoContent`,
   `Results.NotFound`, `HttpResponse.Created` and `@HttpCode` are not applied.**
-  The response is 200. Throw `HttpExceptions` to send error statuses.
+  The response is 200. Throw `HttpExceptions` to send error statuses. Fixed in 0.5.5.
 - **`@Body()`/`@Query()` DTOs are missing from the generated OpenAPI document.**
   Validation still runs. Describe them with `@OpenApi({ requestBody, query })`
   for now.
-- **`@All()` crashes `app.run()`.**
+- **`@All()` crashes `app.run()`.** Fixed in 0.5.5.
 - **Upload policy violations return 500**, not 400 or 413.
-- **`app.run()` has no `host` option.** The server binds to localhost.
+- **`app.run()` has no `host` option.** The server binds to localhost. Fixed in 0.5.5.
 
 ---
 

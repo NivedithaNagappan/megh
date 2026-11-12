@@ -21,10 +21,10 @@ export default defineConfig({
       { text: 'Database', link: '/advanced/orm', activeMatch: '^/advanced/(orm|database)' },
       { text: 'CLI', link: '/cli/basic', activeMatch: '^/cli/' },
       {
-        text: 'v0.5.4',
+        text: 'v0.5.5',
         items: [
           { text: 'Upcoming changes', link: '/getting-started/upgrading-next' },
-          { text: 'Upgrading to 0.5.4', link: '/getting-started/upgrading-0.5' },
+          { text: 'Upgrading to 0.5.5', link: '/getting-started/upgrading-0.5' },
           { text: 'Moving from Avleon', link: '/getting-started/upgrading-megh' },
           { text: 'Upgrading to 0.4', link: '/getting-started/upgrading-0.4' },
           { text: 'Upgrading to 0.3', link: '/getting-started/upgrading' },
@@ -113,7 +113,7 @@ export default defineConfig({
         collapsed: true,
         items: [
           { text: 'Upcoming changes', link: '/getting-started/upgrading-next' },
-          { text: 'Upgrading to 0.5.4', link: '/getting-started/upgrading-0.5' },
+          { text: 'Upgrading to 0.5.5', link: '/getting-started/upgrading-0.5' },
           { text: 'Moving from Avleon', link: '/getting-started/upgrading-megh' },
           { text: 'Upgrading to 0.4', link: '/getting-started/upgrading-0.4' },
           { text: 'Upgrading to 0.3', link: '/getting-started/upgrading' },
