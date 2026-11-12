@@ -142,77 +142,15 @@ app.run(3000);  // :3000
 app.run(3000, { host: '127.0.0.1' });
 ```
 
-The host defaults to the `HOST` environment variable, else `0.0.0.0`, so
-the app is reachable inside a container. Pass `127.0.0.1` to accept local
-connections only.
+Set `NODE_ENV=development` locally to get detailed errors and pretty logs. An
+unset `NODE_ENV` counts as production.
 
-| Option | Default | |
-|--------|---------|---|
-| `host` | `HOST` or `0.0.0.0` | Interface to listen on |
-| `onListen` | | Called once the server is listening |
-| `shutdownTimeout` | `10000` | Milliseconds to wait for a clean shutdown before exiting with code 1 |
-
-Read the port from the environment to make it configurable:
-
-```ts [serve.ts]
-import { Environment, inject } from '@meghjs/core';
-import app from './app';
-
-async function serve() {
-  const env = inject(Environment);
-  await app.run(env.get<number>('PORT') || 4000);
-}
-
-serve();
-```
-
-## Lifecycle hooks
-
-Register work to run at each stage of the app's life. Call these before
-`run()`; each returns the app, so they chain:
-
-```ts
-app
-  .onInit(async () => {
-    // After the database connects, before routes are mapped and the server
-    // listens. A thrown error aborts startup.
-    await cache.warmUp();
-  })
-  .onReady(() => {
-    // The server is listening.
-    console.log('ready');
-  })
-  .onClose(async () => {
-    // On shutdown, after the server stops accepting requests.
-    await metrics.flush();
-  });
-```
-
-Hooks of the same kind run in the order you register them, except `onClose`
-hooks, which run in reverse so that things set up last are torn down first. A
-failing `onClose` hook is logged and the others still run.
-
-`await app.close()` shuts the app down yourself, for example at the end of a
-test. It stops the HTTP server (waiting for in-flight requests), the
-scheduler, queue workers and the cache, then runs the `onClose` hooks.
-Calling it twice is safe.
-
-## Development and production
-
-`app.isDevelopment()` is true only when `NODE_ENV=development`. An unset
-`NODE_ENV` counts as production. In production mode, 5xx details are hidden
-and logs are written as JSON. Set `NODE_ENV=development` locally to get
-detailed errors, pretty logs and any docs you gate behind `isDevelopment()`.
-
-On `SIGTERM` or `SIGINT`, `run()` calls `app.close()` and exits with code 0.
-If shutdown fails, or takes longer than `shutdownTimeout`, it exits with
-code 1.
-
-Megh loads `.env` into `process.env` when it is first imported. Set
-`MEGH_DOTENV=false` to skip that and manage the environment yourself.
+See [Application](/getting-started/application) for the app options, the
+`use*` methods, what `run()` does, lifecycle hooks and shutdown.
 
 ## Next steps
 
+- [Application](/getting-started/application) — options, lifecycle and shutdown
 - [Controller](/core-concept/controller) — routes, parameters, REST resources
 - [Middleware](/core-concept/middleware) — request pipeline
 - [MeghORM](/advanced/orm) — models, queries, relations and migrations

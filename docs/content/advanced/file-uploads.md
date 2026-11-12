@@ -19,6 +19,11 @@ app.useMultipart({
 });
 ```
 
+The options go to `@fastify/multipart`. Megh sets `attachFieldsToBody: true`
+(which `@UploadFile` needs) and a **10 MB** per-file limit unless you pass your
+own `limits`. The smaller of this limit and `FileStorage`'s `maxFileSize`
+(50 MB, below) wins, so raise both to accept bigger files.
+
 ## Receiving a file
 
 `@UploadFile('field')` injects one file and `@UploadFiles()` injects all of
@@ -132,5 +137,5 @@ To serve the upload directory as static files, see `useStaticFiles`
 (requires `@fastify/static`):
 
 ```ts
-app.useStaticFiles({ path: path.join(process.cwd(), 'public'), prefix: '/static/' });
+app.useStaticFiles({ root: path.join(process.cwd(), 'public'), prefix: '/static/' });
 ```

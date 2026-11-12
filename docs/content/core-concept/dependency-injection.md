@@ -58,7 +58,7 @@ import app from './app';
 
 async function serve() {
   const env = inject(Environment);
-  await app.run(env.get<number>('PORT') || 4000);
+  await app.run(Number(env.get('PORT')) || 4000);
 }
 
 serve();

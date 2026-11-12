@@ -89,4 +89,4 @@ The entry point comes from `megh.entry` in `package.json`, falling back to `main
 npx megh build
 ```
 
-Removes `dist/` and compiles the project with `tsconfig.build.json`.
+Removes the output folder (`outDir`, usually `dist/`) and compiles the project with `tsconfig.build.json`.
