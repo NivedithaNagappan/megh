@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.5](https://github.com/meghjs/megh/compare/v0.5.4...v0.5.5) (2026-11-12)
+
+* feat(core)!: one pipeline order, and complete inline routes ([e4aa8fa](https://github.com/meghjs/megh/commit/e4aa8fa0f664869232392a61b1498ba97444b285))
+
+### Bug Fixes
+
+* **core:** respect the declared type when casting path and query values ([dcebb02](https://github.com/meghjs/megh/commit/dcebb02ec626ff6d870f2400e00f159410bf23b1))
+* **core:** runtime bugs from the 1.0 checklist ([255cc5d](https://github.com/meghjs/megh/commit/255cc5d688eeaa858c26b17e75946578ac296a75))
+
+### Features
+
+* **core:** compiled DTO validation and Megh's own validation decorators ([7415c00](https://github.com/meghjs/megh/commit/7415c00710bf6a631053140b7111a1b957db023a))
+* **core:** health endpoints and request IDs ([fe01391](https://github.com/meghjs/megh/commit/fe01391d7e501560c65598df07ff685cbb2276a2))
+* **core:** pluggable error handling with exception filters ([2e0c317](https://github.com/meghjs/megh/commit/2e0c317c071cd882236062ad09bd6dcad453a862))
+
+### BREAKING CHANGES
+
+* @UseMiddleware runs before authentication and
+  @Authorized, so it can no longer read request.user.
+
+
+
 ## [0.5.4](https://github.com/meghjs/megh/compare/v0.5.3...v0.5.4) (2026-11-09)
 
 ### Bug Fixes
