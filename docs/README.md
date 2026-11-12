@@ -28,7 +28,8 @@ content/                 Markdown pages; the folder path is the URL
 ├── core-concept/
 ├── advanced/
 ├── microservices/       OpenAPI and WebSocket
-├── ai/
+├── production/          Deployment and security
+├── reference/           API reference, versioning, FAQ
 ├── cli/
 └── public/              Static files served from /
 .vitepress/

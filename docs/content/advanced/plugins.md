@@ -61,7 +61,7 @@ work in `ctx.onInit`. The context gives you:
 |--------|-----|
 | `ctx.extend(name, fn)` | Add `app[name]`. Throws if core or another plugin already defines it. |
 | `ctx.container` | The app's container (`get`, `set`, `has`) |
-| `ctx.onInit` / `ctx.onReady` / `ctx.onClose` | [Lifecycle hooks](/getting-started/usage#lifecycle-hooks) |
+| `ctx.onInit` / `ctx.onReady` / `ctx.onClose` | [Lifecycle hooks](/getting-started/application#lifecycle-hooks) |
 | `ctx.http` | The Fastify instance, for Fastify hooks and plugins |
 | `ctx.logger` | A logger tagged with the plugin's name |
 | `ctx.app` | The application |

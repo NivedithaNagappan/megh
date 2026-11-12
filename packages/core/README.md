@@ -1015,8 +1015,20 @@ app.useMultipart({
 });
 ```
 
+`useMultipart()` passes its options to `@fastify/multipart`. Megh sets
+`attachFieldsToBody: true` (needed by `@UploadFile`) and a **10 MB** per-file
+limit unless you pass your own `limits`. The smaller of this limit and
+`FileStorage`'s `maxFileSize` (50 MB) wins, so raise both for bigger files.
+
 ```typescript
-import { FileStorage, UploadFile, MultipartFile, OpenApi } from "@meghjs/core";
+import {
+  ApiController,
+  Post,
+  FileStorage,
+  UploadFile,
+  MultipartFile,
+  OpenApi,
+} from "@meghjs/core";
 
 @ApiController("/files")
 class FileController {
@@ -1078,7 +1090,7 @@ import path from "path";
 
 // requires @fastify/static
 app.useStaticFiles({
-  path: path.join(process.cwd(), "public"),
+  root: path.join(process.cwd(), "public"),
   prefix: "/static/",
 });
 ```

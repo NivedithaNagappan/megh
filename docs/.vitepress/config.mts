@@ -16,10 +16,11 @@ export default defineConfig({
       {
         text: 'Guide',
         link: '/getting-started/introduction',
-        activeMatch: '^/(getting-started|core-concept|microservices|ai)/|^/advanced/(?!orm|database)',
+        activeMatch: '^/(getting-started|core-concept|microservices|production)/|^/advanced/(?!orm|database)',
       },
       { text: 'Database', link: '/advanced/orm', activeMatch: '^/advanced/(orm|database)' },
       { text: 'CLI', link: '/cli/basic', activeMatch: '^/cli/' },
+      { text: 'Reference', link: '/reference/api', activeMatch: '^/reference/' },
       {
         text: 'v0.5.5',
         items: [
@@ -40,6 +41,7 @@ export default defineConfig({
           { text: 'Introduction', link: '/getting-started/introduction' },
           { text: 'Installation', link: '/getting-started/installation' },
           { text: 'Quick Start', link: '/getting-started/usage' },
+          { text: 'Application', link: '/getting-started/application' },
         ],
       },
       {
@@ -47,6 +49,7 @@ export default defineConfig({
         items: [
           { text: 'Controllers', link: '/core-concept/controller' },
           { text: 'Dependency Injection', link: '/core-concept/dependency-injection' },
+          { text: 'Configuration', link: '/core-concept/configuration' },
           { text: 'Middleware', link: '/core-concept/middleware' },
           { text: 'Validation', link: '/core-concept/validation' },
           { text: 'Error Handling', link: '/core-concept/error-handling' },
@@ -71,10 +74,12 @@ export default defineConfig({
         items: [
           { text: 'Events', link: '/advanced/events' },
           { text: 'Queue', link: '/advanced/queue' },
+          { text: 'Scheduler', link: '/advanced/scheduler' },
           { text: 'Caching', link: '/advanced/caching' },
           { text: 'File Uploads', link: '/advanced/file-uploads' },
           { text: 'Logging', link: '/advanced/logging' },
           { text: 'Health Checks', link: '/advanced/health' },
+          { text: 'Testing', link: '/advanced/testing' },
         ],
       },
       {
@@ -82,12 +87,26 @@ export default defineConfig({
         items: [
           { text: 'OpenAPI', link: '/microservices/openapi' },
           { text: 'WebSocket', link: '/microservices/websocket' },
-          { text: 'AI', link: '/ai/integration' },
         ],
       },
       {
         text: 'Extending',
         items: [{ text: 'Plugins', link: '/advanced/plugins' }],
+      },
+      {
+        text: 'Production',
+        items: [
+          { text: 'Deployment', link: '/production/deployment' },
+          { text: 'Security Hardening', link: '/production/security' },
+        ],
+      },
+      {
+        text: 'Reference',
+        items: [
+          { text: 'API Reference', link: '/reference/api' },
+          { text: 'Versioning Policy', link: '/reference/versioning' },
+          { text: 'FAQ and Troubleshooting', link: '/reference/faq' },
+        ],
       },
       {
         text: 'CLI',

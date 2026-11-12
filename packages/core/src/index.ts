@@ -42,6 +42,7 @@ export type { Job, JobsOptions } from "./queue/queue";
 
 // ─── Scheduler ───────────────────────────────────────────────────────────────
 export * from "./scheduler/schedule-decorator";
+export { MeghScheduler } from "./scheduler/scheduler";
 
 // ─── Security ────────────────────────────────────────────────────────────────
 export * from "./security";

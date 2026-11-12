@@ -105,7 +105,7 @@ metadata. Existing projects are not changed.
 
 ## What's new
 
-- [Lifecycle hooks](/getting-started/usage#lifecycle-hooks): `app.onInit`,
+- [Lifecycle hooks](/getting-started/application#lifecycle-hooks): `app.onInit`,
   `app.onReady`, `app.onClose`, and `app.close()` for a clean shutdown.
 - [Plugins](/advanced/plugins): packages can add `app.use*` methods, services
   and hooks, and are found automatically once installed.
