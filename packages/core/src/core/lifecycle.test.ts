@@ -1,6 +1,14 @@
 import "reflect-metadata";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MeghApplication } from "./application";
+import { LoggerService } from "../observability/logger";
+
+const fakeLogger = () => ({
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+});
 
 // A fresh app per test; getApp() would return a shared singleton.
 const createApp = () => MeghApplication.getInternalApp();
@@ -83,7 +91,8 @@ describe("application lifecycle", () => {
 
   it("keeps running close hooks after one fails, and closes only once", async () => {
     const app = started(createApp());
-    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+    const log = fakeLogger();
+    vi.spyOn(LoggerService, "child").mockReturnValue(log as any);
     const last = vi.fn();
     app.onClose(last).onClose(() => {
       throw new Error("flush failed");
@@ -94,9 +103,9 @@ describe("application lifecycle", () => {
     await app.close();
 
     expect(last).toHaveBeenCalledTimes(1);
-    expect(errorLog).toHaveBeenCalledWith(
-      "[Megh] onClose hook failed:",
-      expect.any(Error),
+    expect(log.error).toHaveBeenCalledWith(
+      { err: expect.any(Error) },
+      "onClose hook failed",
     );
   });
 

@@ -5,7 +5,7 @@
  * @url https://github.com/xtareq
  */
 export function IsArrayNotEmpty(validationOptions?: any) {
-  const { registerDecorator, ValidationArguments } = require("class-validator");
+  const { registerDecorator } = require("class-validator");
   return function (object: Object, propertyName: string) {
     registerDecorator({
       name: "isArrayWithAtLeastOneElement",

@@ -5,7 +5,7 @@
  * @url https://github.com/xtareq
  */
 
-import { CONTROLLER_META_KEY, ROUTE_META_KEY } from "../common/container";
+import { ROUTE_META_KEY } from "../common/container";
 import { OpenApiOptions } from "../openapi/openapi";
 
 export type RouteMethods =

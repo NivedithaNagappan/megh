@@ -22,6 +22,7 @@ import {
 import { transformAndValidate } from "../common/utils/validation-utils";
 import { Type } from "class-transformer";
 import { MeghApplication } from "./application";
+import { LoggerService } from "../observability/logger";
 import { ApiController, MeghRequest } from "../http/controller";
 import { Get, Post } from "../http/route-methods";
 import { Body, Query } from "../http/params";
@@ -229,14 +230,22 @@ describe("request pipeline", () => {
 
   describe("@Authorized", () => {
     it("denies with 403 when no authorizer is registered", async () => {
+      const warn = vi.fn();
+      const child = vi.spyOn(LoggerService, "child").mockReturnValue({
+        info: vi.fn(),
+        warn,
+        error: vi.fn(),
+        debug: vi.fn(),
+      } as any);
       const app = await boot((a) => a.useControllers([GuardedController]));
       try {
         const res = await app.app.inject({ method: "GET", url: "/guarded" });
         expect(res.statusCode).toBe(403);
-        expect(spies[1]).toHaveBeenCalledWith(
+        expect(warn).toHaveBeenCalledWith(
           expect.stringContaining("no authorization handler"),
         );
       } finally {
+        child.mockRestore();
         await app.app.close();
       }
     });

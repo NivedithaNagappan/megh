@@ -1343,12 +1343,12 @@ Redis ছাড়াই job dispatch করে এমন code test করতে
 
 **API cleanup** (1.0-এর API একটি প্রতিশ্রুতি)
 
-- [ ] No-op `useHttps()`, `useSerialization()` এবং `mapFeatures()` সম্পূর্ণ করা বা সরিয়ে ফেলা
+- [x] No-op `useHttps()`, `useSerialization()` এবং `mapFeatures()` সম্পূর্ণ করা বা সরিয়ে ফেলা
 - [x] TypeORM এবং Knex-কে `@meghjs/data` plugin-এ সরানো, এবং deprecated `useDatasource()` সরিয়ে ফেলা
-- [ ] `MeghSocketIo` stub এবং অব্যবহৃত adapter type সরিয়ে ফেলা
+- [x] `MeghSocketIo` stub এবং অব্যবহৃত adapter type সরিয়ে ফেলা
 - [ ] `KnexHooks` / `KnexHooksFactory`, `DuplicateRouteException`, `mapRoute()` এবং `registerMiddleware()` সরিয়ে ফেলা
 - [x] Public index থেকে `mock-db` export বন্ধ করা, এবং Jest type ছাড়া build করা
-- [ ] বাকি `console.log` call-গুলো logger দিয়ে বদলানো
+- [x] বাকি `console.log` call-গুলো logger দিয়ে বদলানো
 
 **Tests**
 
