@@ -1,4 +1,4 @@
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import { CliError } from "../errors";
@@ -44,6 +44,8 @@ export type NewOptions = {
   database?: string;
   /** Skip `<pm> install`. Also enabled by the `MEGH_SKIP_INSTALL=1` environment variable. */
   skipInstall?: boolean;
+  /** Skip `git init`. Also enabled by the `MEGH_SKIP_GIT=1` environment variable. */
+  skipGit?: boolean;
 };
 
 /** Third-party versions for generated projects. */
@@ -52,6 +54,8 @@ const DEP_VERSIONS: Record<string, string> = {
   "class-validator": "^0.14.2",
   "reflect-metadata": "^0.2.2",
   "@fastify/cors": "^11.0.0",
+  "@fastify/swagger": "^9.7.0",
+  "@fastify/swagger-ui": "^6.1.2",
   typeorm: "^0.3.20",
   pg: "^8.11.0",
   mysql2: "^3.11.0",
@@ -174,7 +178,11 @@ export function packageJson(
   if (features.includes("typeorm")) pick("typeorm", "pg");
   if (features.includes("knex")) pick("knex", "pg");
   if (features.includes("orm")) pick(...DATABASE_SETUP[database].drivers);
+  // useOpenApi() builds the spec with @fastify/swagger, then serves it with
+  // Swagger UI, or with Scalar when that is chosen.
+  if (features.includes("openapi") || features.includes("scalar")) pick("@fastify/swagger");
   if (features.includes("scalar")) pick("@scalar/fastify-api-reference");
+  else if (features.includes("openapi")) pick("@fastify/swagger-ui");
 
   const devDeps: Record<string, string> = {};
   const pickDev = (...names: string[]) => names.forEach((n) => (devDeps[n] = DEP_VERSIONS[n]));
@@ -260,10 +268,29 @@ export function devCommand(pm: PackageManager) {
 
 function runInstall(pm: string, cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(pm, ["install"], { cwd, stdio: "inherit", shell: process.platform === "win32" });
+    // Windows needs a shell to run npm.cmd/yarn.cmd/pnpm.cmd. Passing one command
+    // string (not an args array) keeps Node 24 from warning with DEP0190.
+    const child =
+      process.platform === "win32"
+        ? spawn(`${pm} install`, { cwd, stdio: "inherit", shell: true })
+        : spawn(pm, ["install"], { cwd, stdio: "inherit" });
     child.on("error", reject);
     child.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`${pm} install exited with code ${code}`))));
   });
+}
+
+type GitResult = "initialized" | "no-git" | "inside-repo" | "failed";
+
+/**
+ * Run `git init` in a new project. Skipped when git is not installed, or when
+ * the folder is already inside a repository (e.g. `megh new .` in a repo).
+ */
+export function initGit(cwd: string): GitResult {
+  const git = (...args: string[]) => spawnSync("git", args, { cwd, stdio: "ignore" });
+  const version = git("--version");
+  if (version.error || version.status !== 0) return "no-git";
+  if (git("rev-parse", "--is-inside-work-tree").status === 0) return "inside-repo";
+  return git("init").status === 0 ? "initialized" : "failed";
 }
 
 export async function createApplication(name: string, opts: NewOptions = {}): Promise<string> {
@@ -346,6 +373,12 @@ export async function createApplication(name: string, opts: NewOptions = {}): Pr
     log.step(path.relative(root, file).split(path.sep).join("/"), "");
   }
   if (!minimal) fs.mkdirSync(path.join(root, "public"), { recursive: true });
+
+  if (!opts.skipGit && process.env.MEGH_SKIP_GIT !== "1") {
+    const git = initGit(root);
+    if (git === "initialized") log.success("Initialized a git repository");
+    else if (git === "failed") log.warn("git init failed; run it yourself to put the project under git");
+  }
 
   const skipInstall = opts.skipInstall || process.env.MEGH_SKIP_INSTALL === "1";
   if (skipInstall) {
