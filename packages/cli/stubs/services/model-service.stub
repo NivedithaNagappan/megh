@@ -1,33 +1,88 @@
 import { AppService, type CreateInput, type PageRequest, type UpdateInput } from '@meghjs/core';
 import { {Model} } from '{modelImport}';
 
+/**
+ * Reads and writes {Model} rows for the {Model} resource.
+ *
+ * Megh's container creates one instance and injects it wherever it is asked
+ * for, so a controller only declares it as a constructor parameter. Put the
+ * {Model} business rules here and keep the controller to HTTP concerns.
+ *
+ * @example
+ * constructor(private readonly {modelVar}Service: {ClassName}) {}
+ *
+ * const {modelVar} = await this.{modelVar}Service.findOrFail(id);
+ */
 @AppService
 export class {ClassName} {
-  /** Every {modelVar}, ordered by {primaryKey}. */
+  /**
+   * Every {modelVar} row, ordered by `{primaryKey}`.
+   *
+   * Loads the whole table, so use {@link {ClassName}.paginate} for any table
+   * that can grow.
+   *
+   * @returns Every {Model}, an empty array when there are none.
+   */
   findAll() {
     return {Model}.query().orderBy('{primaryKey}').get();
   }
 
-  /** One page of {modelVar} rows: `{ data, meta }`. */
+  /**
+   * One page of {modelVar} rows, ordered by `{primaryKey}`.
+   *
+   * @param request - `page` (from 1, default 1) and `perPage` (default 10).
+   * @returns `{ data, meta }`: the rows on this page, and `meta` with
+   *   `total`, `page`, `perPage` and `lastPage`.
+   */
   paginate(request: PageRequest = {}) {
     return {Model}.query().orderBy('{primaryKey}').paginate(request);
   }
 
-  /** The {modelVar} with this {primaryKey}, or `undefined`. */
+  /**
+   * The {modelVar} with this `{primaryKey}`, if there is one.
+   *
+   * @param id - The `{primaryKey}` to look up.
+   * @returns The {Model}, or `undefined` when no row has this `{primaryKey}`.
+   */
   find(id: {primaryKeyType}) {
     return {Model}.find(id);
   }
 
-  /** The {modelVar} with this {primaryKey}; throws a 404 when there is none. */
+  /**
+   * The {modelVar} with this `{primaryKey}`, for when it must exist.
+   *
+   * @param id - The `{primaryKey}` to look up.
+   * @returns The {Model}.
+   * @throws NotFoundException when no row has this `{primaryKey}`; Megh
+   *   answers it with a 404.
+   */
   findOrFail(id: {primaryKeyType}) {
     return {Model}.findOrFail(id);
   }
 
+  /**
+   * Insert a new {modelVar} row.
+   *
+   * @param input - The column values. Columns the database fills in, such as
+   *   an auto-increment `{primaryKey}` or timestamps, may be left out.
+   * @returns The new {Model}, with the values the database filled in.
+   */
   create(input: CreateInput<typeof {Model}>) {
     return {Model}.create(input);
   }
 
-  /** `save()` writes only the columns that changed. */
+  /**
+   * Change some columns of an existing {modelVar}.
+   *
+   * Fields that are `undefined` are skipped, so a partial update DTO only
+   * changes what the client sent, and `save()` writes only the columns whose
+   * value changed.
+   *
+   * @param id - The `{primaryKey}` of the {modelVar} to change.
+   * @param changes - The new column values.
+   * @returns The updated {Model}.
+   * @throws NotFoundException when no row has this `{primaryKey}` (a 404).
+   */
   async update(id: {primaryKeyType}, changes: UpdateInput<{Model}>) {
     const {modelVar} = await {Model}.findOrFail(id);
     // A DTO instance holds `undefined` for every field that was not sent.
@@ -35,6 +90,13 @@ export class {ClassName} {
     return {modelVar}.fill(sent).save();
   }
 
+  /**
+   * Delete a {modelVar}. With `softDeletes` on the model, this sets
+   * `deleted_at` instead of removing the row.
+   *
+   * @param id - The `{primaryKey}` of the {modelVar} to delete.
+   * @throws NotFoundException when no row has this `{primaryKey}` (a 404).
+   */
   async delete(id: {primaryKeyType}) {
     const {modelVar} = await {Model}.findOrFail(id);
     await {modelVar}.delete();
