@@ -1,0 +1,37 @@
+import { Mailable } from '@meghjs/core';
+
+/**
+ * The "{Title}" email.
+ *
+ * Send it with the injected `Mailer`:
+ *
+ * @example
+ * constructor(private readonly mailer: Mailer) {}
+ *
+ * await this.mailer.to(user.email).send(new {ClassName}());
+ * await this.mailer.to(user.email).queue(new {ClassName}()); // needs app.useMail({ queue: true })
+ */
+export class {ClassName} extends Mailable {
+  // Take the data the email needs in the constructor, e.g.
+  // constructor(private readonly user: User) {
+  //   super();
+  // }
+
+  /** The subject, and optionally from, replyTo, cc and bcc. */
+  envelope() {
+    return { subject: '{Title}' };
+  }
+
+  /** The body: html, text or both. Each method here may be async. */
+  content() {
+    return {
+      html: '<p>{Title}</p>',
+      text: '{Title}',
+    };
+  }
+
+  /** Files to attach: { filename, content } or { path }. */
+  attachments() {
+    return [];
+  }
+}

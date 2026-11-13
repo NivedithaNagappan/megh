@@ -11,7 +11,7 @@ import { ENV_TYPES_FILE, envTypesFile } from "../utils/env-types";
 export const PACKAGE_MANAGERS = ["npm", "yarn", "pnpm"] as const;
 export type PackageManager = (typeof PACKAGE_MANAGERS)[number];
 
-export const FEATURES = ["openapi", "cors", "orm", "typeorm", "knex", "scalar"] as const;
+export const FEATURES = ["openapi", "cors", "orm", "typeorm", "knex", "scalar", "mail"] as const;
 export type Feature = (typeof FEATURES)[number];
 const DEFAULT_FEATURES: Feature[] = ["openapi"];
 
@@ -64,6 +64,7 @@ const DEP_VERSIONS: Record<string, string> = {
   tarn: "^3.0.2",
   knex: "^3.1.0",
   "@scalar/fastify-api-reference": "^1.0.0",
+  nodemailer: "^10.5.0",
   typescript: "^5.7.2",
   "@types/node": "^22.20.5",
   vitest: "^4.1.12",
@@ -131,6 +132,7 @@ async function prompt(opts: NewOptions): Promise<Answers> {
             { name: "TypeORM", value: "typeorm" },
             { name: "Knex", value: "knex" },
             { name: "Scalar UI (replaces Swagger UI)", value: "scalar" },
+            { name: "Mail: mailables, SMTP and API mailers, queued mail", value: "mail" },
           ],
         },
       ]));
@@ -183,6 +185,7 @@ export function packageJson(
   if (features.includes("openapi") || features.includes("scalar")) pick("@fastify/swagger");
   if (features.includes("scalar")) pick("@scalar/fastify-api-reference");
   else if (features.includes("openapi")) pick("@fastify/swagger-ui");
+  if (features.includes("mail")) pick("nodemailer");
 
   const devDeps: Record<string, string> = {};
   const pickDev = (...names: string[]) => names.forEach((n) => (devDeps[n] = DEP_VERSIONS[n]));
@@ -240,6 +243,9 @@ function appSource(features: Feature[]) {
   if (features.includes("orm")) {
     setup.push(`// Connects from DATABASE_URL in .env; megh migrate uses the same setting.\napp.useMeghORM();`);
   }
+  if (features.includes("mail")) {
+    setup.push(`// Settings come from MEGH_MAIL_* in .env. Inject Mailer to send a Mailable.\napp.useMail();`);
+  }
   if (features.includes("typeorm")) {
     setup.push(
       `// TODO: pass your TypeORM DataSourceOptions (or an @AppConfig class)\n` +
@@ -256,6 +262,29 @@ function appSource(features: Feature[]) {
     Imports: imports.map((i) => i + "\n").join(""),
     Setup: setup.map((s) => "\n" + s + "\n").join(""),
   });
+}
+
+/**
+ * The mail section of `.env`. No mailer is set: in development mail is then
+ * written to the log, and in production the app refuses to start until one is.
+ */
+function mailEnv(appTitle: string) {
+  return [
+    "",
+    "# Mail: app.useMail(). With no MEGH_MAIL_MAILER, mail goes to the log in",
+    "# development, and the app will not start in production until one is set.",
+    "# MEGH_MAIL_MAILER=smtp",
+    "# MEGH_MAIL_HOST=127.0.0.1",
+    "# MEGH_MAIL_PORT=1025",
+    "# MEGH_MAIL_USERNAME=",
+    "# MEGH_MAIL_PASSWORD=",
+    "# MEGH_MAIL_ENCRYPTION=tls",
+    "# Or an API mailer: sendgrid, mailgun, postmark or resend.",
+    "# MEGH_MAIL_SENDGRID_API_KEY=",
+    "MEGH_MAIL_FROM_ADDRESS=hello@example.com",
+    `MEGH_MAIL_FROM_NAME="${appTitle.replace(/"/g, "")}"`,
+    "",
+  ].join("\n");
 }
 
 export function installCommand(pm: PackageManager) {
@@ -350,6 +379,10 @@ export async function createApplication(name: string, opts: NewOptions = {}): Pr
     if (database === "sqlite") gitignore = gitignore.replace(/\n*$/, "\n") + "database.sqlite\n";
     add("src/database/migrations/.gitkeep", "");
     add("src/database/seeders/database.seeder.ts", renderEntrySeeder([]));
+  }
+  if (features.includes("mail")) {
+    env = env.replace(/\n*$/, "\n") + mailEnv(titleCase(appName) || appName);
+    add("src/mail/welcome.mail.ts", renderStub("mail/mail.stub", { ClassName: "WelcomeMail", Title: "Welcome" }));
   }
   add(".gitignore", gitignore);
   add(".env", env);
