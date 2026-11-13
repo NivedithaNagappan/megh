@@ -262,7 +262,8 @@ function implicitDefault(smtp: SmtpMailerConfig | undefined): string {
   if (process.env.NODE_ENV === "development") return "log";
   if (process.env.NODE_ENV === "test") return "array";
   throw new MailError(
-    "No mailer is set. Set MEGH_MAIL_MAILER (smtp, log or array) or MEGH_MAIL_HOST in .env, " +
+    "No mailer is set. Set MEGH_MAIL_MAILER (smtp, sendgrid, mailgun, postmark, resend, failover or log) " +
+      "or MEGH_MAIL_HOST in .env, " +
       "or pass { default } to app.useMail().",
   );
 }
