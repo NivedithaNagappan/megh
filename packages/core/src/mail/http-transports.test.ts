@@ -406,6 +406,32 @@ describe("provider settings", () => {
     expect(resolveMailConfig({ default: "log" }, env({})).default).toBe("log");
   });
 
+  it("merges a mailer's options over its .env settings", () => {
+    const { mailers } = resolveMailConfig(
+      {
+        default: "log",
+        mailers: {
+          sendgrid: {
+            transport: "sendgrid",
+            endpoint: "https://api.eu.sendgrid.com",
+          },
+          // A different transport under the same name replaces it.
+          mailgun: { transport: "resend", apiKey: "re" },
+        },
+      },
+      env({
+        MEGH_MAIL_SENDGRID_API_KEY: "sg",
+        MEGH_MAIL_MAILGUN_API_KEY: "mg",
+      }),
+    );
+    expect(mailers.sendgrid).toEqual({
+      transport: "sendgrid",
+      apiKey: "sg",
+      endpoint: "https://api.eu.sendgrid.com",
+    });
+    expect(mailers.mailgun).toEqual({ transport: "resend", apiKey: "re" });
+  });
+
   it("checks a failover default's list", () => {
     const resolve = (mailers: string[], extra = {}) =>
       resolveMailConfig(

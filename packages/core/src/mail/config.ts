@@ -237,8 +237,21 @@ export function resolveMailConfig(
     postmark: { transport: "postmark" },
     resend: { transport: "resend" },
     ...env.mailers,
-    ...options.mailers,
   };
+  // A mailer given in options is merged over the one from .env when both use
+  // the same transport, so setting only `endpoint` keeps the API key.
+  for (const [key, given] of Object.entries(options.mailers ?? {})) {
+    const fromEnv = mailers[key];
+    mailers[key] =
+      isSettings(given) &&
+      isSettings(fromEnv) &&
+      given.transport === fromEnv.transport
+        ? ({
+            ...withoutUndefined(fromEnv),
+            ...withoutUndefined(given),
+          } as MailerConfig)
+        : given;
+  }
   const smtp = mailers.smtp as SmtpMailerConfig;
   const name = options.default ?? env.default ?? implicitDefault(smtp);
   if (!mailers[name]) {
@@ -324,4 +337,21 @@ export function mailerProblem(
     default:
       return `"${name}" has an unknown transport "${String((c as { transport?: unknown }).transport)}". Use smtp, log, array, sendgrid, mailgun, postmark, resend, failover, or an object with a send() method.`;
   }
+}
+
+/** Plain mailer settings (`{ transport, ... }`), as opposed to a transport object. */
+function isSettings(
+  config: MailerConfig | undefined,
+): config is Exclude<MailerConfig, MailTransport> {
+  return (
+    !!config &&
+    typeof (config as { send?: unknown }).send !== "function" &&
+    typeof (config as { transport?: unknown }).transport === "string"
+  );
+}
+
+function withoutUndefined<T extends object>(value: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, v]) => v !== undefined),
+  ) as Partial<T>;
 }
