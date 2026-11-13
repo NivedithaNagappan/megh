@@ -209,6 +209,8 @@ describe("new", () => {
     const pkg = JSON.parse(read("my_api", "package.json"));
     expect(pkg.name).toBe("my-api");
     expect(pkg.dependencies["@fastify/cors"]).toBeDefined();
+    expect(pkg.dependencies["@fastify/swagger"]).toBeDefined();
+    expect(pkg.dependencies["@fastify/swagger-ui"]).toBeDefined();
     expect(pkg.scripts["start:dev"]).toBe("megh serve");
     expect(pkg.scripts.test).toBe("vitest run");
     expect(read("my_api", "vitest.config.mts")).toContain("swc.vite()");
@@ -217,6 +219,20 @@ describe("new", () => {
     expect(fs.existsSync(path.join(root, "src", "config", "openapi.config.ts"))).toBe(true);
     expect(pkg.dependencies["@meghjs/data"]).toBeUndefined();
     expect(read("my_api", "megh-env.d.ts")).not.toContain("reference");
+  });
+
+  it("uses Scalar in place of Swagger UI with the scalar feature", async () => {
+    await createApplication("scalar_api", { cwd: tmp, yes: true, skipInstall: true, features: ["scalar"] });
+    const pkg = JSON.parse(read("scalar_api", "package.json"));
+    expect(pkg.dependencies["@fastify/swagger"]).toBeDefined();
+    expect(pkg.dependencies["@scalar/fastify-api-reference"]).toBeDefined();
+    expect(pkg.dependencies["@fastify/swagger-ui"]).toBeUndefined();
+  });
+
+  it("leaves the OpenAPI packages out of a minimal project", async () => {
+    await createApplication("tiny", { cwd: tmp, yes: true, skipInstall: true, minimal: true });
+    const pkg = JSON.parse(read("tiny", "package.json"));
+    expect(pkg.dependencies["@fastify/swagger"]).toBeUndefined();
   });
 
   it("adds @meghjs/data and its types for the database features", async () => {

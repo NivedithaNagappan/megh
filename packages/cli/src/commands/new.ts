@@ -52,6 +52,8 @@ const DEP_VERSIONS: Record<string, string> = {
   "class-validator": "^0.14.2",
   "reflect-metadata": "^0.2.2",
   "@fastify/cors": "^11.0.0",
+  "@fastify/swagger": "^9.7.0",
+  "@fastify/swagger-ui": "^6.1.2",
   typeorm: "^0.3.20",
   pg: "^8.11.0",
   mysql2: "^3.11.0",
@@ -174,7 +176,11 @@ export function packageJson(
   if (features.includes("typeorm")) pick("typeorm", "pg");
   if (features.includes("knex")) pick("knex", "pg");
   if (features.includes("orm")) pick(...DATABASE_SETUP[database].drivers);
+  // useOpenApi() builds the spec with @fastify/swagger, then serves it with
+  // Swagger UI, or with Scalar when that is chosen.
+  if (features.includes("openapi") || features.includes("scalar")) pick("@fastify/swagger");
   if (features.includes("scalar")) pick("@scalar/fastify-api-reference");
+  else if (features.includes("openapi")) pick("@fastify/swagger-ui");
 
   const devDeps: Record<string, string> = {};
   const pickDev = (...names: string[]) => names.forEach((n) => (devDeps[n] = DEP_VERSIONS[n]));
@@ -260,7 +266,12 @@ export function devCommand(pm: PackageManager) {
 
 function runInstall(pm: string, cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(pm, ["install"], { cwd, stdio: "inherit", shell: process.platform === "win32" });
+    // Windows needs a shell to run npm.cmd/yarn.cmd/pnpm.cmd. Passing one command
+    // string (not an args array) keeps Node 24 from warning with DEP0190.
+    const child =
+      process.platform === "win32"
+        ? spawn(`${pm} install`, { cwd, stdio: "inherit", shell: true })
+        : spawn(pm, ["install"], { cwd, stdio: "inherit" });
     child.on("error", reject);
     child.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`${pm} install exited with code ${code}`))));
   });
