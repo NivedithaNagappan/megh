@@ -39,13 +39,15 @@ import { isApiController } from "../common/container";
 import { AutoControllerOptions, IResponse } from "./types";
 
 import { CacheManager } from "../observability/cache";
+import { Mailer } from "../mail/mailer";
+import type { MailConfig } from "../mail/config";
 import {
   HealthCheck,
   HealthOptions,
   HealthRegistry,
   SKIP_GLOBAL_MIDDLEWARE,
 } from "../observability/health";
-import { MeghConfig } from "../config/config";
+import { GetConfig, MeghConfig } from "../config/config";
 import { MeghAuthentication } from "../security/authentication";
 import { registerPlugins } from "../plugins/registry";
 import { internalLogger } from "../observability/internal-logger";
@@ -166,6 +168,7 @@ export class MeghApplication implements IMeghApplication {
   private signalHandler: ((signal: NodeJS.Signals) => void) | null = null;
   private pluginNames: string[] = [];
   private usesCache = false;
+  private usesMail = false;
   private health = new HealthRegistry();
   private errorHandler = new MeghErrorHandler({
     isDevelopment: () => this.isDevelopment(),
@@ -236,6 +239,33 @@ export class MeghApplication implements IMeghApplication {
     if (!Container.has(CacheManager)) {
       Container.set(CacheManager, new CacheManager());
     }
+    return this;
+  }
+
+  /**
+   * Turn on mail: inject `Mailer` to send `Mailable`s. Settings come from
+   * `MEGH_MAIL_*` in `.env`; anything passed here overrides them.
+   *
+   *   app.useMail()
+   *   app.useMail({ from: 'hello@x.io', mailers: { audit: myTransport } })
+   *   app.useMail(MailSettings) // an @AppConfig class returning MailConfig
+   *
+   * Throws at startup when the settings are invalid, e.g. in production with
+   * no mailer set.
+   */
+  useMail(options?: MailConfig | Constructor<MeghConfig<MailConfig>>) {
+    if (
+      typeof options === "function" &&
+      options.prototype != null &&
+      typeof options.prototype.config === "function"
+    ) {
+      Mailer.configure(
+        GetConfig(options as Constructor<MeghConfig<MailConfig>>),
+      );
+    } else {
+      Mailer.configure(options as MailConfig | undefined);
+    }
+    this.usesMail = true;
     return this;
   }
 
@@ -740,6 +770,16 @@ export class MeghApplication implements IMeghApplication {
         await CacheManager.close();
       } catch (err) {
         internalLogger("app").error({ err }, "Closing the cache failed");
+      }
+    }
+    if (this.usesMail) {
+      try {
+        await Mailer.close();
+      } catch (err) {
+        internalLogger("app").error(
+          { err },
+          "Closing the mail transports failed",
+        );
       }
     }
     for (const hook of [...this.lifecycleHooks.close].reverse()) {
