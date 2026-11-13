@@ -608,7 +608,12 @@ app.useOpenApi({
 **Config class:**
 
 ```typescript
-import { AppConfig, MeghConfig, Environment, OpenApiUiOptions } from "@meghjs/core";
+import {
+  AppConfig,
+  MeghConfig,
+  Environment,
+  OpenApiUiOptions,
+} from "@meghjs/core";
 
 @AppConfig
 export class OpenApiConfig extends MeghConfig<OpenApiUiOptions> {
@@ -1295,7 +1300,6 @@ Work left for 1.0.0 is tracked as issues in the
 overview in [`1.0-CHECKLIST.md`](https://github.com/meghjs/megh/blob/main/1.0-CHECKLIST.md).
 What's left is mainly core correctness fixes, security headers, rate limiting
 and compression, a global route prefix, tests, and trimming the public API.
-
 
 ---
 

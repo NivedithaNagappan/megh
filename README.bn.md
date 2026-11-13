@@ -128,21 +128,21 @@ Megh integration-গুলোকে মূল install-এর বাইরে র
 এগুলোর কোনোটি ছাড়াই package-টি ঠিকঠাক import হয়, আর কোনো feature-এর যখন এগুলোর একটি দরকার হয়,
 তখন আপনি একটি স্পষ্ট error পাবেন:
 
-| Feature                                    | Install                                                                           |
-| -------------------------------------------- | --------------------------------------------------------------------------------- |
-| CORS (`useCors`)                             | `npm i @fastify/cors`                                                             |
-| File uploads (`useMultipart`, `@UploadFile`) | `npm i @fastify/multipart`                                                      |
-| Static files (`useStaticFiles`)            | `npm i @fastify/static`                                                           |
-| OpenAPI with Swagger UI                    | `npm i @fastify/swagger @fastify/swagger-ui`                                      |
-| OpenAPI with Scalar                        | `npm i @fastify/swagger @scalar/fastify-api-reference`                            |
-| MeghORM (`useMeghORM`) | একটি driver (`pg`, `mysql2`, `better-sqlite3`, বা `tedious tarn`) |
-| TypeORM                                    | `npm i typeorm` + একটি driver (`pg`, `mysql2`, `sqlite3`, `better-sqlite3`, `mssql`) |
-| Knex                                       | `npm i knex` + একটি driver                                                         |
-| Queues & workers                           | `npm i bullmq ioredis` (`memory`/`sync` driver-এ দরকার নেই)                         |
-| Redis cache                                | `npm i ioredis`                                                                   |
-| WebSocket                                    | `npm i socket.io fastify-socket.io`                                               |
-| `FileStorage`-এ image transform            | `npm i sharp`                                                                     |
-| সুন্দরভাবে format করা dev log             | `npm i -D pino-pretty`                                                            |
+| Feature                                      | Install                                                                              |
+| -------------------------------------------- | ------------------------------------------------------------------------------------ |
+| CORS (`useCors`)                             | `npm i @fastify/cors`                                                                |
+| File uploads (`useMultipart`, `@UploadFile`) | `npm i @fastify/multipart`                                                           |
+| Static files (`useStaticFiles`)              | `npm i @fastify/static`                                                              |
+| OpenAPI with Swagger UI                      | `npm i @fastify/swagger @fastify/swagger-ui`                                         |
+| OpenAPI with Scalar                          | `npm i @fastify/swagger @scalar/fastify-api-reference`                               |
+| MeghORM (`useMeghORM`)                       | একটি driver (`pg`, `mysql2`, `better-sqlite3`, বা `tedious tarn`)                    |
+| TypeORM                                      | `npm i typeorm` + একটি driver (`pg`, `mysql2`, `sqlite3`, `better-sqlite3`, `mssql`) |
+| Knex                                         | `npm i knex` + একটি driver                                                           |
+| Queues & workers                             | `npm i bullmq ioredis` (`memory`/`sync` driver-এ দরকার নেই)                          |
+| Redis cache                                  | `npm i ioredis`                                                                      |
+| WebSocket                                    | `npm i socket.io fastify-socket.io`                                                  |
+| `FileStorage`-এ image transform              | `npm i sharp`                                                                        |
+| সুন্দরভাবে format করা dev log                | `npm i -D pino-pretty`                                                               |
 
 ### Module format
 
@@ -233,7 +233,7 @@ class UserController {
 
 ### Route Methods
 
-| Decorator       | HTTP method |
+| Decorator        | HTTP method |
 | ---------------- | ----------- |
 | `@Get(path?)`    | GET         |
 | `@Post(path?)`   | POST        |
@@ -259,12 +259,12 @@ async getUser(
 }
 ```
 
-| Decorator       | উৎস                     |
+| Decorator       | উৎস                        |
 | --------------- | -------------------------- |
-| `@Param(key?)`  | route path-এর parameter |
-| `@Query(key?)`  | query string            |
-| `@Body()`       | request body            |
-| `@Header(key?)` | request header          |
+| `@Param(key?)`  | route path-এর parameter    |
+| `@Query(key?)`  | query string               |
+| `@Body()`       | request body               |
+| `@Header(key?)` | request header             |
 | `@AuthUser()`   | বর্তমান authenticated user |
 
 আপনি যদি tsx, esbuild বা SWC দিয়ে compile করেন, তাহলে compiler decorator
@@ -592,7 +592,12 @@ app.useOpenApi({
 **Config class:**
 
 ```typescript
-import { AppConfig, MeghConfig, Environment, OpenApiUiOptions } from "@meghjs/core";
+import {
+  AppConfig,
+  MeghConfig,
+  Environment,
+  OpenApiUiOptions,
+} from "@meghjs/core";
 
 @AppConfig
 export class OpenApiConfig extends MeghConfig<OpenApiUiOptions> {
@@ -654,7 +659,14 @@ npm install pg   # or: mysql2, better-sqlite3, tedious tarn
 
 ```typescript
 import {
-  DB, Model, Table, PrimaryKey, AutoIncrement, Column, CreatedAt, HasMany,
+  DB,
+  Model,
+  Table,
+  PrimaryKey,
+  AutoIncrement,
+  Column,
+  CreatedAt,
+  HasMany,
 } from "@meghjs/core";
 import { Post } from "./post.model";
 
@@ -1222,21 +1234,21 @@ Redis ছাড়াই job dispatch করে এমন code test করতে
 
 ## Upgrading to 0.3
 
-| Area | পরিবর্তন |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dependencies | `@fastify/cors`, `@fastify/multipart`, `@fastify/static`, `@fastify/swagger`, `@fastify/swagger-ui`, `@scalar/fastify-api-reference`, `fastify-socket.io`, `class-validator`, `class-transformer` এবং `pino-pretty` এখন peer dependency। আপনি যেগুলো ব্যবহার করেন সেগুলো install করুন ([table](#optional-dependencies))। |
-| Package | শুধু CommonJS, একটি `exports` map-সহ। Deep import (`@meghjs/core/dist/...`) আর resolve হয় না। License এখন MIT। |
-| Environment | `isDevelopment()`-এর জন্য `NODE_ENV=development` লাগে; সেট না থাকলে এখন production বোঝায়। |
-| Authorization | `@Authorized` deny-by-default। যে authorizer `false` return করে, সেটি এখন access নিষেধ করে। `AuthorizeMiddleware`, `AppAuthorization`, `AuthHandler` এবং `AuthReturnTypes` সরিয়ে ফেলা হয়েছে। একটি `authorize()` method-সহ সাধারণ `@CanAuthorize` class ব্যবহার করুন। |
-| Validation | অজানা DTO property 400 দিয়ে প্রত্যাখ্যান করা হয়। Handler-গুলো DTO instance পায়। Error body এখন `{ code, status, message, errors[] }` (আগে ছিল `{ code, error: "ValidationError", errors }`)। |
-| Pagination | সব paginator `{ data, meta: { total, page, perPage, lastPage, next, prev } }` return করে এবং `{ page, perPage }` নেয়। |
-| File storage | Default-ভাবে random filename, `overwrite: false`, extension allowlist এবং 50 MB limit। `save` option-এ `saveAs` ব্যবহার হয় (`as` নয়)। `download`/`downloadAs`/`getUploadFile` path-গুলো `baseDir` থেকে resolve করে। `UploadFileFromRequest`-এর `dest` এখন একটি string path। |
-| Events | `dispatch` একটি `MeghEvent` instance নেয়। Kafka এবং RabbitMQ broadcast exception throw করে। Socket broadcast-এর জন্য `useSocketIo()` লাগে। `getListeners` একটি class বা event নেয়, এবং `flushOnce` সরিয়ে ফেলা হয়েছে। |
-| Queues | `@MeghWorker` আর import-এর সময় চালু হয় না; `app.useWorker([...])` দিয়ে register করুন। |
-| Cache | Memory store প্রতিটি instance-এর জন্য আলাদা এবং TTL কার্যকর করা হয়। |
-| Logging | Default-ভাবে JSON; pretty output শুধু development-এ, `pino-pretty` install থাকলে। |
-| Results | `Results.Ok(x)` এখন `{ headers, data, statusCode }` হিসেবে serialize হয়। |
-| সরানো export | `registerKnex`, `FEATURE_KEY`, `uuid`, `getLineNumber`, `MatchLocation`, `extrctParamFromUrl`, `findDuplicates`, `isClassValidator`, `validateRequestBody`, `OkOptions`, `Results.code`, `KafkaBroadcastOption`, `RabbitMqBroadcastOption`, এবং `ControllerOptions.version`/`since`/`meta`। |
+| Area          | পরিবর্তন                                                                                                                                                                                                                                                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Dependencies  | `@fastify/cors`, `@fastify/multipart`, `@fastify/static`, `@fastify/swagger`, `@fastify/swagger-ui`, `@scalar/fastify-api-reference`, `fastify-socket.io`, `class-validator`, `class-transformer` এবং `pino-pretty` এখন peer dependency। আপনি যেগুলো ব্যবহার করেন সেগুলো install করুন ([table](#optional-dependencies))। |
+| Package       | শুধু CommonJS, একটি `exports` map-সহ। Deep import (`@meghjs/core/dist/...`) আর resolve হয় না। License এখন MIT।                                                                                                                                                                                                          |
+| Environment   | `isDevelopment()`-এর জন্য `NODE_ENV=development` লাগে; সেট না থাকলে এখন production বোঝায়।                                                                                                                                                                                                                               |
+| Authorization | `@Authorized` deny-by-default। যে authorizer `false` return করে, সেটি এখন access নিষেধ করে। `AuthorizeMiddleware`, `AppAuthorization`, `AuthHandler` এবং `AuthReturnTypes` সরিয়ে ফেলা হয়েছে। একটি `authorize()` method-সহ সাধারণ `@CanAuthorize` class ব্যবহার করুন।                                                   |
+| Validation    | অজানা DTO property 400 দিয়ে প্রত্যাখ্যান করা হয়। Handler-গুলো DTO instance পায়। Error body এখন `{ code, status, message, errors[] }` (আগে ছিল `{ code, error: "ValidationError", errors }`)।                                                                                                                          |
+| Pagination    | সব paginator `{ data, meta: { total, page, perPage, lastPage, next, prev } }` return করে এবং `{ page, perPage }` নেয়।                                                                                                                                                                                                   |
+| File storage  | Default-ভাবে random filename, `overwrite: false`, extension allowlist এবং 50 MB limit। `save` option-এ `saveAs` ব্যবহার হয় (`as` নয়)। `download`/`downloadAs`/`getUploadFile` path-গুলো `baseDir` থেকে resolve করে। `UploadFileFromRequest`-এর `dest` এখন একটি string path।                                            |
+| Events        | `dispatch` একটি `MeghEvent` instance নেয়। Kafka এবং RabbitMQ broadcast exception throw করে। Socket broadcast-এর জন্য `useSocketIo()` লাগে। `getListeners` একটি class বা event নেয়, এবং `flushOnce` সরিয়ে ফেলা হয়েছে।                                                                                                 |
+| Queues        | `@MeghWorker` আর import-এর সময় চালু হয় না; `app.useWorker([...])` দিয়ে register করুন।                                                                                                                                                                                                                                 |
+| Cache         | Memory store প্রতিটি instance-এর জন্য আলাদা এবং TTL কার্যকর করা হয়।                                                                                                                                                                                                                                                     |
+| Logging       | Default-ভাবে JSON; pretty output শুধু development-এ, `pino-pretty` install থাকলে।                                                                                                                                                                                                                                        |
+| Results       | `Results.Ok(x)` এখন `{ headers, data, statusCode }` হিসেবে serialize হয়।                                                                                                                                                                                                                                                |
+| সরানো export  | `registerKnex`, `FEATURE_KEY`, `uuid`, `getLineNumber`, `MatchLocation`, `extrctParamFromUrl`, `findDuplicates`, `isClassValidator`, `validateRequestBody`, `OkOptions`, `Results.code`, `KafkaBroadcastOption`, `RabbitMqBroadcastOption`, এবং `ControllerOptions.version`/`since`/`meta`।                              |
 
 ---
 
@@ -1269,21 +1281,20 @@ issue হিসেবে track করা হয়, আর সংক্ষেপ
 বাকি আছে মূলত core-এর correctness fix, security header, rate limiting ও
 compression, global route prefix, test, এবং public API ছোট করা।
 
-
 ---
 
 ## Repository-র গঠন
 
 এই monorepo-তে প্রতিটি Megh package এবং docs site-এর source রাখা আছে, যাতে framework, এর CLI template এবং এর documentation-এর পরিবর্তন একটি commit-এই যুক্ত করা যায়।
 
-| Folder           | Package / site                                                | যেখান থেকে publish হয়                                                         |
-|------------------|---------------------------------------------------------------|--------------------------------------------------------------------------------|
-| `packages/core/` | [`@meghjs/core`](https://www.npmjs.com/package/@meghjs/core)  | এই repository (Lerna)                                                        |
-| `packages/cli/`  | [`@meghjs/cli`](https://www.npmjs.com/package/@meghjs/cli)    | এই repository (Lerna)                                                        |
-| `packages/data/` | [`@meghjs/data`](https://www.npmjs.com/package/@meghjs/data)  | এই repository (Lerna)                                                        |
-| `docs/`          | https://meghjs.github.io (VitePress)                        | [meghjs/meghjs.github.io](https://github.com/meghjs/meghjs.github.io)  |
-| `resources/`     | Logo এবং favicon                                              | প্রযোজ্য নয়                                                                   |
-| `scripts/`       | `mirror.sh`, যা `docs/`-কে এর আলাদা repository-র সাথে sync করে | প্রযোজ্য নয়                                                                   |
+| Folder           | Package / site                                                 | যেখান থেকে publish হয়                                                |
+| ---------------- | -------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `packages/core/` | [`@meghjs/core`](https://www.npmjs.com/package/@meghjs/core)   | এই repository (Lerna)                                                 |
+| `packages/cli/`  | [`@meghjs/cli`](https://www.npmjs.com/package/@meghjs/cli)     | এই repository (Lerna)                                                 |
+| `packages/data/` | [`@meghjs/data`](https://www.npmjs.com/package/@meghjs/data)   | এই repository (Lerna)                                                 |
+| `docs/`          | https://meghjs.github.io (VitePress)                           | [meghjs/meghjs.github.io](https://github.com/meghjs/meghjs.github.io) |
+| `resources/`     | Logo এবং favicon                                               | প্রযোজ্য নয়                                                          |
+| `scripts/`       | `mirror.sh`, যা `docs/`-কে এর আলাদা repository-র সাথে sync করে | প্রযোজ্য নয়                                                          |
 
 `1.0-CHECKLIST.md` 1.0 release-এর কাজের হিসাব রাখে; বর্তমান roadmap নিচে [Roadmap to 1.0.0](#roadmap-to-100)-এ দেওয়া আছে।
 
