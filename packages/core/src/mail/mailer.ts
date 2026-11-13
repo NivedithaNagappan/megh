@@ -1,16 +1,28 @@
 import { Injectable } from "../di";
 import type { Constructor } from "../common/utils/common-utils";
 import {
+  mailerProblem,
   resolveMailConfig,
+  type FailoverMailerConfig,
   type MailConfig,
   type MailerConfig,
   type ResolvedMailConfig,
-  type SmtpMailerConfig,
 } from "./config";
 import { MailError } from "./errors";
 import { Mailable } from "./mailable";
+import {
+  MailgunTransport,
+  PostmarkTransport,
+  ResendTransport,
+  SendGridTransport,
+} from "./http-transports";
 import { MailQueue } from "./queue";
-import { ArrayTransport, LogTransport, SmtpTransport } from "./transports";
+import {
+  ArrayTransport,
+  FailoverTransport,
+  LogTransport,
+  SmtpTransport,
+} from "./transports";
 import type {
   MailAddress,
   MailAddressLike,
@@ -206,7 +218,7 @@ export class Mailer {
     const { config } = Mailer.resolve(name);
     let transport = Mailer.transports.get(name);
     if (!transport) {
-      transport = createTransport(config.mailers[name]);
+      transport = createTransport(name, config.mailers);
       Mailer.transports.set(name, transport);
     }
     return transport.send(message);
@@ -227,18 +239,34 @@ export class Mailer {
   }
 }
 
-function createTransport(config: MailerConfig): MailTransport {
+function createTransport(
+  name: string,
+  mailers: Record<string, MailerConfig>,
+): MailTransport {
+  const problem = mailerProblem(name, mailers);
+  if (problem) throw new MailError(`The mailer ${problem}`);
+  const config = mailers[name];
   if ("send" in config && typeof config.send === "function") return config;
-  switch ((config as { transport?: string }).transport) {
+  const c = config as Exclude<MailerConfig, MailTransport>;
+  switch (c.transport) {
     case "smtp":
-      return new SmtpTransport(config as SmtpMailerConfig);
+      return new SmtpTransport(c);
     case "log":
       return new LogTransport();
     case "array":
       return new ArrayTransport();
-    default:
-      throw new MailError(
-        `Unknown mail transport "${String((config as { transport?: unknown }).transport)}". Use smtp, log, array, or an object with a send() method.`,
+    case "sendgrid":
+      return new SendGridTransport(c);
+    case "mailgun":
+      return new MailgunTransport(c);
+    case "postmark":
+      return new PostmarkTransport(c);
+    case "resend":
+      return new ResendTransport(c);
+    case "failover":
+      return new FailoverTransport(
+        (c as FailoverMailerConfig).mailers,
+        (mailer, message) => Mailer.deliver(mailer, message),
       );
   }
 }

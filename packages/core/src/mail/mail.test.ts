@@ -123,6 +123,10 @@ describe("mail config", () => {
       "smtp",
       "log",
       "array",
+      "sendgrid",
+      "mailgun",
+      "postmark",
+      "resend",
       "audit",
     ]);
     expect(() => resolveMailConfig({ default: "nope" }, env({}))).toThrow(
@@ -332,8 +336,8 @@ describe("Mailer", () => {
       "Mail not sent (log mailer)",
     );
     await expect(
-      new Mailer().mailer("sendgrid").to("a@x.io").send(new WelcomeMail()),
-    ).rejects.toThrow(/no mailer named "sendgrid"/);
+      new Mailer().mailer("sparkpost").to("a@x.io").send(new WelcomeMail()),
+    ).rejects.toThrow(/no mailer named "sparkpost"/);
   });
 
   it("uses a custom transport and returns its reply", async () => {

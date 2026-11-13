@@ -10,6 +10,12 @@ export {
   type LogMailerConfig,
   type ArrayMailerConfig,
   type MailQueueConfig,
+  type SendGridMailerConfig,
+  type MailgunMailerConfig,
+  type PostmarkMailerConfig,
+  type ResendMailerConfig,
+  type FailoverMailerConfig,
+  mailerProblem,
 } from "./config";
 export {
   MailQueue,
@@ -18,4 +24,16 @@ export {
 } from "./queue";
 export { Mailable } from "./mailable";
 export { Mailer, PendingMail, MailFake, SentMail } from "./mailer";
-export { SmtpTransport, LogTransport, ArrayTransport } from "./transports";
+export {
+  SmtpTransport,
+  LogTransport,
+  ArrayTransport,
+  FailoverTransport,
+} from "./transports";
+export {
+  SendGridTransport,
+  MailgunTransport,
+  PostmarkTransport,
+  ResendTransport,
+  MailTransportError,
+} from "./http-transports";

@@ -106,6 +106,50 @@ export class LogTransport implements MailTransport {
   }
 }
 
+/**
+ * Sends through the first mailer in the list that succeeds, logging each
+ * failure. Fails only when every mailer has.
+ */
+export class FailoverTransport implements MailTransport {
+  private readonly logger = internalLogger("mail");
+
+  constructor(
+    private readonly mailers: string[],
+    private readonly deliver: (
+      mailer: string,
+      message: MailMessage,
+    ) => Promise<MailTransportResult | void>,
+  ) {}
+
+  async send(message: MailMessage): Promise<MailTransportResult> {
+    const failures: string[] = [];
+    for (const [i, mailer] of this.mailers.entries()) {
+      try {
+        const result = await this.deliver(mailer, message);
+        if (i > 0)
+          this.logger.info(
+            { mailer },
+            `Mail sent through "${mailer}" after failover`,
+          );
+        return { ...(result ?? {}) };
+      } catch (err) {
+        const why = err instanceof Error ? err.message : String(err);
+        failures.push(`${mailer}: ${why}`);
+        const next = this.mailers[i + 1];
+        this.logger.warn(
+          { err, mailer, next },
+          next
+            ? `Mailer "${mailer}" failed; trying "${next}"`
+            : `Mailer "${mailer}" failed; no mailers left to try`,
+        );
+      }
+    }
+    throw new MailError(
+      `Every failover mailer failed. ${failures.join(" | ")}`,
+    );
+  }
+}
+
 /** Keeps every message in `messages`, for tests. */
 export class ArrayTransport implements MailTransport {
   readonly messages: MailMessage[] = [];

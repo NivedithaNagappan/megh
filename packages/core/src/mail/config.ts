@@ -32,9 +32,67 @@ export interface ArrayMailerConfig {
   transport: "array";
 }
 
+/** Settings shared by the HTTP API mailers. */
+interface HttpMailerOptions {
+  /** The API's base URL, e.g. for a regional endpoint or a test server. */
+  endpoint?: string;
+  /** Milliseconds to wait for the API. Defaults to 30 000. */
+  timeout?: number;
+}
+
+/** Twilio SendGrid. EU subusers use `endpoint: "https://api.eu.sendgrid.com"`. */
+export interface SendGridMailerConfig extends HttpMailerOptions {
+  transport: "sendgrid";
+  /** `MEGH_MAIL_SENDGRID_API_KEY`. */
+  apiKey?: string;
+}
+
+/** Mailgun. EU domains use `endpoint: "https://api.eu.mailgun.net"`. */
+export interface MailgunMailerConfig extends HttpMailerOptions {
+  transport: "mailgun";
+  /** `MEGH_MAIL_MAILGUN_API_KEY`. */
+  apiKey?: string;
+  /** The sending domain, e.g. `mg.example.com`. `MEGH_MAIL_MAILGUN_DOMAIN`. */
+  domain?: string;
+}
+
+/** Postmark. */
+export interface PostmarkMailerConfig extends HttpMailerOptions {
+  transport: "postmark";
+  /** The server API token. `MEGH_MAIL_POSTMARK_TOKEN`. */
+  token?: string;
+  /** Defaults to Postmark's transactional stream. `MEGH_MAIL_POSTMARK_MESSAGE_STREAM`. */
+  messageStream?: string;
+}
+
+/** Resend. */
+export interface ResendMailerConfig extends HttpMailerOptions {
+  transport: "resend";
+  /** `MEGH_MAIL_RESEND_API_KEY`. */
+  apiKey?: string;
+}
+
+/**
+ * Tries other mailers in order until one sends: `{ transport: "failover",
+ * mailers: ["sendgrid", "smtp"] }`. `MEGH_MAIL_FAILOVER=sendgrid,smtp` sets
+ * up one named `failover`.
+ */
+export interface FailoverMailerConfig {
+  transport: "failover";
+  mailers: string[];
+}
+
 /** A mailer's settings, or a transport of your own. */
 export type MailerConfig =
-  SmtpMailerConfig | LogMailerConfig | ArrayMailerConfig | MailTransport;
+  | SmtpMailerConfig
+  | LogMailerConfig
+  | ArrayMailerConfig
+  | SendGridMailerConfig
+  | MailgunMailerConfig
+  | PostmarkMailerConfig
+  | ResendMailerConfig
+  | FailoverMailerConfig
+  | MailTransport;
 
 /** Options for `app.useMail()`. Anything left out comes from `MEGH_MAIL_*` in `.env`. */
 export interface MailConfig {
@@ -42,7 +100,11 @@ export interface MailConfig {
   default?: string;
   /** The address messages come from unless `envelope()` says otherwise. */
   from?: MailAddressLike;
-  /** Named mailers. `smtp`, `log` and `array` are always there; these add to or replace them. */
+  /**
+   * Named mailers. `smtp`, `log`, `array`, `sendgrid`, `mailgun`, `postmark`
+   * and `resend` are always there, set up from `.env`; these add to or
+   * replace them.
+   */
   mailers?: Record<string, MailerConfig>;
   /**
    * Turn on `queue()` and `later()`: `true` for the defaults, or options.
@@ -105,6 +167,10 @@ export function mailConfigFromEnv(
   }
   const fromAddress = value("MEGH_MAIL_FROM_ADDRESS");
   const fromName = value("MEGH_MAIL_FROM_NAME");
+  const failover = value("MEGH_MAIL_FAILOVER")
+    ?.split(",")
+    .map((m) => m.trim())
+    .filter(Boolean);
   return {
     default: value("MEGH_MAIL_MAILER"),
     from: fromAddress
@@ -119,6 +185,28 @@ export function mailConfigFromEnv(
         username: value("MEGH_MAIL_USERNAME"),
         password: value("MEGH_MAIL_PASSWORD"),
       },
+      sendgrid: {
+        transport: "sendgrid",
+        apiKey: value("MEGH_MAIL_SENDGRID_API_KEY"),
+      },
+      mailgun: {
+        transport: "mailgun",
+        apiKey: value("MEGH_MAIL_MAILGUN_API_KEY"),
+        domain: value("MEGH_MAIL_MAILGUN_DOMAIN"),
+        endpoint: value("MEGH_MAIL_MAILGUN_ENDPOINT"),
+      },
+      postmark: {
+        transport: "postmark",
+        token: value("MEGH_MAIL_POSTMARK_TOKEN"),
+        messageStream: value("MEGH_MAIL_POSTMARK_MESSAGE_STREAM"),
+      },
+      resend: {
+        transport: "resend",
+        apiKey: value("MEGH_MAIL_RESEND_API_KEY"),
+      },
+      ...(failover?.length
+        ? { failover: { transport: "failover", mailers: failover } }
+        : {}),
     },
   };
 }
@@ -134,7 +222,7 @@ function defaultEnvReader() {
  * `log` in development and `array` in tests.
  *
  * @throws MailError in production when no mailer is set, or when the default
- *   mailer is not configured.
+ *   mailer is missing or lacks a setting it needs (a host, an API key).
  */
 export function resolveMailConfig(
   options: MailConfig = {},
@@ -144,6 +232,10 @@ export function resolveMailConfig(
     smtp: { transport: "smtp" },
     log: { transport: "log" },
     array: { transport: "array" },
+    sendgrid: { transport: "sendgrid" },
+    mailgun: { transport: "mailgun" },
+    postmark: { transport: "postmark" },
+    resend: { transport: "resend" },
     ...env.mailers,
     ...options.mailers,
   };
@@ -154,6 +246,8 @@ export function resolveMailConfig(
       `The default mailer "${name}" is not configured. Configured mailers: ${Object.keys(mailers).join(", ")}.`,
     );
   }
+  const problem = mailerProblem(name, mailers);
+  if (problem) throw new MailError(`The default mailer ${problem}`);
   const queue = options.queue === true ? {} : options.queue || undefined;
   return {
     default: name,
@@ -171,4 +265,62 @@ function implicitDefault(smtp: SmtpMailerConfig | undefined): string {
     "No mailer is set. Set MEGH_MAIL_MAILER (smtp, log or array) or MEGH_MAIL_HOST in .env, " +
       "or pass { default } to app.useMail().",
   );
+}
+
+/**
+ * What stops a mailer from sending, or `undefined` when it is ready.
+ * Checked for the default mailer at startup, and for others on first use.
+ */
+export function mailerProblem(
+  name: string,
+  mailers: Record<string, MailerConfig>,
+): string | undefined {
+  const config = mailers[name];
+  if (!config) return `"${name}" is not configured.`;
+  if ("send" in config && typeof config.send === "function") return undefined;
+  const missing = (setting: string) => `"${name}" needs ${setting}.`;
+  const c = config as Exclude<MailerConfig, MailTransport>;
+  switch (c.transport) {
+    case "log":
+    case "array":
+      return undefined;
+    case "smtp":
+      return c.host || c.options
+        ? undefined
+        : missing("a host: set MEGH_MAIL_HOST or mailers.smtp.host");
+    case "sendgrid":
+      return c.apiKey
+        ? undefined
+        : missing("an API key: set MEGH_MAIL_SENDGRID_API_KEY or apiKey");
+    case "mailgun":
+      if (!c.apiKey)
+        return missing("an API key: set MEGH_MAIL_MAILGUN_API_KEY or apiKey");
+      return c.domain
+        ? undefined
+        : missing("a domain: set MEGH_MAIL_MAILGUN_DOMAIN or domain");
+    case "postmark":
+      return c.token
+        ? undefined
+        : missing("a server token: set MEGH_MAIL_POSTMARK_TOKEN or token");
+    case "resend":
+      return c.apiKey
+        ? undefined
+        : missing("an API key: set MEGH_MAIL_RESEND_API_KEY or apiKey");
+    case "failover": {
+      if (!c.mailers?.length) return missing("a list of mailers to try");
+      for (const member of c.mailers) {
+        const target = mailers[member];
+        if (!target)
+          return `"${name}" lists "${member}", which is not configured.`;
+        if ((target as { transport?: string }).transport === "failover") {
+          return `"${name}" lists "${member}", another failover mailer; list the mailers directly.`;
+        }
+        const problem = mailerProblem(member, mailers);
+        if (problem) return `"${name}" lists ${problem}`;
+      }
+      return undefined;
+    }
+    default:
+      return `"${name}" has an unknown transport "${String((c as { transport?: unknown }).transport)}". Use smtp, log, array, sendgrid, mailgun, postmark, resend, failover, or an object with a send() method.`;
+  }
 }
