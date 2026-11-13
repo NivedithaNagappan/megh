@@ -3,7 +3,8 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { runCli } from "../src/program";
-import { createApplication } from "../src/commands/new";
+import { createApplication, initGit } from "../src/commands/new";
+import { spawnSync } from "child_process";
 import { runChecks } from "../src/commands/doctor";
 import { joinRoute, scanRoutes } from "../src/commands/route-list";
 import { makeController, makeDto, makeModel, makeService } from "../src/generators/make";
@@ -22,10 +23,13 @@ const quiet = () => {
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "megh-cli-"));
   quiet();
+  // Projects made by `new` skip git init unless a test turns it back on.
+  vi.stubEnv("MEGH_SKIP_GIT", "1");
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -233,6 +237,28 @@ describe("new", () => {
     await createApplication("tiny", { cwd: tmp, yes: true, skipInstall: true, minimal: true });
     const pkg = JSON.parse(read("tiny", "package.json"));
     expect(pkg.dependencies["@fastify/swagger"]).toBeUndefined();
+  });
+
+  const hasGit = spawnSync("git", ["--version"]).status === 0;
+
+  it.runIf(hasGit)("runs git init in the new project", async () => {
+    vi.stubEnv("MEGH_SKIP_GIT", "");
+    await createApplication("git_api", { cwd: tmp, yes: true, skipInstall: true });
+    expect(exists("git_api", ".git")).toBe(true);
+  });
+
+  it("skips git init with skipGit", async () => {
+    vi.stubEnv("MEGH_SKIP_GIT", "");
+    await createApplication("nogit_api", { cwd: tmp, yes: true, skipInstall: true, skipGit: true });
+    expect(exists("nogit_api", ".git")).toBe(false);
+  });
+
+  it.runIf(hasGit)("leaves a folder that is already inside a repository alone", () => {
+    expect(initGit(tmp)).toBe("initialized");
+    const inner = path.join(tmp, "packages", "api");
+    fs.mkdirSync(inner, { recursive: true });
+    expect(initGit(inner)).toBe("inside-repo");
+    expect(fs.existsSync(path.join(inner, ".git"))).toBe(false);
   });
 
   it("adds @meghjs/data and its types for the database features", async () => {

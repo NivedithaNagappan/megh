@@ -97,6 +97,7 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
       `Set up MeghORM (the orm feature) for ${DATABASES.join(", ")}. Defaults to sqlite with orm`,
     )
     .option("--skip-install", "Do not install dependencies (or set MEGH_SKIP_INSTALL=1)")
+    .option("--skip-git", "Do not run git init (or set MEGH_SKIP_GIT=1)")
     .action(async (name: string, o) => {
       await createApplication(name, { cwd: cwd(), ...o });
     });

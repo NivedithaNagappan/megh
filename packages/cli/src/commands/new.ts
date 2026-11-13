@@ -1,4 +1,4 @@
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import { CliError } from "../errors";
@@ -44,6 +44,8 @@ export type NewOptions = {
   database?: string;
   /** Skip `<pm> install`. Also enabled by the `MEGH_SKIP_INSTALL=1` environment variable. */
   skipInstall?: boolean;
+  /** Skip `git init`. Also enabled by the `MEGH_SKIP_GIT=1` environment variable. */
+  skipGit?: boolean;
 };
 
 /** Third-party versions for generated projects. */
@@ -277,6 +279,20 @@ function runInstall(pm: string, cwd: string): Promise<void> {
   });
 }
 
+type GitResult = "initialized" | "no-git" | "inside-repo" | "failed";
+
+/**
+ * Run `git init` in a new project. Skipped when git is not installed, or when
+ * the folder is already inside a repository (e.g. `megh new .` in a repo).
+ */
+export function initGit(cwd: string): GitResult {
+  const git = (...args: string[]) => spawnSync("git", args, { cwd, stdio: "ignore" });
+  const version = git("--version");
+  if (version.error || version.status !== 0) return "no-git";
+  if (git("rev-parse", "--is-inside-work-tree").status === 0) return "inside-repo";
+  return git("init").status === 0 ? "initialized" : "failed";
+}
+
 export async function createApplication(name: string, opts: NewOptions = {}): Promise<string> {
   if (!name || !name.trim()) throw new CliError("Please provide a project name, e.g. `megh new my-api`.");
   const cwd = opts.cwd ?? process.cwd();
@@ -357,6 +373,12 @@ export async function createApplication(name: string, opts: NewOptions = {}): Pr
     log.step(path.relative(root, file).split(path.sep).join("/"), "");
   }
   if (!minimal) fs.mkdirSync(path.join(root, "public"), { recursive: true });
+
+  if (!opts.skipGit && process.env.MEGH_SKIP_GIT !== "1") {
+    const git = initGit(root);
+    if (git === "initialized") log.success("Initialized a git repository");
+    else if (git === "failed") log.warn("git init failed; run it yourself to put the project under git");
+  }
 
   const skipInstall = opts.skipInstall || process.env.MEGH_SKIP_INSTALL === "1";
   if (skipInstall) {

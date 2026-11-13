@@ -37,7 +37,7 @@ npm run start:dev
 
 | Command | Alias | Options | Description |
 |---------|-------|---------|-------------|
-| `new <name>` | | `-m`, `-f`, `-y`, `--pm <npm\|yarn\|pnpm>`, `--features <list>`, `--skip-install` | Create a new application |
+| `new <name>` | | `-m`, `-f`, `-y`, `--pm <npm\|yarn\|pnpm>`, `--features <list>`, `--skip-install`, `--skip-git` | Create a new application |
 | `serve` | | `--entry <file>`, `--no-type-check`, `--debounce <ms>` | Dev server: SWC compile, run, reload on change |
 | `build` | | `-p <tsconfig>` | Compile with `tsconfig.build.json` and copy assets |
 | `start` | | `--entry <file>` | Run the compiled app with `NODE_ENV=production` |
