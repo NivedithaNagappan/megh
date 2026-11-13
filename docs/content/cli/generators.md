@@ -186,6 +186,40 @@ export class AuthMiddleware extends MeghMiddleware {
 }
 ```
 
+## Mail
+
+```sh
+npx megh make:mail OrderShipped
+```
+
+Generates a `Mailable` in `src/mail`, with `envelope()`, `content()` and
+`attachments()` to fill in. The `Mail` suffix is added for you, and a name like
+`admin/Invoice` writes to `src/mail/admin/invoice.mail.ts`:
+
+```ts [src/mail/order-shipped.mail.ts]
+import { Mailable } from '@meghjs/core';
+
+export class OrderShippedMail extends Mailable {
+  envelope() {
+    return { subject: 'Order Shipped' };
+  }
+
+  content() {
+    return {
+      html: '<p>Order Shipped</p>',
+      text: 'Order Shipped',
+    };
+  }
+
+  attachments() {
+    return [];
+  }
+}
+```
+
+If `src/app.ts` doesn't call `app.useMail()` yet, the command says so. See
+[Mail](/advanced/mail).
+
 ## Config
 
 ```sh

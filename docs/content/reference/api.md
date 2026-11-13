@@ -74,6 +74,7 @@ calls chain.
 | `useCache(options?: CacheOptions)` | Configure `CacheManager` and register it in the container. |
 | `useScheduler(tasks: Constructor[] \| { path: string })` | Register `@ScheduledTask` classes, or scan a directory for them. |
 | `useWorker(workers: Constructor<any>[])` | Resolve and start `@Queue` and `@MeghWorker` classes. They close on shutdown. |
+| `useMail(options?: MailConfig \| Constructor<MeghConfig<MailConfig>>)` | Configure `Mailer` over `MEGH_MAIL_*`, and start the mail queue's worker when `queue` is set. Throws when the default mailer is misconfigured. See [Mail](/advanced/mail). |
 | `useSocketIo(options?: any)` | Enable Socket.IO through `fastify-socket.io`. |
 | `useGlobal(options: GlobalOptions)` | Call several `use*` methods from one object (`cors`, `openApi`, `controllers`, `middlewares`, `authorization`, `multipart`, `staticFiles`). |
 | `useMeghORM(options?: DatabaseOptions \| MeghConfigClass<DatabaseOptions>)` | Connect Megh ORM. Added by the built-in ORM plugin. See [ORM](/advanced/orm). |
@@ -660,6 +661,30 @@ delay(data: T, delayMs: number, options?: JobsOptions): Promise<Job<T>>
 delay(name: string, data: T, delayMs: number, options?: JobsOptions): Promise<Job<T>>
 dispatch(name: string, data: T, delayMs?: number, options?: JobsOptions): Promise<Job<T>>
 ```
+
+## Mail
+
+Guide: [Mail](/advanced/mail).
+
+| Export | Kind | Signature / description |
+| --- | --- | --- |
+| `Mailable` | abstract class | One kind of email. `envelope()`, `content()` (required), `attachments()`; each may be async. |
+| `Mailer` | class | Injectable. `to()`, `cc()`, `bcc()`, `send()`, `queue()`, `later(delay, mail)`, `mailer(name)`. Static: `configure()`, `fake()`, `restore()`, `close()`, `reset()`. |
+| `PendingMail` | class | Returned by `mailer.to()`: add recipients, then `send()`, `queue()` or `later()`. |
+| `MailFake` | class | Returned by `Mailer.fake()`. `assertSent`, `assertNotSent`, `assertNothingSent`, `assertSentCount`, `assertQueued`, `assertNotQueued`, `assertNothingQueued`, `sentOf`, `queuedOf`, `sent`, `queued`, `restore`. |
+| `SentMail` | class | A recorded message: `mailer`, `mailable`, `message`, `delay`, `hasTo()`, `hasCc()`, `hasBcc()`, `hasFrom()`. |
+| `MailConfig` | interface | `{ default?, from?, mailers?, queue? }` for `useMail()`. |
+| `MailQueueConfig` | interface | `{ name?, adapter?, driver?, worker?, jobOptions? }`. |
+| `MailerConfig` | type | One mailer's settings: `{ transport: "smtp" \| "sendgrid" \| "mailgun" \| "postmark" \| "resend" \| "failover" \| "log" \| "array", ... }`, or a `MailTransport`. |
+| `MailTransport` | interface | `{ send(message: MailMessage): Promise<{ messageId?, response? } \| void>; close?() }`. Implement it for your own mailer. |
+| `MailMessage` | interface | A built message: `from`, `to`, `cc`, `bcc`, `replyTo`, `subject`, `html?`, `text?`, `attachments`, `headers`. |
+| `MailEnvelope`, `MailContent`, `MailAttachment`, `MailAddress`, `MailAddressLike` | types | What a `Mailable` returns, and address forms. |
+| `SentMessage`, `QueuedMessage` | types | What `send()` and `queue()`/`later()` resolve to. |
+| `SmtpTransport`, `SendGridTransport`, `MailgunTransport`, `PostmarkTransport`, `ResendTransport`, `FailoverTransport`, `LogTransport`, `ArrayTransport` | classes | The built-in transports. |
+| `MailQueue` | class | The `MeghQueue` behind `queue()` and `later()`. |
+| `MailError` | class | A misconfiguration, or a mailable that cannot be built. |
+| `MailTransportError` | class | A provider refused the message: `provider`, `status`, `body`. |
+| `mailConfigFromEnv`, `resolveMailConfig`, `mailerProblem` | functions | Read `MEGH_MAIL_*`, merge options over it, and check a mailer's settings. |
 
 ## Scheduler
 

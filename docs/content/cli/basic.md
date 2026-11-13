@@ -58,8 +58,8 @@ npx @meghjs/cli new myapi
 ```
 
 You are prompted for a package manager and optional features: OpenAPI docs,
-CORS, MeghORM, TypeORM, Knex and Scalar UI. With MeghORM you also pick the
-database. Non-interactively:
+CORS, MeghORM, TypeORM, Knex, Scalar UI and [Mail](/advanced/mail). With
+MeghORM you also pick the database. Non-interactively:
 
 ```sh
 npx @meghjs/cli new myapi --yes --database postgres   # also: mysql, sqlite, mssql

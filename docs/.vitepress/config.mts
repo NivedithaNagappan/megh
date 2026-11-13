@@ -75,6 +75,7 @@ export default defineConfig({
         items: [
           { text: 'Events', link: '/advanced/events' },
           { text: 'Queue', link: '/advanced/queue' },
+          { text: 'Mail', link: '/advanced/mail' },
           { text: 'Scheduler', link: '/advanced/scheduler' },
           { text: 'Caching', link: '/advanced/caching' },
           { text: 'File Uploads', link: '/advanced/file-uploads' },

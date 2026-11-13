@@ -75,6 +75,7 @@ Each `use*` method returns the app, so they chain. Call them before `run()`.
 | `useMeghORM(options)` | Database connection for MeghORM | [MeghORM](/advanced/orm) |
 | `useScheduler([...])` or `useScheduler({ path })` | Scheduled tasks | [Scheduler](/advanced/scheduler) |
 | `useWorker([...])` | Queue workers | [Queue](/advanced/queue) |
+| `useMail(options?)` | Send mail over SMTP or a provider's API, now or queued | [Mail](/advanced/mail) |
 | `useSocketIo(options)` | Socket.IO server | [WebSocket](/microservices/websocket) |
 | `useHealth(options)`, `addHealthCheck(name, fn)` | `/health` and `/ready` endpoints | [Health Checks](/advanced/health) |
 

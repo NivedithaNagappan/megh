@@ -16,6 +16,11 @@ There are two ways to work with jobs: a **queue class**, which both produces and
 consumes jobs, and a **worker class**, which only consumes a queue someone else
 fills.
 
+::: tip
+For email you don't need your own queue: `mailer.to(user.email).queue(mail)`
+uses a built-in mail queue. See [Mail](/advanced/mail#queueing-mail).
+:::
+
 ## A queue
 
 Extend `MeghQueue<T>` and decorate it with `@Queue`. `T` is the shape of the

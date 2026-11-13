@@ -46,6 +46,7 @@ Documentation: **https://meghjs.github.io**
   - [Pagination](#pagination)
   - [Events](#events)
   - [Queues & Workers](#queues--workers)
+  - [Mail](#mail)
   - [Task Scheduling](#task-scheduling)
   - [Caching](#caching)
   - [File Uploads](#file-uploads)
@@ -80,6 +81,7 @@ Documentation: **https://meghjs.github.io**
 - ⚙️ **Config** — typed, environment-aware config class
 - 📣 **Events** — queue-based delivery ও Socket.IO broadcast-সহ typed event
 - 📬 **Queues & workers** — [BullMQ](https://docs.bullmq.io)-এ background job, test-এর জন্য in-memory driver-সহ
+- ✉️ **Mail** — SMTP, SendGrid, Mailgun, Postmark বা Resend দিয়ে mailable class পাঠানো, সঙ্গে সঙ্গে বা queue-তে, test fake-সহ
 - ⏰ **Task scheduling** — cron, interval ও timeout job
 - 🗃️ **Caching** — in-memory বা Redis, TTL ও tag-based invalidation-সহ
 - 📝 **Logging** — [pino](https://getpino.io) দিয়ে structured JSON log
@@ -139,6 +141,7 @@ Megh integration-গুলোকে মূল install-এর বাইরে র
 | TypeORM                                      | `npm i typeorm` + একটি driver (`pg`, `mysql2`, `sqlite3`, `better-sqlite3`, `mssql`) |
 | Knex                                         | `npm i knex` + একটি driver                                                           |
 | Queues & workers                             | `npm i bullmq ioredis` (`memory`/`sync` driver-এ দরকার নেই)                          |
+| Mail over SMTP                               | `npm i nodemailer` (SendGrid, Mailgun, Postmark ও Resend mailer-এ কিছু লাগে না)      |
 | Redis cache                                  | `npm i ioredis`                                                                      |
 | WebSocket                                    | `npm i socket.io fastify-socket.io`                                                  |
 | `FileStorage`-এ image transform              | `npm i sharp`                                                                        |
@@ -915,6 +918,48 @@ await usersService.register(user);
 await waitForMemoryQueues(); // wait until all jobs finish
 resetMemoryQueues();
 ```
+
+### Mail
+
+**Mailable** class দিয়ে email পাঠান — SMTP ([Nodemailer](https://nodemailer.com)) অথবা SendGrid, Mailgun, Postmark ও Resend-এর API দিয়ে, সঙ্গে সঙ্গে বা queue থেকে।
+
+```ts
+// app.ts — settings আসে .env-এর MEGH_MAIL_* থেকে
+app.useMail({ queue: true });
+
+// mail/welcome.mail.ts — npx megh make:mail Welcome
+export class WelcomeMail extends Mailable {
+  constructor(private readonly user: User) {
+    super();
+  }
+
+  envelope() {
+    return { subject: `Welcome, ${this.user.name}` };
+  }
+
+  content() {
+    return { html: `<p>Hi ${this.user.name}!</p>`, text: `Hi ${this.user.name}!` };
+  }
+}
+
+// যেকোনো service-এ
+constructor(private readonly mailer: Mailer) {}
+
+await this.mailer.to(user.email).send(new WelcomeMail(user));
+await this.mailer.to(user.email).later(60_000, new WelcomeMail(user)); // queued
+```
+
+```ini
+MEGH_MAIL_MAILER=smtp            # অথবা sendgrid, mailgun, postmark, resend, failover, log
+MEGH_MAIL_HOST=smtp.example.com
+MEGH_MAIL_FROM_ADDRESS=hello@example.com
+```
+
+- কোনো mailer সেট না থাকলে development-এ mail log-এ লেখা হয়; production-এ app চালু হয় না।
+- `failover` একাধিক mailer ক্রমানুসারে চেষ্টা করে: `MEGH_MAIL_FAILOVER=sendgrid,smtp`।
+- Test-এ `Mailer.fake()` mail রেকর্ড করে: `mail.assertSent(WelcomeMail, (sent) => sent.hasTo(user.email))`।
+
+সব option-এর জন্য [Mail guide](https://meghjs.github.io/advanced/mail) দেখুন।
 
 ---
 
