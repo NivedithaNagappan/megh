@@ -36,6 +36,7 @@ const DEFAULT_DIRS = {
   config: "config",
   middleware: "middlewares",
   dto: "dtos",
+  mail: "mail",
 } as const;
 
 type Kind = keyof typeof DEFAULT_DIRS;
@@ -434,6 +435,28 @@ export function makeMiddleware(name: string, opts: MakeBaseOptions = {}): string
   const n = resolveName(name, "Middleware");
   const file = path.join(targetDir(projectRoot, "middleware", n.dirs, opts.root), `${n.fileBase}.middleware.ts`);
   return write(file, renderStub("middlewares/middleware.stub", { ClassName: n.className }), opts.force, "Middleware", projectRoot);
+}
+
+/** A Mailable in src/mail/<name>.mail.ts: `make:mail Welcome` writes `WelcomeMail`. */
+export function makeMail(name: string, opts: MakeBaseOptions = {}): string {
+  const projectRoot = requireProjectRoot(opts.cwd ?? process.cwd());
+  const n = resolveName(name, "Mail");
+  const file = path.join(targetDir(projectRoot, "mail", n.dirs, opts.root), `${n.fileBase}.mail.ts`);
+  const title = n.base.replace(/([a-z\d])([A-Z])/g, "$1 $2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2");
+  write(file, renderStub("mail/mail.stub", { ClassName: n.className, Title: title }), opts.force, "Mail", projectRoot);
+  if (!usesMail(projectRoot)) {
+    log.info("  Turn mail on in src/app.ts with app.useMail(), and set MEGH_MAIL_* in .env.");
+  }
+  return file;
+}
+
+/** Whether src/app.ts already calls useMail(). */
+function usesMail(projectRoot: string) {
+  try {
+    return /\.useMail\(/.test(fs.readFileSync(path.join(projectRoot, "src", "app.ts"), "utf8"));
+  } catch {
+    return false;
+  }
 }
 
 export function makeDto(name: string, opts: MakeBaseOptions = {}): string {

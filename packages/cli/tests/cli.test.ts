@@ -7,7 +7,7 @@ import { createApplication, initGit } from "../src/commands/new";
 import { spawnSync } from "child_process";
 import { runChecks } from "../src/commands/doctor";
 import { joinRoute, scanRoutes } from "../src/commands/route-list";
-import { makeController, makeDto, makeModel, makeService } from "../src/generators/make";
+import { makeController, makeDto, makeMail, makeModel, makeService } from "../src/generators/make";
 import { entryCandidates, projectLayout, resolveEntry } from "../src/utils/entry";
 import { kebabCase, pascalCase, resolveName } from "../src/utils/names";
 import { parseJsonc, readTsConfig } from "../src/utils/tsconfig";
@@ -130,6 +130,35 @@ export class HomeController {
 
 describe("generators", () => {
   beforeEach(project);
+
+  it("creates a Mailable in src/mail", () => {
+    const info = vi.spyOn(console, "log");
+    makeMail("OrderShipped", { cwd: tmp });
+    const mail = read("src", "mail", "order-shipped.mail.ts");
+    expect(mail).toContain("import { Mailable } from '@meghjs/core';");
+    expect(mail).toContain("export class OrderShippedMail extends Mailable {");
+    expect(mail).toContain("return { subject: 'Order Shipped' };");
+    expect(mail).toContain("new OrderShippedMail()");
+    expect(mail).not.toMatch(/\{(ClassName|Title)\}/);
+    // The project has no src/app.ts calling useMail(), so it says how to turn mail on.
+    expect(info.mock.calls.flat().join("\n")).toContain("app.useMail()");
+    expect(() => makeMail("OrderShipped", { cwd: tmp })).toThrow(/already exists/);
+  });
+
+  it("strips a Mail suffix and supports folders", () => {
+    makeMail("admin/InvoiceMail", { cwd: tmp });
+    expect(read("src", "mail", "admin", "invoice.mail.ts")).toContain("export class InvoiceMail extends Mailable");
+    makeMail("Welcome", { cwd: tmp, root: "modules/users" });
+    expect(exists("src", "modules", "users", "welcome.mail.ts")).toBe(true);
+  });
+
+  it("does not repeat the useMail() hint once the app calls it", () => {
+    fs.mkdirSync(path.join(tmp, "src"), { recursive: true });
+    fs.writeFileSync(path.join(tmp, "src", "app.ts"), "app.useMail();\n");
+    const info = vi.spyOn(console, "log");
+    makeMail("Welcome", { cwd: tmp });
+    expect(info.mock.calls.flat().join("\n")).not.toContain("Turn mail on");
+  });
 
   it("creates a model and refuses to overwrite without force", () => {
     makeModel("product", { cwd: tmp });
@@ -261,6 +290,28 @@ describe("new", () => {
     expect(fs.existsSync(path.join(inner, ".git"))).toBe(false);
   });
 
+  it("sets up mail with the mail feature", async () => {
+    await createApplication("shop_api", { cwd: tmp, yes: true, skipInstall: true, features: ["mail"] });
+    const pkg = JSON.parse(read("shop_api", "package.json"));
+    expect(pkg.dependencies.nodemailer).toBeDefined();
+    expect(read("shop_api", "src", "app.ts")).toContain("app.useMail();");
+    expect(read("shop_api", "src", "mail", "welcome.mail.ts")).toContain("export class WelcomeMail extends Mailable");
+    const env = read("shop_api", ".env");
+    expect(env).toContain("MEGH_MAIL_FROM_ADDRESS=hello@example.com");
+    expect(env).toContain('MEGH_MAIL_FROM_NAME="Shop Api"');
+    // No mailer is set: log in development, and a clear error in production.
+    expect(env).not.toMatch(/^MEGH_MAIL_MAILER=/m);
+    expect(env).toContain("# MEGH_MAIL_HOST=127.0.0.1");
+  });
+
+  it("leaves mail out unless it is chosen", async () => {
+    await createApplication("plain", { cwd: tmp, yes: true, skipInstall: true });
+    expect(JSON.parse(read("plain", "package.json")).dependencies.nodemailer).toBeUndefined();
+    expect(read("plain", "src", "app.ts")).not.toContain("useMail");
+    expect(read("plain", ".env")).not.toContain("MEGH_MAIL");
+    expect(exists("plain", "src", "mail")).toBe(false);
+  });
+
   it("adds @meghjs/data and its types for the database features", async () => {
     await createApplication("db_api", { cwd: tmp, yes: true, skipInstall: true, features: ["typeorm"] });
     const pkg = JSON.parse(read("db_api", "package.json"));
@@ -365,6 +416,14 @@ describe("runCli", () => {
     project();
     expect(await runCli(["m:m", "user", "-rt", "domain"], { cwd: tmp })).toBe(0);
     expect(exists("src", "domain", "user.model.ts")).toBe(true);
+  });
+
+  it("registers make:mail and its m:mail alias", async () => {
+    project();
+    expect(await runCli(["make:mail", "Welcome"], { cwd: tmp })).toBe(0);
+    expect(await runCli(["m:mail", "Goodbye"], { cwd: tmp })).toBe(0);
+    expect(exists("src", "mail", "welcome.mail.ts")).toBe(true);
+    expect(exists("src", "mail", "goodbye.mail.ts")).toBe(true);
   });
 
   it("reports CliErrors as exit code 1", async () => {

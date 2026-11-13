@@ -40,6 +40,9 @@ export * from "./queue";
 // types explicitly for consumers writing handler signatures.
 export type { Job, JobsOptions } from "./queue/queue";
 
+// ─── Mail ────────────────────────────────────────────────────────────────────
+export * from "./mail";
+
 // ─── Scheduler ───────────────────────────────────────────────────────────────
 export * from "./scheduler/schedule-decorator";
 export { MeghScheduler } from "./scheduler/scheduler";

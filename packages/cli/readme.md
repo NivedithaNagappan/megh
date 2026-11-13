@@ -25,7 +25,7 @@ npx @meghjs/cli new my_api
 ```
 
 You are prompted for a package manager and for optional features (OpenAPI,
-CORS, TypeORM, Knex, Scalar UI). The generated project uses `@meghjs/core`'s
+CORS, MeghORM, TypeORM, Knex, Scalar UI, Mail). The generated project uses `@meghjs/core`'s
 `Megh.createApplication()` and is ready to run:
 
 ```sh
@@ -51,6 +51,7 @@ npm run start:dev
 | `make:config` | `m:cnf` | `-f`, `--root <dir>` | Create an `@AppConfig` class |
 | `make:middleware` | `m:mlwr` | `-f`, `--root <dir>` | Create a middleware |
 | `make:dto` | `m:dto` | `-f`, `--root <dir>` | Create a class-validator DTO |
+| `make:mail` | `m:mail` | `-f`, `--root <dir>` | Create a Mailable in `src/mail` |
 | `make:seeder` | `m:sd` | `-f` | Create a seeder in `src/database/seeders` (`database` for the entry seeder) |
 | `db:seed` | | `-s <name>`, `--force` | Run the seeders in one transaction (also `migrate --seed`) |
 | `make:factory` | `m:f` | `-f` | Create a model factory in `src/database/factories`, with Faker values per column |
@@ -114,6 +115,18 @@ npx megh make:middleware auth
 ```
 
 Generates a class extending `MeghMiddleware` with an `invoke(req, res)` method.
+
+### Mail
+
+```sh
+npx megh make:mail OrderShipped
+```
+
+Generates `src/mail/order-shipped.mail.ts`, an `OrderShippedMail` class
+extending `Mailable` with `envelope()`, `content()` and `attachments()`. Send it
+with the injected `Mailer`: `mailer.to(user.email).send(new OrderShippedMail())`.
+Mail must be turned on in `src/app.ts` with `app.useMail()`; projects created
+with the `mail` feature already have it.
 
 ### Config
 

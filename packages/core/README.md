@@ -38,6 +38,7 @@ Megh is a TypeScript-first web framework built on top of [Fastify](https://fasti
   - [Pagination](#pagination)
   - [Events](#events)
   - [Queues & Workers](#queues--workers)
+  - [Mail](#mail)
   - [Task Scheduling](#task-scheduling)
   - [Caching](#caching)
   - [File Uploads](#file-uploads)
@@ -69,6 +70,7 @@ Megh is a TypeScript-first web framework built on top of [Fastify](https://fasti
 - ⚙️ **Config** — typed, environment-aware config classes
 - 📣 **Events** — typed events with queued delivery and Socket.IO broadcast
 - 📬 **Queues & workers** — background jobs on [BullMQ](https://docs.bullmq.io), with in-memory drivers for tests
+- ✉️ **Mail** — mailable classes over SMTP, SendGrid, Mailgun, Postmark or Resend, sent now or queued, with a test fake
 - ⏰ **Task scheduling** — cron, interval and timeout jobs
 - 🗃️ **Caching** — in-memory or Redis, with TTL and tag-based invalidation
 - 📝 **Logging** — structured JSON logs via [pino](https://getpino.io)
@@ -117,21 +119,22 @@ Megh keeps integrations out of the core install. Add only what you use. The
 package imports fine without any of them, and you get a clear error the moment a
 feature needs one:
 
-| Feature                                      | Install                                                                           |
-| -------------------------------------------- | --------------------------------------------------------------------------------- |
-| CORS (`useCors`)                             | `npm i @fastify/cors`                                                             |
-| File uploads (`useMultipart`, `@UploadFile`) | `npm i @fastify/multipart`                                                        |
-| Static files (`useStaticFiles`)              | `npm i @fastify/static`                                                           |
-| OpenAPI with Swagger UI                      | `npm i @fastify/swagger @fastify/swagger-ui`                                      |
-| OpenAPI with Scalar                          | `npm i @fastify/swagger @scalar/fastify-api-reference`                            |
-| MeghORM (`useMeghORM`)                       | a driver (`pg`, `mysql2`, `better-sqlite3`, or `tedious tarn`)                    |
-| TypeORM                                      | `npm i typeorm` + a driver (`pg`, `mysql2`, `sqlite3`, `better-sqlite3`, `mssql`) |
-| Knex                                         | `npm i knex` + a driver                                                           |
-| Queues & workers                             | `npm i bullmq ioredis` (not needed with the `memory`/`sync` drivers)              |
-| Redis cache                                  | `npm i ioredis`                                                                   |
-| WebSocket                                    | `npm i socket.io fastify-socket.io`                                               |
-| Image transforms in `FileStorage`            | `npm i sharp`                                                                     |
-| Pretty dev logs                              | `npm i -D pino-pretty`                                                            |
+| Feature                                      | Install                                                                              |
+| -------------------------------------------- | ------------------------------------------------------------------------------------ |
+| CORS (`useCors`)                             | `npm i @fastify/cors`                                                                |
+| File uploads (`useMultipart`, `@UploadFile`) | `npm i @fastify/multipart`                                                           |
+| Static files (`useStaticFiles`)              | `npm i @fastify/static`                                                              |
+| OpenAPI with Swagger UI                      | `npm i @fastify/swagger @fastify/swagger-ui`                                         |
+| OpenAPI with Scalar                          | `npm i @fastify/swagger @scalar/fastify-api-reference`                               |
+| MeghORM (`useMeghORM`)                       | a driver (`pg`, `mysql2`, `better-sqlite3`, or `tedious tarn`)                       |
+| TypeORM                                      | `npm i typeorm` + a driver (`pg`, `mysql2`, `sqlite3`, `better-sqlite3`, `mssql`)    |
+| Knex                                         | `npm i knex` + a driver                                                              |
+| Queues & workers                             | `npm i bullmq ioredis` (not needed with the `memory`/`sync` drivers)                 |
+| Mail over SMTP                               | `npm i nodemailer` (the SendGrid, Mailgun, Postmark and Resend mailers need nothing) |
+| Redis cache                                  | `npm i ioredis`                                                                      |
+| WebSocket                                    | `npm i socket.io fastify-socket.io`                                                  |
+| Image transforms in `FileStorage`            | `npm i sharp`                                                                        |
+| Pretty dev logs                              | `npm i -D pino-pretty`                                                               |
 
 ### Module format
 
@@ -919,6 +922,48 @@ await usersService.register(user);
 await waitForMemoryQueues(); // wait until all jobs finish
 resetMemoryQueues();
 ```
+
+### Mail
+
+Send email from **mailable** classes over SMTP ([Nodemailer](https://nodemailer.com)) or the SendGrid, Mailgun, Postmark and Resend APIs, straight away or from a queue.
+
+```ts
+// app.ts — settings come from MEGH_MAIL_* in .env
+app.useMail({ queue: true });
+
+// mail/welcome.mail.ts — npx megh make:mail Welcome
+export class WelcomeMail extends Mailable {
+  constructor(private readonly user: User) {
+    super();
+  }
+
+  envelope() {
+    return { subject: `Welcome, ${this.user.name}` };
+  }
+
+  content() {
+    return { html: `<p>Hi ${this.user.name}!</p>`, text: `Hi ${this.user.name}!` };
+  }
+}
+
+// any service
+constructor(private readonly mailer: Mailer) {}
+
+await this.mailer.to(user.email).send(new WelcomeMail(user));
+await this.mailer.to(user.email).later(60_000, new WelcomeMail(user)); // queued
+```
+
+```ini
+MEGH_MAIL_MAILER=smtp            # or sendgrid, mailgun, postmark, resend, failover, log
+MEGH_MAIL_HOST=smtp.example.com
+MEGH_MAIL_FROM_ADDRESS=hello@example.com
+```
+
+- With no mailer set, mail goes to the log in development; in production the app refuses to start.
+- `failover` tries mailers in order: `MEGH_MAIL_FAILOVER=sendgrid,smtp`.
+- `Mailer.fake()` records mail in tests: `mail.assertSent(WelcomeMail, (sent) => sent.hasTo(user.email))`.
+
+See the [Mail guide](https://meghjs.github.io/advanced/mail) for every option.
 
 ---
 
