@@ -3,6 +3,11 @@ import { MeghApplication } from "../core/application";
 import { AppConfig, MeghConfig } from "../config/config";
 import { LoggerService } from "../observability/logger";
 import {
+  MemoryQueue,
+  resetMemoryQueues,
+  waitForMemoryQueues,
+} from "../queue/memory-driver";
+import {
   ArrayTransport,
   Mailable,
   MailError,
@@ -43,8 +48,8 @@ const configure = (extra: MailConfig = {}) => {
   Mailer.configure({
     default: "memory",
     from: "Megh <hello@megh.dev>",
-    mailers: { memory },
     ...extra,
+    mailers: { memory, ...extra.mailers },
   });
 };
 
@@ -458,5 +463,194 @@ describe("app.useMail", () => {
     close.mockClear();
     await app.close();
     expect(close).toHaveBeenCalledOnce();
+  });
+});
+
+describe("queued mail", () => {
+  const job = (id: string) => new MemoryQueue("mail").getJob(id);
+  const useQueue = (queue: MailConfig["queue"] = { driver: "memory" }) =>
+    configure({ queue });
+
+  afterEach(async () => {
+    // Close the worker before dropping the queues, or a job still waiting
+    // would run on the next tick against the next test's mailer.
+    await Mailer.reset();
+    resetMemoryQueues();
+  });
+
+  it("builds the message now and sends it from the worker", async () => {
+    useQueue();
+    const queued = await new Mailer().to("ann@x.io").queue(new WelcomeMail());
+    expect(queued).toMatchObject({ mailer: "memory", delay: 0 });
+    expect(queued.message.subject).toBe("Welcome, Ann");
+    expect(queued.jobId).toBeDefined();
+    expect(memory.messages).toHaveLength(0); // not sent yet
+
+    await waitForMemoryQueues();
+    expect(memory.messages).toHaveLength(1);
+    expect(memory.messages[0].to).toEqual([{ address: "ann@x.io" }]);
+    const opts = (await job(queued.jobId!))!.opts;
+    expect(opts).toMatchObject({
+      attempts: 3,
+      removeOnComplete: true,
+      backoff: { type: "exponential", delay: 10_000 },
+    });
+  });
+
+  it("sends through the named mailer in the worker", async () => {
+    const audit = new ArrayTransport();
+    configure({ queue: { driver: "sync" }, mailers: { audit } });
+    await new Mailer().mailer("audit").to("a@x.io").queue(new WelcomeMail());
+    expect(audit.messages).toHaveLength(1);
+    expect(memory.messages).toHaveLength(0);
+  });
+
+  it("later() delays the job by milliseconds or until a time", async () => {
+    useQueue();
+    const queued = await new Mailer().to("a@x.io").later(30, new WelcomeMail());
+    expect(queued.delay).toBe(30);
+    expect(await (await job(queued.jobId!))!.getState()).toBe("delayed");
+    await waitForMemoryQueues();
+    expect(memory.messages).toHaveLength(1);
+
+    const soon = await new Mailer()
+      .to("a@x.io")
+      .later(new Date(Date.now() + 60_000), new WelcomeMail());
+    expect(soon.delay).toBeGreaterThan(59_000);
+    expect(soon.delay).toBeLessThanOrEqual(60_000);
+    const past = await new Mailer()
+      .to("a@x.io")
+      .later(new Date(Date.now() - 1000), new WelcomeMail());
+    expect(past.delay).toBe(0);
+    await expect(
+      new Mailer().to("a@x.io").later(NaN, new WelcomeMail()),
+    ).rejects.toThrow(/later\(\) needs/);
+  });
+
+  it("carries Buffer attachments through the job as base64", async () => {
+    useQueue({ driver: "sync" });
+    class InvoiceMail extends WelcomeMail {
+      attachments() {
+        return [
+          { filename: "invoice.pdf", content: Buffer.from([0, 1, 2, 255]) },
+        ];
+      }
+    }
+    const queued = await new Mailer().to("a@x.io").queue(new InvoiceMail());
+    const data = (await job(queued.jobId!))!.data;
+    expect(data.message.attachments[0]).toEqual({
+      filename: "invoice.pdf",
+      content: "AAEC/w==",
+      encoding: "base64",
+    });
+    expect(JSON.parse(JSON.stringify(data))).toEqual(data); // survives Redis
+    const sent = memory.messages[0].attachments[0];
+    expect(Buffer.isBuffer(sent.content)).toBe(true);
+    expect([...(sent.content as Buffer)]).toEqual([0, 1, 2, 255]);
+    expect(sent.encoding).toBeUndefined();
+  });
+
+  it("retries a failed send", async () => {
+    let calls = 0;
+    const flaky = {
+      send: vi.fn(async () => {
+        if (++calls < 3) throw new Error("SMTP 421");
+        return { messageId: "ok" };
+      }),
+    };
+    configure({
+      default: "flaky",
+      mailers: { flaky },
+      queue: { driver: "sync" },
+    });
+    const queued = await new Mailer().to("a@x.io").queue(new WelcomeMail());
+    const done = (await job(queued.jobId!))!;
+    expect(flaky.send).toHaveBeenCalledTimes(3);
+    expect(await done.getState()).toBe("completed");
+    expect(done.returnvalue).toEqual({ messageId: "ok" });
+  });
+
+  it("leaves jobs for another process with worker: false", async () => {
+    useQueue({ driver: "memory", worker: false });
+    const queued = await new Mailer().to("a@x.io").queue(new WelcomeMail());
+    await new Promise((r) => setImmediate(r));
+    expect(await (await job(queued.jobId!))!.getState()).toBe("waiting");
+    expect(memory.messages).toHaveLength(0);
+  });
+
+  it("uses the queue name and job options given", async () => {
+    configure({
+      queue: { driver: "sync", name: "emails", jobOptions: { attempts: 5 } },
+    });
+    const queued = await new Mailer().to("a@x.io").queue(new WelcomeMail());
+    const found = await new MemoryQueue("emails").getJob(queued.jobId!);
+    expect(found!.opts).toMatchObject({ attempts: 5, removeOnComplete: true });
+    expect(memory.messages).toHaveLength(1);
+  });
+
+  it("needs useMail({ queue }), and fails fast on a broken mailable", async () => {
+    configure();
+    await expect(
+      new Mailer().to("a@x.io").queue(new WelcomeMail()),
+    ).rejects.toThrow(/Queued mail needs a queue. Pass \{ queue: true \}/);
+    useQueue();
+    await expect(new Mailer().queue(new WelcomeMail())).rejects.toThrow(
+      /no recipients/,
+    );
+  });
+
+  it("closes the worker, so the queue can be set up again", async () => {
+    useQueue();
+    await Mailer.close();
+    expect(() => useQueue()).not.toThrow(); // a second in-memory worker would throw
+    useQueue(); // configure() closes the previous one itself
+    await new Mailer().to("a@x.io").queue(new WelcomeMail());
+    await waitForMemoryQueues();
+    expect(memory.messages).toHaveLength(1);
+  });
+});
+
+describe("Mailer.fake with queued mail", () => {
+  it("records queued mail without a queue", async () => {
+    configure();
+    const mail = Mailer.fake();
+    await new Mailer().to("ann@x.io").queue(new WelcomeMail());
+    await new Mailer().to("bob@x.io").later(5000, new WelcomeMail("Bob"));
+
+    mail.assertQueued(WelcomeMail);
+    mail.assertQueued(WelcomeMail, 2);
+    mail.assertQueued(
+      WelcomeMail,
+      (q) => q.hasTo("bob@x.io") && q.delay === 5000,
+    );
+    mail.assertNotQueued(OTPCodeMail);
+    mail.assertNothingSent();
+    expect(
+      mail.queuedOf(WelcomeMail, (q) => q.hasTo("ann@x.io"))[0].delay,
+    ).toBe(0);
+  });
+
+  it("says when mail was queued but sent was expected, and the reverse", async () => {
+    configure();
+    const mail = Mailer.fake();
+    mail.assertNothingQueued();
+    await new Mailer().to("a@x.io").queue(new WelcomeMail());
+    expect(() => mail.assertSent(WelcomeMail)).toThrow(
+      "Expected WelcomeMail to be sent, but it was not. Nothing was sent. It was queued instead; use assertQueued().",
+    );
+    expect(() => mail.assertNothingQueued()).toThrow(
+      "Expected no mail to be queued. Queued: WelcomeMail (1).",
+    );
+    expect(() => mail.assertNotQueued(WelcomeMail)).toThrow(
+      "not to be queued, but it was queued 1 time(s)",
+    );
+
+    await new Mailer().to("a@x.io").send(new OTPCodeMail());
+    expect(() => mail.assertQueued(OTPCodeMail)).toThrow(
+      /It was sent instead; use assertSent\(\)\./,
+    );
+    expect(() => mail.assertQueued(WelcomeMail, 2)).toThrow(
+      "to be queued 2 time(s), but it was queued 1 time(s)",
+    );
   });
 });

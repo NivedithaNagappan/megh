@@ -9,12 +9,15 @@ import {
 } from "./config";
 import { MailError } from "./errors";
 import { Mailable } from "./mailable";
+import { MailQueue } from "./queue";
 import { ArrayTransport, LogTransport, SmtpTransport } from "./transports";
 import type {
   MailAddress,
   MailAddressLike,
   MailMessage,
   MailTransport,
+  MailTransportResult,
+  QueuedMessage,
   SentMessage,
 } from "./types";
 
@@ -30,6 +33,7 @@ type AddressInput = MailAddressLike | MailAddressLike[];
  * constructor(private readonly mailer: Mailer) {}
  *
  * await this.mailer.to(user.email).send(new WelcomeMail(user));
+ * await this.mailer.to(user.email).queue(new WelcomeMail(user)); // needs useMail({ queue })
  * await this.mailer.mailer('log').to('dev@x.io').send(new WelcomeMail(user));
  */
 @Injectable()
@@ -37,6 +41,7 @@ export class Mailer {
   private static config: ResolvedMailConfig | undefined;
   private static readonly transports = new Map<string, MailTransport>();
   private static current: MailFake | null = null;
+  private static mailQueue: MailQueue | undefined;
 
   /** The named mailer to use; `undefined` means the default. */
   private mailerName: string | undefined;
@@ -45,6 +50,9 @@ export class Mailer {
    * Set the mail configuration, merged over `MEGH_MAIL_*`. Called by
    * `app.useMail()`; call it yourself outside a Megh app.
    *
+   * With `queue` set, this also starts the worker that sends queued mail
+   * (unless `queue.worker` is `false`).
+   *
    * @throws MailError when the configuration is invalid, e.g. in production
    *   with no mailer set.
    */
@@ -52,6 +60,11 @@ export class Mailer {
     const config = resolveMailConfig(options);
     Mailer.close().catch(() => {});
     Mailer.config = config;
+    if (config.queue) {
+      Mailer.mailQueue = new MailQueue(config.queue, (name, message) =>
+        Mailer.deliver(name, message),
+      );
+    }
   }
 
   /**
@@ -73,11 +86,17 @@ export class Mailer {
     Mailer.current = null;
   }
 
-  /** Close every transport's connections. Called when the app closes. */
+  /**
+   * Close the mail queue and every transport's connections. Called when the
+   * app closes.
+   */
   static async close(): Promise<void> {
+    // Detach before awaiting, so a configure() right after starts afresh.
+    const queue = Mailer.mailQueue;
+    Mailer.mailQueue = undefined;
     const transports = [...Mailer.transports.values()];
     Mailer.transports.clear();
-    await Promise.all(transports.map((t) => t.close?.()));
+    await Promise.all([queue?.close(), ...transports.map((t) => t.close?.())]);
   }
 
   /** Forget the configuration and transports, so the environment is read again. */
@@ -123,36 +142,88 @@ export class Mailer {
     return new PendingMail(this.mailerName).send(mailable);
   }
 
+  /** Queue a mailable for the recipients its `envelope()` names. See {@link PendingMail.queue}. */
+  queue(mailable: Mailable): Promise<QueuedMessage> {
+    return new PendingMail(this.mailerName).queue(mailable);
+  }
+
+  /** Queue a mailable to be sent later. See {@link PendingMail.later}. */
+  later(delay: number | Date, mailable: Mailable): Promise<QueuedMessage> {
+    return new PendingMail(this.mailerName).later(delay, mailable);
+  }
+
   /** @internal Build and send (or record) one message. */
   static async dispatch(
     mailerName: string | undefined,
     recipients: Recipients,
     mailable: Mailable,
   ): Promise<SentMessage> {
-    const config = (Mailer.config ??= resolveMailConfig());
-    const name = mailerName ?? config.default;
-    const mailerConfig = config.mailers[name];
-    if (!mailerConfig) {
-      throw new MailError(
-        `There is no mailer named "${name}". Configured mailers: ${Object.keys(config.mailers).join(", ")}.`,
-      );
-    }
+    const { name, config } = Mailer.resolve(mailerName);
     const message = await buildMessage(mailable, recipients, config.from);
     if (Mailer.current) {
       Mailer.current.record(new SentMail(name, mailable, message));
       return { mailer: name, message };
     }
-    const result = await Mailer.transport(name, mailerConfig).send(message);
+    const result = await Mailer.deliver(name, message);
     return { mailer: name, message, ...(result ?? {}) };
   }
 
-  private static transport(name: string, config: MailerConfig): MailTransport {
+  /** @internal Build one message and queue it (or record it). */
+  static async dispatchQueued(
+    mailerName: string | undefined,
+    recipients: Recipients,
+    mailable: Mailable,
+    delay: number,
+  ): Promise<QueuedMessage> {
+    const { name, config } = Mailer.resolve(mailerName);
+    const message = await buildMessage(mailable, recipients, config.from);
+    if (Mailer.current) {
+      Mailer.current.recordQueued(new SentMail(name, mailable, message, delay));
+      return { mailer: name, message, delay };
+    }
+    if (!Mailer.mailQueue) {
+      throw new MailError(
+        "Queued mail needs a queue. Pass { queue: true } (or queue options) to app.useMail().",
+      );
+    }
+    const job = await Mailer.mailQueue.enqueue(
+      { mailer: name, message },
+      delay,
+    );
+    return {
+      mailer: name,
+      message,
+      delay,
+      ...(job.id !== undefined ? { jobId: String(job.id) } : {}),
+    };
+  }
+
+  /** @internal Send a built message through a named mailer. Used by the queue worker. */
+  static deliver(
+    name: string,
+    message: MailMessage,
+  ): Promise<MailTransportResult | void> {
+    const { config } = Mailer.resolve(name);
     let transport = Mailer.transports.get(name);
     if (!transport) {
-      transport = createTransport(config);
+      transport = createTransport(config.mailers[name]);
       Mailer.transports.set(name, transport);
     }
-    return transport;
+    return transport.send(message);
+  }
+
+  private static resolve(mailerName: string | undefined): {
+    name: string;
+    config: ResolvedMailConfig;
+  } {
+    const config = (Mailer.config ??= resolveMailConfig());
+    const name = mailerName ?? config.default;
+    if (!config.mailers[name]) {
+      throw new MailError(
+        `There is no mailer named "${name}". Configured mailers: ${Object.keys(config.mailers).join(", ")}.`,
+      );
+    }
+    return { name, config };
   }
 }
 
@@ -207,6 +278,42 @@ export class PendingMail {
    */
   send(mailable: Mailable): Promise<SentMessage> {
     return Mailer.dispatch(this.mailerName, this.recipients, mailable);
+  }
+
+  /**
+   * Build the mailable now and send it from the mail queue's worker. The
+   * job holds the built message, so the mailable is not needed there; an
+   * attachment given by `path` must exist where the worker runs.
+   *
+   * @returns The mailer, the built message and the job ID.
+   * @throws MailError when queueing is off (`useMail({ queue })`), or the
+   *   message has no sender, no recipients or no body.
+   */
+  queue(mailable: Mailable): Promise<QueuedMessage> {
+    return Mailer.dispatchQueued(this.mailerName, this.recipients, mailable, 0);
+  }
+
+  /**
+   * Like {@link PendingMail.queue}, but sent after a delay.
+   *
+   * @param delay - Milliseconds to wait, or the time to send at. A time in
+   *   the past sends straight away.
+   */
+  async later(
+    delay: number | Date,
+    mailable: Mailable,
+  ): Promise<QueuedMessage> {
+    const ms =
+      delay instanceof Date ? delay.getTime() - Date.now() : Number(delay);
+    if (!Number.isFinite(ms)) {
+      throw new MailError("later() needs a number of milliseconds or a Date.");
+    }
+    return Mailer.dispatchQueued(
+      this.mailerName,
+      this.recipients,
+      mailable,
+      Math.max(0, Math.round(ms)),
+    );
   }
 }
 
@@ -305,6 +412,8 @@ export class SentMail<T extends Mailable = Mailable> {
     readonly mailer: string,
     readonly mailable: T,
     readonly message: MailMessage,
+    /** For queued mail: milliseconds until it would be sent. */
+    readonly delay = 0,
   ) {}
 
   /** Whether `address` is among the `to` recipients (case-insensitive). */
@@ -334,57 +443,56 @@ function includes(list: MailAddress[], address: MailAddressLike) {
 }
 
 type Filter<T extends Mailable> = (sent: SentMail<T>) => boolean;
+type Kind = "sent" | "queued";
 
 /**
- * Returned by {@link Mailer.fake}: what would have been sent, and assertions
- * that throw a descriptive error when they fail (any test runner works).
+ * Returned by {@link Mailer.fake}: what would have been sent or queued, and
+ * assertions that throw a descriptive error when they fail (any test runner
+ * works).
  */
 export class MailFake {
-  /** Every recorded message, oldest first. */
+  /** Every message sent with `send()`, oldest first. */
   readonly sent: SentMail[] = [];
+  /** Every message queued with `queue()` or `later()`, oldest first. */
+  readonly queued: SentMail[] = [];
 
   /** @internal */
   record(mail: SentMail): void {
     this.sent.push(mail);
   }
 
-  /** The recorded messages of one mailable class, optionally filtered. */
+  /** @internal */
+  recordQueued(mail: SentMail): void {
+    this.queued.push(mail);
+  }
+
+  /** The sent messages of one mailable class, optionally filtered. */
   sentOf<T extends Mailable>(
     type: Constructor<T>,
     filter?: Filter<T>,
   ): SentMail<T>[] {
-    const ofType = this.sent.filter(
-      (s) => s.mailable instanceof type,
-    ) as SentMail<T>[];
-    return filter ? ofType.filter(filter) : ofType;
+    return pick(this.sent, type, filter);
+  }
+
+  /** The queued messages of one mailable class, optionally filtered. */
+  queuedOf<T extends Mailable>(
+    type: Constructor<T>,
+    filter?: Filter<T>,
+  ): SentMail<T>[] {
+    return pick(this.queued, type, filter);
   }
 
   /**
-   * Assert that a mailable of this class was sent.
+   * Assert that a mailable of this class was sent with `send()`.
    *
-   * @param filterOrTimes - A check each match must pass, or the exact number
+   * @param filterOrTimes - A check a match must pass, or the exact number
    *   of times it must have been sent.
    */
   assertSent<T extends Mailable>(
     type: Constructor<T>,
     filterOrTimes?: Filter<T> | number,
   ): void {
-    if (typeof filterOrTimes === "number") {
-      const count = this.sentOf(type).length;
-      if (count !== filterOrTimes) {
-        throw new Error(
-          `Expected ${type.name} to be sent ${filterOrTimes} time(s), but it was sent ${count} time(s).`,
-        );
-      }
-      return;
-    }
-    if (!this.sentOf(type, filterOrTimes).length) {
-      const why =
-        filterOrTimes && this.sentOf(type).length ? " matching the check" : "";
-      throw new Error(
-        `Expected ${type.name} to be sent${why}, but it was not.${this.summary()}`,
-      );
-    }
+    this.expect("sent", type, filterOrTimes);
   }
 
   /** Assert that no mailable of this class (matching `filter`, if given) was sent. */
@@ -392,24 +500,50 @@ export class MailFake {
     type: Constructor<T>,
     filter?: Filter<T>,
   ): void {
-    const count = this.sentOf(type, filter).length;
-    if (count)
+    this.expectNone("sent", type, filter);
+  }
+
+  /**
+   * Assert that a mailable of this class was queued with `queue()` or `later()`.
+   *
+   * @param filterOrTimes - A check a match must pass (`sent.delay` holds the
+   *   delay in milliseconds), or the exact number of times it must have been
+   *   queued.
+   */
+  assertQueued<T extends Mailable>(
+    type: Constructor<T>,
+    filterOrTimes?: Filter<T> | number,
+  ): void {
+    this.expect("queued", type, filterOrTimes);
+  }
+
+  /** Assert that no mailable of this class (matching `filter`, if given) was queued. */
+  assertNotQueued<T extends Mailable>(
+    type: Constructor<T>,
+    filter?: Filter<T>,
+  ): void {
+    this.expectNone("queued", type, filter);
+  }
+
+  /** Assert that nothing was sent with `send()`. */
+  assertNothingSent(): void {
+    if (this.sent.length)
+      throw new Error(`Expected no mail to be sent.${this.summary("sent")}`);
+  }
+
+  /** Assert that nothing was queued. */
+  assertNothingQueued(): void {
+    if (this.queued.length)
       throw new Error(
-        `Expected ${type.name} not to be sent, but it was sent ${count} time(s).`,
+        `Expected no mail to be queued.${this.summary("queued")}`,
       );
   }
 
-  /** Assert that nothing was sent. */
-  assertNothingSent(): void {
-    if (this.sent.length)
-      throw new Error(`Expected no mail to be sent.${this.summary()}`);
-  }
-
-  /** Assert how many messages were sent in all. */
+  /** Assert how many messages were sent with `send()` in all. */
   assertSentCount(count: number): void {
     if (this.sent.length !== count) {
       throw new Error(
-        `Expected ${count} message(s) to be sent, but ${this.sent.length} were.${this.summary()}`,
+        `Expected ${count} message(s) to be sent, but ${this.sent.length} were.${this.summary("sent")}`,
       );
     }
   }
@@ -419,13 +553,70 @@ export class MailFake {
     Mailer.restore();
   }
 
-  private summary() {
-    if (!this.sent.length) return " Nothing was sent.";
+  private expect<T extends Mailable>(
+    kind: Kind,
+    type: Constructor<T>,
+    filterOrTimes?: Filter<T> | number,
+  ): void {
+    const list = this[kind];
+    if (typeof filterOrTimes === "number") {
+      const count = pick(list, type).length;
+      if (count !== filterOrTimes) {
+        throw new Error(
+          `Expected ${type.name} to be ${kind} ${filterOrTimes} time(s), but it was ${kind} ${count} time(s).${this.hint(kind, type)}`,
+        );
+      }
+      return;
+    }
+    if (!pick(list, type, filterOrTimes).length) {
+      const why =
+        filterOrTimes && pick(list, type).length ? " matching the check" : "";
+      throw new Error(
+        `Expected ${type.name} to be ${kind}${why}, but it was not.${this.summary(kind)}${this.hint(kind, type)}`,
+      );
+    }
+  }
+
+  private expectNone<T extends Mailable>(
+    kind: Kind,
+    type: Constructor<T>,
+    filter?: Filter<T>,
+  ): void {
+    const count = pick(this[kind], type, filter).length;
+    if (count)
+      throw new Error(
+        `Expected ${type.name} not to be ${kind}, but it was ${kind} ${count} time(s).`,
+      );
+  }
+
+  /** Point out a mailable that was queued when `sent` was expected, or the reverse. */
+  private hint(kind: Kind, type: Constructor<Mailable>) {
+    const other: Kind = kind === "sent" ? "queued" : "sent";
+    if (!pick(this[other], type).length) return "";
+    const assertion = other === "sent" ? "assertSent" : "assertQueued";
+    return ` It was ${other} instead; use ${assertion}().`;
+  }
+
+  private summary(kind: Kind) {
+    const list = this[kind];
+    if (!list.length) return ` Nothing was ${kind}.`;
     const counts = new Map<string, number>();
-    for (const s of this.sent) {
+    for (const s of list) {
       const n = s.mailable.constructor.name;
       counts.set(n, (counts.get(n) ?? 0) + 1);
     }
-    return ` Sent: ${[...counts].map(([n, c]) => `${n} (${c})`).join(", ")}.`;
+    const label = kind === "sent" ? "Sent" : "Queued";
+    return ` ${label}: ${[...counts].map(([n, c]) => `${n} (${c})`).join(", ")}.`;
   }
+}
+
+function pick<T extends Mailable>(
+  list: SentMail[],
+  type: Constructor<T>,
+  filter?: Filter<T>,
+): SentMail<T>[] {
+  const ofType = list.filter(
+    (s) => s.mailable instanceof type,
+  ) as SentMail<T>[];
+  return filter ? ofType.filter(filter) : ofType;
 }

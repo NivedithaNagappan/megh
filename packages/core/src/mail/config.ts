@@ -1,4 +1,6 @@
+import type { JobsOptions, QueueOptions } from "bullmq";
 import { Environment } from "../config/environment-variables";
+import type { QueueDriver } from "../queue/memory-driver";
 import { MailError } from "./errors";
 import type { MailAddressLike, MailTransport } from "./types";
 
@@ -42,6 +44,34 @@ export interface MailConfig {
   from?: MailAddressLike;
   /** Named mailers. `smtp`, `log` and `array` are always there; these add to or replace them. */
   mailers?: Record<string, MailerConfig>;
+  /**
+   * Turn on `queue()` and `later()`: `true` for the defaults, or options.
+   * The queue's worker starts when this is set, unless `worker: false`.
+   */
+  queue?: boolean | MailQueueConfig;
+}
+
+/** Where queued mail goes, and how it is retried. */
+export interface MailQueueConfig {
+  /** Queue name, as it appears in Redis. Defaults to `mail`. */
+  name?: string;
+  /** BullMQ queue options, including the Redis `connection`. */
+  adapter?: QueueOptions;
+  /**
+   * Backend. Defaults to `setQueueDriver()`, then `MEGH_QUEUE_DRIVER`, then
+   * `bullmq`. Use `memory` or `sync` in tests.
+   */
+  driver?: QueueDriver;
+  /**
+   * Options for the worker that sends queued mail, or `false` in a process
+   * that only queues mail while another process sends it.
+   */
+  worker?: false | { concurrency?: number };
+  /**
+   * Options for each job. Defaults to 3 attempts with exponential backoff
+   * from 10 seconds, and removing jobs once sent.
+   */
+  jobOptions?: JobsOptions;
 }
 
 /** A {@link MailConfig} with every gap filled from the environment. */
@@ -49,6 +79,8 @@ export interface ResolvedMailConfig {
   default: string;
   from?: MailAddressLike;
   mailers: Record<string, MailerConfig>;
+  /** Set when queueing is on. */
+  queue?: MailQueueConfig;
 }
 
 const ENCRYPTIONS = ["ssl", "tls", "none"] as const;
@@ -122,7 +154,13 @@ export function resolveMailConfig(
       `The default mailer "${name}" is not configured. Configured mailers: ${Object.keys(mailers).join(", ")}.`,
     );
   }
-  return { default: name, from: options.from ?? env.from, mailers };
+  const queue = options.queue === true ? {} : options.queue || undefined;
+  return {
+    default: name,
+    from: options.from ?? env.from,
+    mailers,
+    ...(queue ? { queue } : {}),
+  };
 }
 
 function implicitDefault(smtp: SmtpMailerConfig | undefined): string {

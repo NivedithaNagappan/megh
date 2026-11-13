@@ -22,6 +22,8 @@ export interface MailAttachment {
   contentType?: string;
   /** Content ID, for images referenced as `<img src="cid:...">` in the HTML. */
   cid?: string;
+  /** Set to `base64` when `content` is base64 text rather than the file itself. */
+  encoding?: "base64";
 }
 
 /** Who a message is from and to, and its subject. Returned by `Mailable.envelope()`. */
@@ -83,6 +85,16 @@ export interface MailTransport {
   send(message: MailMessage): Promise<MailTransportResult | void>;
   /** Release connections; called by `Mailer.close()` and when the app closes. */
   close?(): void | Promise<void>;
+}
+
+/** The result of `queue()` and `later()`. */
+export interface QueuedMessage {
+  mailer: string;
+  message: MailMessage;
+  /** The queue job's ID. Not set under `Mailer.fake()`. */
+  jobId?: string;
+  /** Milliseconds until it is sent; 0 for `queue()`. */
+  delay: number;
 }
 
 /** The result of `send()`: the mailer used, the message and the provider's reply. */
