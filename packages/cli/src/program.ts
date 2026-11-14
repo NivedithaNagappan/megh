@@ -11,6 +11,7 @@ import {
   makeConfig,
   makeController,
   makeDto,
+  makeMail,
   makeMiddleware,
   makeMigration,
   makeModel,
@@ -97,6 +98,7 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
       `Set up MeghORM (the orm feature) for ${DATABASES.join(", ")}. Defaults to sqlite with orm`,
     )
     .option("--skip-install", "Do not install dependencies (or set MEGH_SKIP_INSTALL=1)")
+    .option("--skip-git", "Do not run git init (or set MEGH_SKIP_GIT=1)")
     .action(async (name: string, o) => {
       await createApplication(name, { cwd: cwd(), ...o });
     });
@@ -330,6 +332,12 @@ export function createProgram(run: RunOptions = {}): { program: Command; exitCod
     .option("--root <dir>", "Folder under src/ to write to (also -rt)")
     .action((name: string, o) => {
       makeMiddleware(name, { cwd: cwd(), ...o });
+    });
+
+  make("make:mail", ["m:mail"], "Create a Mailable in src/mail/<name>.mail.ts")
+    .option("--root <dir>", "Folder under src/ to write to (also -rt)")
+    .action((name: string, o) => {
+      makeMail(name, { cwd: cwd(), ...o });
     });
 
   make("make:dto", ["m:dto"], "Create a class-validator DTO in src/dtos/<name>.dto.ts")

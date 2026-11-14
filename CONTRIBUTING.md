@@ -3,6 +3,10 @@
 Thanks for helping improve Megh. This guide covers how to set up the repo, make
 a change and get it merged.
 
+Everyone taking part in Megh's issues, pull requests and discussions is
+expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md). Report
+unacceptable behaviour to xtrinsic96@gmail.com.
+
 ## Ground rules
 
 - `main` is protected. Nobody pushes to it directly. Every change goes in

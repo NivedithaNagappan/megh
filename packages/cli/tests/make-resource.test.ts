@@ -118,6 +118,22 @@ describe("make:resource from a migration", () => {
     expect(ctrl).not.toContain("@Patch");
   });
 
+  it("documents the service class and every method with JSDoc", () => {
+    makeResource("user", { cwd: tmp });
+    const service = read("src", "services", "user.service.ts");
+    expect(service).toMatch(/\/\*\*\n \* Reads and writes User rows[\s\S]*?@example[\s\S]*?\*\/\n@AppService\nexport class UserService/);
+    for (const method of ["findAll()", "paginate(", "find(", "findOrFail(", "create(", "async update(", "async delete("]) {
+      const at = service.indexOf(`\n  ${method}`);
+      expect(at, method).toBeGreaterThan(-1);
+      // The method is directly preceded by a JSDoc block.
+      expect(service.slice(0, at).trimEnd().endsWith("*/"), method).toBe(true);
+    }
+    expect(service).toContain("@param id - The `id` to look up.");
+    expect(service.match(/@throws NotFoundException/g)).toHaveLength(3); // findOrFail, update, delete
+    expect(service).toContain("{@link UserService.paginate}");
+    expect(service).not.toMatch(/\{(ClassName|Model|modelVar|modelImport|primaryKey|primaryKeyType)\}/);
+  });
+
   it("supports nested names and irregular plurals", () => {
     writeFile(
       "src/database/migrations/20260102000000_create_categories_table.ts",

@@ -1,4 +1,4 @@
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import { CliError } from "../errors";
@@ -11,7 +11,7 @@ import { ENV_TYPES_FILE, envTypesFile } from "../utils/env-types";
 export const PACKAGE_MANAGERS = ["npm", "yarn", "pnpm"] as const;
 export type PackageManager = (typeof PACKAGE_MANAGERS)[number];
 
-export const FEATURES = ["openapi", "cors", "orm", "typeorm", "knex", "scalar"] as const;
+export const FEATURES = ["openapi", "cors", "orm", "typeorm", "knex", "scalar", "mail"] as const;
 export type Feature = (typeof FEATURES)[number];
 const DEFAULT_FEATURES: Feature[] = ["openapi"];
 
@@ -44,6 +44,8 @@ export type NewOptions = {
   database?: string;
   /** Skip `<pm> install`. Also enabled by the `MEGH_SKIP_INSTALL=1` environment variable. */
   skipInstall?: boolean;
+  /** Skip `git init`. Also enabled by the `MEGH_SKIP_GIT=1` environment variable. */
+  skipGit?: boolean;
 };
 
 /** Third-party versions for generated projects. */
@@ -52,6 +54,8 @@ const DEP_VERSIONS: Record<string, string> = {
   "class-validator": "^0.14.2",
   "reflect-metadata": "^0.2.2",
   "@fastify/cors": "^11.0.0",
+  "@fastify/swagger": "^9.7.0",
+  "@fastify/swagger-ui": "^6.1.2",
   typeorm: "^0.3.20",
   pg: "^8.11.0",
   mysql2: "^3.11.0",
@@ -60,6 +64,7 @@ const DEP_VERSIONS: Record<string, string> = {
   tarn: "^3.0.2",
   knex: "^3.1.0",
   "@scalar/fastify-api-reference": "^1.0.0",
+  nodemailer: "^10.5.0",
   typescript: "^5.7.2",
   "@types/node": "^22.20.5",
   vitest: "^4.1.12",
@@ -127,6 +132,7 @@ async function prompt(opts: NewOptions): Promise<Answers> {
             { name: "TypeORM", value: "typeorm" },
             { name: "Knex", value: "knex" },
             { name: "Scalar UI (replaces Swagger UI)", value: "scalar" },
+            { name: "Mail: mailables, SMTP and API mailers, queued mail", value: "mail" },
           ],
         },
       ]));
@@ -174,7 +180,12 @@ export function packageJson(
   if (features.includes("typeorm")) pick("typeorm", "pg");
   if (features.includes("knex")) pick("knex", "pg");
   if (features.includes("orm")) pick(...DATABASE_SETUP[database].drivers);
+  // useOpenApi() builds the spec with @fastify/swagger, then serves it with
+  // Swagger UI, or with Scalar when that is chosen.
+  if (features.includes("openapi") || features.includes("scalar")) pick("@fastify/swagger");
   if (features.includes("scalar")) pick("@scalar/fastify-api-reference");
+  else if (features.includes("openapi")) pick("@fastify/swagger-ui");
+  if (features.includes("mail")) pick("nodemailer");
 
   const devDeps: Record<string, string> = {};
   const pickDev = (...names: string[]) => names.forEach((n) => (devDeps[n] = DEP_VERSIONS[n]));
@@ -232,6 +243,9 @@ function appSource(features: Feature[]) {
   if (features.includes("orm")) {
     setup.push(`// Connects from DATABASE_URL in .env; megh migrate uses the same setting.\napp.useMeghORM();`);
   }
+  if (features.includes("mail")) {
+    setup.push(`// Settings come from MEGH_MAIL_* in .env. Inject Mailer to send a Mailable.\napp.useMail();`);
+  }
   if (features.includes("typeorm")) {
     setup.push(
       `// TODO: pass your TypeORM DataSourceOptions (or an @AppConfig class)\n` +
@@ -250,6 +264,29 @@ function appSource(features: Feature[]) {
   });
 }
 
+/**
+ * The mail section of `.env`. No mailer is set: in development mail is then
+ * written to the log, and in production the app refuses to start until one is.
+ */
+function mailEnv(appTitle: string) {
+  return [
+    "",
+    "# Mail: app.useMail(). With no MEGH_MAIL_MAILER, mail goes to the log in",
+    "# development, and the app will not start in production until one is set.",
+    "# MEGH_MAIL_MAILER=smtp",
+    "# MEGH_MAIL_HOST=127.0.0.1",
+    "# MEGH_MAIL_PORT=1025",
+    "# MEGH_MAIL_USERNAME=",
+    "# MEGH_MAIL_PASSWORD=",
+    "# MEGH_MAIL_ENCRYPTION=tls",
+    "# Or an API mailer: sendgrid, mailgun, postmark or resend.",
+    "# MEGH_MAIL_SENDGRID_API_KEY=",
+    "MEGH_MAIL_FROM_ADDRESS=hello@example.com",
+    `MEGH_MAIL_FROM_NAME="${appTitle.replace(/"/g, "")}"`,
+    "",
+  ].join("\n");
+}
+
 export function installCommand(pm: PackageManager) {
   return `${pm} install`;
 }
@@ -260,10 +297,29 @@ export function devCommand(pm: PackageManager) {
 
 function runInstall(pm: string, cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(pm, ["install"], { cwd, stdio: "inherit", shell: process.platform === "win32" });
+    // Windows needs a shell to run npm.cmd/yarn.cmd/pnpm.cmd. Passing one command
+    // string (not an args array) keeps Node 24 from warning with DEP0190.
+    const child =
+      process.platform === "win32"
+        ? spawn(`${pm} install`, { cwd, stdio: "inherit", shell: true })
+        : spawn(pm, ["install"], { cwd, stdio: "inherit" });
     child.on("error", reject);
     child.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`${pm} install exited with code ${code}`))));
   });
+}
+
+type GitResult = "initialized" | "no-git" | "inside-repo" | "failed";
+
+/**
+ * Run `git init` in a new project. Skipped when git is not installed, or when
+ * the folder is already inside a repository (e.g. `megh new .` in a repo).
+ */
+export function initGit(cwd: string): GitResult {
+  const git = (...args: string[]) => spawnSync("git", args, { cwd, stdio: "ignore" });
+  const version = git("--version");
+  if (version.error || version.status !== 0) return "no-git";
+  if (git("rev-parse", "--is-inside-work-tree").status === 0) return "inside-repo";
+  return git("init").status === 0 ? "initialized" : "failed";
 }
 
 export async function createApplication(name: string, opts: NewOptions = {}): Promise<string> {
@@ -324,6 +380,10 @@ export async function createApplication(name: string, opts: NewOptions = {}): Pr
     add("src/database/migrations/.gitkeep", "");
     add("src/database/seeders/database.seeder.ts", renderEntrySeeder([]));
   }
+  if (features.includes("mail")) {
+    env = env.replace(/\n*$/, "\n") + mailEnv(titleCase(appName) || appName);
+    add("src/mail/welcome.mail.ts", renderStub("mail/mail.stub", { ClassName: "WelcomeMail", Title: "Welcome" }));
+  }
   add(".gitignore", gitignore);
   add(".env", env);
   add(
@@ -346,6 +406,12 @@ export async function createApplication(name: string, opts: NewOptions = {}): Pr
     log.step(path.relative(root, file).split(path.sep).join("/"), "");
   }
   if (!minimal) fs.mkdirSync(path.join(root, "public"), { recursive: true });
+
+  if (!opts.skipGit && process.env.MEGH_SKIP_GIT !== "1") {
+    const git = initGit(root);
+    if (git === "initialized") log.success("Initialized a git repository");
+    else if (git === "failed") log.warn("git init failed; run it yourself to put the project under git");
+  }
 
   const skipInstall = opts.skipInstall || process.env.MEGH_SKIP_INSTALL === "1";
   if (skipInstall) {
